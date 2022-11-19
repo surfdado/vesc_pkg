@@ -118,7 +118,7 @@ typedef struct {
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer, fault_duty_timer; // Seconds
-	float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
+ // float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
 	float switch_warn_buzz_erpm; /*Dado's*/
@@ -187,17 +187,18 @@ static void configure(data *d) {
 						(float)d->balance_conf.loop_time_filter + 1.0);
 	}
 
-	if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
-		float dT = 1.0 / d->balance_conf.hertz;
-		float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_lowpass_frequency);
-		d->d_pt1_lowpass_k =  dT / (RC + dT);
-	}
+	/* D-Term Filters DISABLED */
+	// if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
+	// 	float dT = 1.0 / d->balance_conf.hertz;
+	// 	float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_lowpass_frequency);
+	// 	d->d_pt1_lowpass_k =  dT / (RC + dT);
+	// }
 
-	if (d->balance_conf.kd_pt1_highpass_frequency > 0) {
-		float dT = 1.0 / d->balance_conf.hertz;
-		float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_highpass_frequency);
-		d->d_pt1_highpass_k =  dT / (RC + dT);
-	}
+	// if (d->balance_conf.kd_pt1_highpass_frequency > 0) {
+	// 	float dT = 1.0 / d->balance_conf.hertz;
+	// 	float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_highpass_frequency);
+	// 	d->d_pt1_highpass_k =  dT / (RC + dT);
+	// }
 
 	if (d->balance_conf.torquetilt_filter > 0) { // Torquetilt Current Biquad
 		float Fc = d->balance_conf.torquetilt_filter / d->balance_conf.hertz;
@@ -226,8 +227,8 @@ static void reset_vars(data *d) {
 	d->integral = 0;
 	d->last_proportional = 0;
 	d->integral2 = 0;
-	d->d_pt1_lowpass_state = 0;
-	d->d_pt1_highpass_state = 0;
+ // d->d_pt1_lowpass_state = 0;
+ // d->d_pt1_highpass_state = 0;
 	// Set values for startup
 	d->setpoint = d->pitch_angle;
 	d->setpoint_target_interpolated = d->pitch_angle;
@@ -316,9 +317,9 @@ static bool check_faults(data *d, bool ignoreTimers){
 		d->fault_angle_roll_timer = d->current_time;
 	}
 
-	// Check for duty
-	if (d->abs_duty_cycle > d->balance_conf.fault_duty){
-		if ((1000.0 * (d->current_time - d->fault_duty_timer)) > d->balance_conf.fault_delay_duty || ignoreTimers) {
+	// Check for duty /*HARD CODED FOR 100% DC and 100ms*/
+	if (d->abs_duty_cycle > 1.0 /*d->balance_conf.fault_duty*/){
+		if ((1000.0 * (d->current_time - d->fault_duty_timer)) > 100 /*d->balance_conf.fault_delay_duty*/ || ignoreTimers) {
 			d->state = FAULT_DUTY;
 			return true;
 		}
@@ -482,24 +483,25 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
-static float apply_deadzone(data *d, float error){ /*No longer repurposed like in Dado's FW*/
-	if (d->balance_conf.deadzone == 0) {
-		return error;
-	}
+/* Deadzone DISABLED */
+// static float apply_deadzone(data *d, float error){ /*No longer repurposed like in Dado's FW*/
+// 	if (d->balance_conf.deadzone == 0) {
+// 		return error;
+// 	}
 
-	if (error < d->balance_conf.deadzone && error > -d->balance_conf.deadzone) {
-		return 0;
-	} else if(error > d->balance_conf.deadzone) {
-		return error - d->balance_conf.deadzone;
-	} else {
-		return error + d->balance_conf.deadzone;
-	}
-}
+// 	if (error < d->balance_conf.deadzone && error > -d->balance_conf.deadzone) {
+// 		return 0;
+// 	} else if(error > d->balance_conf.deadzone) {
+// 		return error - d->balance_conf.deadzone;
+// 	} else {
+// 		return error + d->balance_conf.deadzone;
+// 	}
+// }
 
 static void brake(data *d) {
-	// Brake timeout logic
-	if (d->balance_conf.brake_timeout > 0 && (d->abs_erpm > 1 || d->brake_timeout == 0)) {
-		d->brake_timeout = d->current_time + d->balance_conf.brake_timeout;
+	// Brake timeout logic /*Hard-Coded to 1s Brake Timeout*/
+	if (/*d->balance_conf.brake_timeout > 0 && */(d->abs_erpm > 1 || d->brake_timeout == 0)) {
+		d->brake_timeout = d->current_time + 1 /*d->balance_conf.brake_timeout*/;
 	}
 
 	if (d->brake_timeout != 0 && d->current_time > d->brake_timeout) {
@@ -671,8 +673,8 @@ static void balance_thd(void *arg) {
 			// Do PID maths
 			d->proportional = d->setpoint - d->pitch_angle;
 
-			// Apply deadzone
-			d->proportional = apply_deadzone(d, d->proportional);
+			// Apply deadzone /*DEADZONE DISABLED*/
+			// d->proportional = apply_deadzone(d, d->proportional);
 
 			// Resume real PID maths
 			d->integral = d->integral + d->proportional;
@@ -683,18 +685,18 @@ static void balance_thd(void *arg) {
 				d->integral = d->balance_conf.ki_limit / d->balance_conf.ki * SIGN(d->integral);
 			}
 
-			// Apply D term filters
-			if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
-				d->d_pt1_lowpass_state = d->d_pt1_lowpass_state + d->d_pt1_lowpass_k * (d->derivative - d->d_pt1_lowpass_state);
-				d->derivative = d->d_pt1_lowpass_state;
-			}
+			// // Apply D term filters (DISABLED)
+			// if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
+			// 	d->d_pt1_lowpass_state = d->d_pt1_lowpass_state + d->d_pt1_lowpass_k * (d->derivative - d->d_pt1_lowpass_state);
+			// 	d->derivative = d->d_pt1_lowpass_state;
+			// }
 
-			if (d->balance_conf.kd_pt1_highpass_frequency > 0){
-				d->d_pt1_highpass_state = d->d_pt1_highpass_state + d->d_pt1_highpass_k * (d->derivative - d->d_pt1_highpass_state);
-				d->derivative = d->derivative - d->d_pt1_highpass_state;
-			}
+			// if (d->balance_conf.kd_pt1_highpass_frequency > 0){
+			// 	d->d_pt1_highpass_state = d->d_pt1_highpass_state + d->d_pt1_highpass_k * (d->derivative - d->d_pt1_highpass_state);
+			// 	d->derivative = d->derivative - d->d_pt1_highpass_state;
+			// }
 
-			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral) + (d->balance_conf.kd * d->derivative);
+			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral)/* + (d->balance_conf.kd * d->derivative)*/;
 
 			if (d->balance_conf.pid_mode == BALANCE_PID_MODE_ANGLE_RATE_CASCADE) {
 				d->proportional2 = d->pid_value - d->gyro[1];
@@ -707,7 +709,7 @@ static void balance_thd(void *arg) {
 				}
 
 				d->pid_value = (d->balance_conf.kp2 * d->proportional2) +
-						(d->balance_conf.ki2 * d->integral2) + (d->balance_conf.kd2 * d->derivative2);
+						(d->balance_conf.ki2 * d->integral2)/* + (d->balance_conf.kd2 * d->derivative2)*/;
 			}
 
 			d->last_proportional = d->proportional;
