@@ -69,15 +69,8 @@ typedef struct {
 	float startup_roll_tolerance;
 	float startup_speed;
 	float deadzone;
-	bool multi_esc;
-	float yaw_kp;
-	float yaw_ki;
-	float yaw_kd;
-	float roll_steer_kp;
-	float roll_steer_erpm_kp;
 	float brake_current;
 	uint16_t brake_timeout;
-	float yaw_current_clamp;
 	float ki_limit;
 	uint16_t kd_pt1_lowpass_frequency;
 	uint16_t kd_pt1_highpass_frequency;

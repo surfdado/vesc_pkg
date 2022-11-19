@@ -203,36 +203,6 @@
 #define APPCONF_BALANCE_DEADZONE 0
 #endif
 
-// Multiple VESCs Over CAN
-#ifndef APPCONF_BALANCE_MULTI_ESC
-#define APPCONF_BALANCE_MULTI_ESC 0
-#endif
-
-// Yaw P
-#ifndef APPCONF_BALANCE_YAW_KP
-#define APPCONF_BALANCE_YAW_KP 0
-#endif
-
-// Yaw I
-#ifndef APPCONF_BALANCE_YAW_KI
-#define APPCONF_BALANCE_YAW_KI 0
-#endif
-
-// Yaw D
-#ifndef APPCONF_BALANCE_YAW_KD
-#define APPCONF_BALANCE_YAW_KD 0
-#endif
-
-// Roll Steer KP
-#ifndef APPCONF_BALANCE_ROLL_STEER_KP
-#define APPCONF_BALANCE_ROLL_STEER_KP 0
-#endif
-
-// Roll Steer ERPM KP
-#ifndef APPCONF_BALANCE_ROLL_STEER_ERPM_KP
-#define APPCONF_BALANCE_ROLL_STEER_ERPM_KP 0
-#endif
-
 // Brake Current
 #ifndef APPCONF_BALANCE_BRAKE_CURRENT
 #define APPCONF_BALANCE_BRAKE_CURRENT 0
@@ -241,11 +211,6 @@
 // Brake Timeout
 #ifndef APPCONF_BALANCE_BRAKE_TIMEOUT
 #define APPCONF_BALANCE_BRAKE_TIMEOUT 10
-#endif
-
-// Yaw Current Clamp
-#ifndef APPCONF_BALANCE_YAW_CURRENT_CLAMP
-#define APPCONF_BALANCE_YAW_CURRENT_CLAMP 0
 #endif
 
 // I term limit
