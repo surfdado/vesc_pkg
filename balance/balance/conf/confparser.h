@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 // Constants
-#define BALANCE_CONFIG_SIGNATURE		4098546538
+#define BALANCE_CONFIG_SIGNATURE		3038062682
 
 // Functions
 int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_config *conf);
