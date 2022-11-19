@@ -30,10 +30,6 @@
 
 HEADER
 
-// Can
-#define MAX_CAN_AGE		0.1
-#define MAX_CAN_DEVS	2
-
 // Return the sign of the argument. -1.0 if negative, 1.0 if zero or positive.
 #define SIGN(x)				(((x) < 0.0) ? -1.0 : 1.0)
 
@@ -95,9 +91,11 @@ typedef struct {
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size;
+	bool show_revision; /*Unused?*/
 
 	// Runtime values read from elsewhere
 	float pitch_angle, last_pitch_angle, roll_angle, abs_roll_angle, abs_roll_angle_sin, last_gyro_y;
+//  float true_pitch_angle; /*Used for Pitch Fault and ATR Features, requires modified "imu.c"*/
 	float gyro[3];
 	float duty_cycle, abs_duty_cycle;
 	float erpm, abs_erpm, avg_erpm;
@@ -117,13 +115,13 @@ typedef struct {
 	Biquad torquetilt_current_biquad;
 	float turntilt_target, turntilt_interpolated;
 	SetpointAdjustmentType setpointAdjustmentType;
-	float yaw_proportional, yaw_integral, yaw_derivative, yaw_last_proportional, yaw_pid_value, yaw_setpoint;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer, fault_duty_timer; // Seconds
 	float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
+	float switch_warn_buzz_erpm; /*Dado's*/
 
 	// Debug values
 	int debug_render_1, debug_render_2;
@@ -132,7 +130,7 @@ typedef struct {
 } data;
 
 // Function Prototypes
-static void set_current(data *d, float current, float yaw_current);
+static void set_current(data *d, float current);
 static void configure(data *d);
 
 // Utility Functions
@@ -206,6 +204,9 @@ static void configure(data *d) {
 		biquad_config(&d->torquetilt_current_biquad, BQ_LOWPASS, Fc);
 	}
 
+	// Speed at which to warn users about an impending full switch fault
+	d->switch_warn_buzz_erpm = 2000;
+
 	// Variable nose angle adjustment / tiltback (setting is per 1000erpm, convert to per erpm)
 	d->tiltback_variable = d->balance_conf.tiltback_variable / 1000;
 	if (d->tiltback_variable > 0) {
@@ -217,6 +218,7 @@ static void configure(data *d) {
 	// Reset loop time variables
 	d->last_time = 0.0;
 	d->filtered_loop_overshoot = 0.0;
+	d->show_revision = true;
 }
 
 static void reset_vars(data *d) {
@@ -224,8 +226,6 @@ static void reset_vars(data *d) {
 	d->integral = 0;
 	d->last_proportional = 0;
 	d->integral2 = 0;
-	d->yaw_integral = 0;
-	d->yaw_last_proportional = 0;
 	d->d_pt1_lowpass_state = 0;
 	d->d_pt1_highpass_state = 0;
 	// Set values for startup
@@ -240,7 +240,6 @@ static void reset_vars(data *d) {
 	d->turntilt_target = 0;
 	d->turntilt_interpolated = 0;
 	d->setpointAdjustmentType = CENTERING;
-	d->yaw_setpoint = 0;
 	d->state = RUNNING;
 	d->current_time = 0;
 	d->last_time = 0;
@@ -275,6 +274,12 @@ static bool check_faults(data *d, bool ignoreTimers){
 			d->state = FAULT_SWITCH_FULL;
 			return true;
 		}
+		// low speed (below 6 x half-fault threshold speed):
+		else if ((d->abs_erpm < d->balance_conf.fault_adc_half_erpm * 6)
+			   && (1000.0 * (d->current_time - d->fault_switch_timer) > d->balance_conf.fault_delay_switch_half)){
+			d->state = FAULT_SWITCH_FULL;
+			return true;
+		}
 	} else {
 		d->fault_switch_timer = d->current_time;
 	}
@@ -292,7 +297,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 	}
 
 	// Check pitch angle
-	if (fabsf(d->pitch_angle) > d->balance_conf.fault_pitch) {
+	if (fabsf(d->pitch_angle/*true_pitch_angle*/) > d->balance_conf.fault_pitch) {
 		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->balance_conf.fault_delay_pitch || ignoreTimers) {
 			d->state = FAULT_ANGLE_PITCH;
 			return true;
@@ -462,7 +467,7 @@ static void apply_turntilt(data *d) {
 	if (d->turntilt_target > 0) {
 		d->turntilt_target = fminf(d->turntilt_target, d->balance_conf.turntilt_angle_limit);
 	} else {
-		d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit);
+		d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit); /*Negative Turn Tilt now allowed?*/
 	}
 
 	// Move towards target limited by max speed
@@ -477,7 +482,7 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
-static float apply_deadzone(data *d, float error){
+static float apply_deadzone(data *d, float error){ /*No longer repurposed like in Dado's FW*/
 	if (d->balance_conf.deadzone == 0) {
 		return error;
 	}
@@ -506,51 +511,24 @@ static void brake(data *d) {
 
 	// Set current
 	VESC_IF->mc_set_brake_current(d->balance_conf.brake_current);
-
-	if (d->balance_conf.multi_esc) {
-		for (int i = 0;i < MAX_CAN_DEVS;i++) {
-			can_status_msg *msg = VESC_IF->can_get_status_msg_index(i);
-			if (msg->id >= 0 && VESC_IF->ts_to_age_s(msg->rx_time) < MAX_CAN_AGE) {
-				VESC_IF->can_set_current_brake(msg->id, d->balance_conf.brake_current);
-			}
-		}
-	}
 }
 
-static void set_current(data *d, float current, float yaw_current){
-	// Limit current output to configured max output (does not account for yaw_current)
+static void set_current(data *d, float current){
+	/*Below is logic new to v6*////////////////////////////////////////////////////////
+	// Limit current output to configured max output
 	if (current > 0 && current > VESC_IF->get_cfg_float(CFG_PARAM_l_current_max)) {
 		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
 	} else if(current < 0 && current < VESC_IF->get_cfg_float(CFG_PARAM_l_current_min)) {
 		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_min);
 	}
+	///////////////////////////////////////////////////////////////////////////////////
 
 	// Reset the timeout
 	VESC_IF->timeout_reset();
-
-	// Set current
-	if (d->balance_conf.multi_esc) {
-		// Set the current delay
-		VESC_IF->mc_set_current_off_delay(d->motor_timeout_seconds);
-
-		// Set Current
-		VESC_IF->mc_set_current(current + yaw_current);
-
-		// Can bus
-		for (int i = 0;i < MAX_CAN_DEVS;i++) {
-			can_status_msg *msg = VESC_IF->can_get_status_msg_index(i);
-
-			if (msg->id >= 0 && VESC_IF->ts_to_age_s(msg->rx_time) < MAX_CAN_AGE) {
-				// Assume 2 motors, i don't know how to steer 3 anyways
-				VESC_IF->can_set_current_off_delay(msg->id, current - yaw_current, d->motor_timeout_seconds);
-			}
-		}
-	} else {
-		// Set the current delay
-		VESC_IF->mc_set_current_off_delay(d->motor_timeout_seconds);
-		// Set Current
-		VESC_IF->mc_set_current(current);
-	}
+	// Set the current delay
+	VESC_IF->mc_set_current_off_delay(d->motor_timeout_seconds);
+	// Set Current
+	VESC_IF->mc_set_current(current);
 }
 
 static void balance_thd(void *arg) {
@@ -581,6 +559,7 @@ static void balance_thd(void *arg) {
 		d->last_gyro_y = d->gyro[1];
 
 		// Get the values we want
+	  /*d->true_pitch_angle = RAD2DEG_f(VESC_IF->imu_ref_get_pitch());*/
 		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
 		d->roll_angle = RAD2DEG_f(VESC_IF->imu_get_roll());
 		d->abs_roll_angle = fabsf(d->roll_angle);
@@ -590,18 +569,6 @@ static void balance_thd(void *arg) {
 		d->abs_duty_cycle = fabsf(d->duty_cycle);
 		d->erpm = VESC_IF->mc_get_rpm();
 		d->abs_erpm = fabsf(d->erpm);
-		if (d->balance_conf.multi_esc) {
-			d->avg_erpm = d->erpm;
-			for (int i = 0;i < MAX_CAN_DEVS;i++) {
-				can_status_msg *msg = VESC_IF->can_get_status_msg_index(i);
-				if (msg->id >= 0 && VESC_IF->ts_to_age_s(msg->rx_time) < MAX_CAN_AGE) {
-					d->avg_erpm += msg->rpm;
-				}
-			}
-
-			d->avg_erpm = d->avg_erpm / 2.0; // Assume 2 motors, i don't know how to steer 3 anyways
-		}
-
 		d->adc1 = VESC_IF->io_read_analog(VESC_PIN_ADC1);
 		d->adc2 = VESC_IF->io_read_analog(VESC_PIN_ADC2); // Returns -1.0 if the pin is missing on the hardware
 		if (d->adc2 < 0.0) {
@@ -637,6 +604,29 @@ static void balance_thd(void *arg) {
 			}
 		}
 
+		/* INSERT DADO's BUZZER LOGIC(?) *///////////////////////////////////////////////
+// 		/*
+// 		 * Use external buzzer to notify rider of foot switch faults.
+// 		 */
+// #ifdef HAS_EXT_BUZZER
+// 		if (switch_state == OFF) {
+// 			if (abs_erpm > switch_warn_buzz_erpm) {
+// 				// If we're at riding speed and the switch is off => ALERT the user
+// 				// set force=true since this could indicate an imminent shutdown/nosedive
+// 				beep_on(true);
+// 			}
+// 			else {
+// 				// if we drop below riding speed stop buzzing
+// 				beep_off(false);
+// 			}
+// 		}
+// 		else {
+// 			// if the switch comes back on we stop buzzing
+// 			beep_off(false);
+// 		}
+// #endif
+		/////////////////////////////////////////////////////////////////////////////////
+
 		// Control Loop State Logic
 		switch(d->state) {
 		case (STARTUP):
@@ -645,6 +635,19 @@ static void balance_thd(void *arg) {
 				if (VESC_IF->imu_startup_done()) {
 					reset_vars(d);
 					d->state = FAULT_STARTUP; // Trigger a fault so we need to meet start conditions to start
+
+					/*MORE DADO BUZZER LOGIC*/////////////////////////////////////////////////////////////////
+					// // Let the rider know that the board is ready (one short beep)
+					// beep_alert(1, false);
+					// // Are we within 5V of the LV tiltback threshold? Issue 1 beep for each volt below that
+					// float bat_volts = GET_INPUT_VOLTAGE();
+					// float threshold = balance_conf.tiltback_lv + 5;
+					// if (bat_volts < threshold) {
+					// 	int beeps = (int)fminf(6, threshold - bat_volts);
+					// 	beep_alert(beeps, true);
+					// }
+					//////////////////////////////////////////////////////////////////////////////////////////
+
 				}
 				break;
 
@@ -720,37 +723,8 @@ static void balance_thd(void *arg) {
 				}
 			}
 
-			if (d->balance_conf.multi_esc) {
-				// Calculate setpoint
-				if (d->abs_duty_cycle < .02) {
-					d->yaw_setpoint = 0;
-				} else if (d->avg_erpm < 0) {
-					d->yaw_setpoint = (-d->balance_conf.roll_steer_kp * d->roll_angle) +
-							(d->balance_conf.roll_steer_erpm_kp * d->roll_angle * d->avg_erpm);
-				} else {
-					d->yaw_setpoint = (d->balance_conf.roll_steer_kp * d->roll_angle) +
-							(d->balance_conf.roll_steer_erpm_kp * d->roll_angle * d->avg_erpm);
-				}
-
-				// Do PID maths
-				d->yaw_proportional = d->yaw_setpoint - d->gyro[2];
-				d->yaw_integral = d->yaw_integral + d->yaw_proportional;
-				d->yaw_derivative = d->yaw_proportional - d->yaw_last_proportional;
-
-				d->yaw_pid_value = (d->balance_conf.yaw_kp * d->yaw_proportional) +
-						(d->balance_conf.yaw_ki * d->yaw_integral) + (d->balance_conf.yaw_kd * d->yaw_derivative);
-
-				if (d->yaw_pid_value > d->balance_conf.yaw_current_clamp) {
-					d->yaw_pid_value = d->balance_conf.yaw_current_clamp;
-				} else if (d->yaw_pid_value < -d->balance_conf.yaw_current_clamp) {
-					d->yaw_pid_value = -d->balance_conf.yaw_current_clamp;
-				}
-
-				d->yaw_last_proportional = d->yaw_proportional;
-			}
-
 			// Output to motor
-			set_current(d, d->pid_value, d->yaw_pid_value);
+			set_current(d, d->pid_value);
 			break;
 
 		case (FAULT_ANGLE_PITCH):
@@ -761,6 +735,7 @@ static void balance_thd(void *arg) {
 			// Check for valid startup position and switch state
 			if (fabsf(d->pitch_angle) < d->balance_conf.startup_pitch_tolerance &&
 					fabsf(d->roll_angle) < d->balance_conf.startup_roll_tolerance && d->switch_state == ON) {
+				d->show_revision = false;
 				reset_vars(d);
 				break;
 			}
@@ -779,6 +754,8 @@ static void balance_thd(void *arg) {
 			brake(d);
 			break;
 		}
+
+	  /*update_beep_alert();*/
 
 		// Debug outputs
 //		app_balance_sample_debug();
