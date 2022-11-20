@@ -119,7 +119,8 @@ typedef struct {
  // float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
-	float switch_warn_buzz_erpm; /*Dado's*/
+	float switch_warn_buzz_erpm;
+	float quickstop_erpm;
 
 	// Debug values
 	int debug_render_1, debug_render_2;
@@ -191,6 +192,9 @@ static void configure(data *d) {
 
 	// Speed at which to warn users about an impending full switch fault
 	d->switch_warn_buzz_erpm = 2000;
+
+	// Speed below which we check for quickstop conditions
+	d->quickstop_erpm = 200; /* Inactive; True Pitch needed for functionality */
 
 	// Variable nose angle adjustment / tiltback (setting is per 1000erpm, convert to per erpm)
 	d->tiltback_variable = d->balance_conf.tiltback_variable / 1000;
@@ -264,6 +268,9 @@ static bool check_faults(data *d, bool ignoreTimers){
 			d->state = FAULT_SWITCH_FULL;
 			return true;
 		}
+
+		/* TRUE PITCH NEEDED FOR QUICKSTOP */
+
 	} else {
 		d->fault_switch_timer = d->current_time;
 	}
@@ -325,14 +332,29 @@ static void calculate_setpoint_target(data *d) {
 		d->setpointAdjustmentType = TILTBACK_HV;
 		d->state = RUNNING_TILTBACK_HIGH_VOLTAGE;
 	} else if (d->abs_duty_cycle > 0.05 && VESC_IF->mc_get_input_voltage_filtered() < d->balance_conf.tiltback_lv) {
-		if (d->erpm > 0) {
-			d->setpoint_target = d->balance_conf.tiltback_lv_angle;
-		} else {
-			d->setpoint_target = -d->balance_conf.tiltback_lv_angle;
-		}
+		
+		float abs_motor_current = fabsf(d->motor_current);
+		float vdelta = d->balance_conf.tiltback_lv - VESC_IF->mc_get_input_voltage_filtered();
+		float ratio = vdelta * 20 / abs_motor_current;
+		// When to do LV tiltback:
+		// a) we're 2V below lv threshold
+		// b) motor current is small (we cannot assume vsag)
+		// c) we have more than 20A per Volt of difference (we tolerate some amount of vsag)
+		if ((vdelta > 2) || (abs_motor_current < 5) || (ratio > 1)) {
+			if (d->erpm > 0) {
+				d->setpoint_target = d->balance_conf.tiltback_lv_angle;
+			} else {
+				d->setpoint_target = -d->balance_conf.tiltback_lv_angle;
+			}
 
-		d->setpointAdjustmentType = TILTBACK_LV;
-		d->state = RUNNING_TILTBACK_LOW_VOLTAGE;
+			d->setpointAdjustmentType = TILTBACK_LV;
+			d->state = RUNNING_TILTBACK_LOW_VOLTAGE;
+		}
+		else {
+			d->setpointAdjustmentType = TILTBACK_NONE;
+			d->setpoint_target = 0;
+			d->state = RUNNING;
+		}
 	} else {
 		d->setpointAdjustmentType = TILTBACK_NONE;
 		d->setpoint_target = 0;
