@@ -10,13 +10,11 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 
 	buffer_append_uint32(buffer, BALANCE_CONFIG_SIGNATURE, &ind);
 
-	buffer[ind++] = conf->pid_mode;
 	buffer_append_float32_auto(buffer, conf->kp, &ind);
 	buffer_append_float32_auto(buffer, conf->ki, &ind);
 	buffer_append_float32_auto(buffer, conf->kp2, &ind);
 	buffer_append_float32_auto(buffer, conf->ki2, &ind);
 	buffer_append_uint16(buffer, conf->hertz, &ind);
-	buffer_append_uint16(buffer, conf->loop_time_filter, &ind);
 	buffer_append_float32_auto(buffer, conf->fault_pitch, &ind);
 	buffer_append_float32_auto(buffer, conf->fault_roll, &ind);
 	buffer_append_float32_auto(buffer, conf->fault_adc1, &ind);
@@ -75,13 +73,11 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 		return false;
 	}
 
-	conf->pid_mode = buffer[ind++];
 	conf->kp = buffer_get_float32_auto(buffer, &ind);
 	conf->ki = buffer_get_float32_auto(buffer, &ind);
 	conf->kp2 = buffer_get_float32_auto(buffer, &ind);
 	conf->ki2 = buffer_get_float32_auto(buffer, &ind);
 	conf->hertz = buffer_get_uint16(buffer, &ind);
-	conf->loop_time_filter = buffer_get_uint16(buffer, &ind);
 	conf->fault_pitch = buffer_get_float32_auto(buffer, &ind);
 	conf->fault_roll = buffer_get_float32_auto(buffer, &ind);
 	conf->fault_adc1 = buffer_get_float32_auto(buffer, &ind);
@@ -133,13 +129,11 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 }
 
 void confparser_set_defaults_balance_config(balance_config *conf) {
-	conf->pid_mode = APPCONF_BALANCE_PID_MODE;
 	conf->kp = APPCONF_BALANCE_KP;
 	conf->ki = APPCONF_BALANCE_KI;
 	conf->kp2 = APPCONF_BALANCE_KP2;
 	conf->ki2 = APPCONF_BALANCE_KI2;
 	conf->hertz = APPCONF_BALANCE_HERTZ;
-	conf->loop_time_filter = APPCONF_BALANCE_LOOP_TIME_FILTER;
 	conf->fault_pitch = APPCONF_BALANCE_FAULT_PITCH;
 	conf->fault_roll = APPCONF_BALANCE_FAULT_ROLL;
 	conf->fault_adc1 = APPCONF_BALANCE_FAULT_ADC1;

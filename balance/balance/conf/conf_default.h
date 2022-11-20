@@ -3,11 +3,6 @@
 #ifndef CONF_DEFAULT_H_
 #define CONF_DEFAULT_H_
 
-// PID Mode
-#ifndef APPCONF_BALANCE_PID_MODE
-#define APPCONF_BALANCE_PID_MODE 1
-#endif
-
 // Angle P
 #ifndef APPCONF_BALANCE_KP
 #define APPCONF_BALANCE_KP 20
@@ -30,12 +25,7 @@
 
 // Loop Hertz
 #ifndef APPCONF_BALANCE_HERTZ
-#define APPCONF_BALANCE_HERTZ 833
-#endif
-
-// Loop Time Correction Filter
-#ifndef APPCONF_BALANCE_LOOP_TIME_FILTER
-#define APPCONF_BALANCE_LOOP_TIME_FILTER 5
+#define APPCONF_BALANCE_HERTZ 832
 #endif
 
 // Pitch Axis Fault Cutoff
@@ -180,7 +170,7 @@
 
 // Brake Current
 #ifndef APPCONF_BALANCE_BRAKE_CURRENT
-#define APPCONF_BALANCE_BRAKE_CURRENT 4
+#define APPCONF_BALANCE_BRAKE_CURRENT 6
 #endif
 
 // I Term Limit
