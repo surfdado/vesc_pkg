@@ -106,7 +106,7 @@ typedef struct {
 
 	// Rumtime state values
 	BalanceState state;
-	float proportional, integral, derivative, proportional2, integral2, derivative2;
+	float proportional, integral, proportional2, integral2;
 	float last_proportional, abs_proportional;
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
@@ -673,35 +673,19 @@ static void balance_thd(void *arg) {
 			// Do PID maths
 			d->proportional = d->setpoint - d->pitch_angle;
 
-			// Apply deadzone /*DEADZONE DISABLED*/
-			// d->proportional = apply_deadzone(d, d->proportional);
-
 			// Resume real PID maths
 			d->integral = d->integral + d->proportional;
-			d->derivative = d->last_pitch_angle - d->pitch_angle;
 
 			// Apply I term Filter
 			if (d->balance_conf.ki_limit > 0 && fabsf(d->integral * d->balance_conf.ki) > d->balance_conf.ki_limit) {
 				d->integral = d->balance_conf.ki_limit / d->balance_conf.ki * SIGN(d->integral);
 			}
 
-			// // Apply D term filters (DISABLED)
-			// if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
-			// 	d->d_pt1_lowpass_state = d->d_pt1_lowpass_state + d->d_pt1_lowpass_k * (d->derivative - d->d_pt1_lowpass_state);
-			// 	d->derivative = d->d_pt1_lowpass_state;
-			// }
-
-			// if (d->balance_conf.kd_pt1_highpass_frequency > 0){
-			// 	d->d_pt1_highpass_state = d->d_pt1_highpass_state + d->d_pt1_highpass_k * (d->derivative - d->d_pt1_highpass_state);
-			// 	d->derivative = d->derivative - d->d_pt1_highpass_state;
-			// }
-
-			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral)/* + (d->balance_conf.kd * d->derivative)*/;
+			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
 
 			if (d->balance_conf.pid_mode == BALANCE_PID_MODE_ANGLE_RATE_CASCADE) {
 				d->proportional2 = d->pid_value - d->gyro[1];
 				d->integral2 = d->integral2 + d->proportional2;
-				d->derivative2 = d->last_gyro_y - d->gyro[1];
 
 				// Apply I term Filter
 				if (d->balance_conf.ki_limit > 0 && fabsf(d->integral2 * d->balance_conf.ki2) > d->balance_conf.ki_limit) {
@@ -709,7 +693,7 @@ static void balance_thd(void *arg) {
 				}
 
 				d->pid_value = (d->balance_conf.kp2 * d->proportional2) +
-						(d->balance_conf.ki2 * d->integral2)/* + (d->balance_conf.kd2 * d->derivative2)*/;
+						(d->balance_conf.ki2 * d->integral2);
 			}
 
 			d->last_proportional = d->proportional;
@@ -779,7 +763,7 @@ static float app_balance_get_debug(int index) {
 		case(3):
 			return d->torquetilt_filtered_current;
 		case(4):
-			return d->derivative;
+			return d->proportional;
 		case(5):
 			return d->last_pitch_angle - d->pitch_angle;
 		case(6):
