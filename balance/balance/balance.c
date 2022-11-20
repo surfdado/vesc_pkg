@@ -91,7 +91,6 @@ typedef struct {
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size;
-	bool show_revision; /*Unused?*/
 
 	// Runtime values read from elsewhere
 	float pitch_angle, last_pitch_angle, roll_angle, abs_roll_angle, abs_roll_angle_sin, last_gyro_y;
@@ -187,19 +186,6 @@ static void configure(data *d) {
 						(float)d->balance_conf.loop_time_filter + 1.0);
 	}
 
-	/* D-Term Filters DISABLED */
-	// if (d->balance_conf.kd_pt1_lowpass_frequency > 0) {
-	// 	float dT = 1.0 / d->balance_conf.hertz;
-	// 	float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_lowpass_frequency);
-	// 	d->d_pt1_lowpass_k =  dT / (RC + dT);
-	// }
-
-	// if (d->balance_conf.kd_pt1_highpass_frequency > 0) {
-	// 	float dT = 1.0 / d->balance_conf.hertz;
-	// 	float RC = 1.0 / ( 2.0 * M_PI * d->balance_conf.kd_pt1_highpass_frequency);
-	// 	d->d_pt1_highpass_k =  dT / (RC + dT);
-	// }
-
 	if (d->balance_conf.torquetilt_filter > 0) { // Torquetilt Current Biquad
 		float Fc = d->balance_conf.torquetilt_filter / d->balance_conf.hertz;
 		biquad_config(&d->torquetilt_current_biquad, BQ_LOWPASS, Fc);
@@ -219,7 +205,6 @@ static void configure(data *d) {
 	// Reset loop time variables
 	d->last_time = 0.0;
 	d->filtered_loop_overshoot = 0.0;
-	d->show_revision = true;
 }
 
 static void reset_vars(data *d) {
@@ -318,8 +303,8 @@ static bool check_faults(data *d, bool ignoreTimers){
 	}
 
 	// Check for duty /*HARD CODED FOR 100% DC and 100ms*/
-	if (d->abs_duty_cycle > 1.0 /*d->balance_conf.fault_duty*/){
-		if ((1000.0 * (d->current_time - d->fault_duty_timer)) > 100 /*d->balance_conf.fault_delay_duty*/ || ignoreTimers) {
+	if (d->abs_duty_cycle > 1.0){ // 100% Duty Cycle
+		if ((1000.0 * (d->current_time - d->fault_duty_timer)) > 100 || ignoreTimers) { // Timer: 100ms
 			d->state = FAULT_DUTY;
 			return true;
 		}
@@ -468,7 +453,7 @@ static void apply_turntilt(data *d) {
 	if (d->turntilt_target > 0) {
 		d->turntilt_target = fminf(d->turntilt_target, d->balance_conf.turntilt_angle_limit);
 	} else {
-		d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit); /*Negative Turn Tilt now allowed?*/
+		d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit);
 	}
 
 	// Move towards target limited by max speed
@@ -483,25 +468,10 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
-/* Deadzone DISABLED */
-// static float apply_deadzone(data *d, float error){ /*No longer repurposed like in Dado's FW*/
-// 	if (d->balance_conf.deadzone == 0) {
-// 		return error;
-// 	}
-
-// 	if (error < d->balance_conf.deadzone && error > -d->balance_conf.deadzone) {
-// 		return 0;
-// 	} else if(error > d->balance_conf.deadzone) {
-// 		return error - d->balance_conf.deadzone;
-// 	} else {
-// 		return error + d->balance_conf.deadzone;
-// 	}
-// }
-
 static void brake(data *d) {
 	// Brake timeout logic /*Hard-Coded to 1s Brake Timeout*/
-	if (/*d->balance_conf.brake_timeout > 0 && */(d->abs_erpm > 1 || d->brake_timeout == 0)) {
-		d->brake_timeout = d->current_time + 1 /*d->balance_conf.brake_timeout*/;
+	if ((d->abs_erpm > 1 || d->brake_timeout == 0)) {
+		d->brake_timeout = d->current_time + 1; // Timeout: 1 second
 	}
 
 	if (d->brake_timeout != 0 && d->current_time > d->brake_timeout) {
@@ -516,14 +486,12 @@ static void brake(data *d) {
 }
 
 static void set_current(data *d, float current){
-	/*Below is logic new to v6*////////////////////////////////////////////////////////
 	// Limit current output to configured max output
 	if (current > 0 && current > VESC_IF->get_cfg_float(CFG_PARAM_l_current_max)) {
 		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
 	} else if(current < 0 && current < VESC_IF->get_cfg_float(CFG_PARAM_l_current_min)) {
 		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_min);
 	}
-	///////////////////////////////////////////////////////////////////////////////////
 
 	// Reset the timeout
 	VESC_IF->timeout_reset();
