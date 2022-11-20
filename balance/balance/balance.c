@@ -688,6 +688,7 @@ static void balance_thd(void *arg) {
 			// Disable output
 			brake(d);
 			break;
+		}
 
 	  /*update_beep_alert();*/
 
