@@ -651,7 +651,7 @@ static void balance_thd(void *arg) {
 
 			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
 
-			if (d->balance_conf.pid_mode == BALANCE_PID_MODE_ANGLE_RATE_CASCADE) {
+			if (d->balance_conf.kp2 > 0) {
 				d->proportional2 = d->pid_value - d->gyro[1];
 				d->integral2 = d->integral2 + d->proportional2;
 
