@@ -105,7 +105,7 @@ typedef struct {
 
 	// Rumtime state values
 	BalanceState state;
-	float proportional, integral, proportional2, integral2;
+	float proportional, integral, proportional2, integral2, pid_rate;
 	float last_proportional, abs_proportional;
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
@@ -650,18 +650,22 @@ static void balance_thd(void *arg) {
 
 			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
 
-			if (d->balance_conf.kp2 > 0) {
+			if (d->balance_conf.pid_mode == BALANCE_PID_MODE_ANGLE_RATE_CASCADE) { // Cascading PID's
 				d->proportional2 = d->pid_value - d->gyro[1];
-				d->integral2 = d->integral2 + d->proportional2;
-
-				// Apply I term Filter
-				if (d->balance_conf.ki_limit > 0 && fabsf(d->integral2 * d->balance_conf.ki2) > d->balance_conf.ki_limit) {
-					d->integral2 = d->balance_conf.ki_limit / d->balance_conf.ki2 * SIGN(d->integral2);
-				}
-
-				d->pid_value = (d->balance_conf.kp2 * d->proportional2) +
-						(d->balance_conf.ki2 * d->integral2);
+				d->pid_value = 0; // Prepping for += later; pid_value already utilized above
+			} else { // Classic Behavior (Angle PID + Rate PID)
+				d->proportional2 = -d->gyro[1];
 			}
+			
+			d->integral2 = d->integral2 + d->proportional2;
+
+			// Apply I term Filter
+			if (d->balance_conf.ki_limit > 0 && fabsf(d->integral2 * d->balance_conf.ki2) > d->balance_conf.ki_limit) {
+				d->integral2 = d->balance_conf.ki_limit / d->balance_conf.ki2 * SIGN(d->integral2);
+			}
+
+			d->pid_value += (d->balance_conf.kp2 * d->proportional2) +
+					(d->balance_conf.ki2 * d->integral2);
 
 			d->last_proportional = d->proportional;
 

@@ -3,6 +3,11 @@
 #ifndef CONF_DEFAULT_H_
 #define CONF_DEFAULT_H_
 
+// PID Mode
+#ifndef APPCONF_BALANCE_PID_MODE
+#define APPCONF_BALANCE_PID_MODE 0
+#endif
+
 // Angle P
 #ifndef APPCONF_BALANCE_KP
 #define APPCONF_BALANCE_KP 20
