@@ -24,9 +24,14 @@
 #include <stdbool.h>
 
 typedef enum {
-	BALANCE_PID_MODE_ANGLE = 0,
-	BALANCE_PID_MODE_ANGLE_RATE_CASCADE
+	ANGLE_RATE = 0,
+	ANGLE_RATE_CASCADE
 } BALANCE_PID_MODE;
+
+typedef enum {
+	ROLL_BASED_TURNTILT = 0,
+	YAW_BASED_TURNTILT
+} BALANCE_TURNTILT_MODE;
 
 typedef struct {
 	BALANCE_PID_MODE pid_mode;
@@ -91,6 +96,7 @@ typedef struct {
 	float torquetilt_off_speed;
 	float torquetilt_strength;
 	float torquetilt_filter;
+	BALANCE_TURNTILT_MODE turntilt_mode;
 	float turntilt_strength;
 	float turntilt_angle_limit;
 	float turntilt_start_angle;
@@ -98,6 +104,7 @@ typedef struct {
 	float turntilt_speed;
 	uint16_t turntilt_erpm_boost;
 	uint16_t turntilt_erpm_boost_end;
+	int turntilt_yaw_aggregate;
 } balance_config;
 
 // DATATYPES_H_

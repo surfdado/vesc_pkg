@@ -102,6 +102,11 @@ typedef struct {
 	float adc1, adc2;
 	SwitchState switch_state;
 
+	// Feature: Turntilt
+	float last_yaw_angle, yaw_angle, abs_yaw_change, last_yaw_change, yaw_change, yaw_aggregate;
+	float turntilt_boost_per_erpm, yaw_aggregate_target;
+	float turntilt_strength;
+
 	// Rumtime state values
 	BalanceState state;
 	float proportional, integral, proportional2, integral2, pid_rate;
@@ -190,6 +195,11 @@ static void configure(data *d) {
 		biquad_config(&d->torquetilt_current_biquad, BQ_LOWPASS, Fc);
 	}
 
+	// Feature: Turntilt
+	d->yaw_aggregate_target = fmaxf(50, d->balance_conf.turntilt_yaw_aggregate);
+	d->turntilt_boost_per_erpm = (float)d->balance_conf.turntilt_erpm_boost / 100.0 / (float)d->balance_conf.turntilt_erpm_boost_end;
+	d->turntilt_strength = d->balance_conf.turntilt_strength;
+
 	// Speed at which to warn users about an impending full switch fault
 	d->switch_warn_buzz_erpm = 2000;
 
@@ -233,6 +243,10 @@ static void reset_vars(data *d) {
 	d->last_time = 0;
 	d->diff_time = 0;
 	d->brake_timeout = 0;
+
+	// Turntilt:
+	d->last_yaw_angle = 0;
+	d->yaw_aggregate = 0;
 }
 
 static float get_setpoint_adjustment_step_size(data *d) {
@@ -436,34 +450,57 @@ static void apply_torquetilt(data *d) {
 }
 
 static void apply_turntilt(data *d) {
-	// Calculate desired angle
-	d->turntilt_target = d->abs_roll_angle_sin * d->balance_conf.turntilt_strength;
+	if (d->turntilt_strength == 0) {
+		return;
+	}
+
+	float is_yaw_based = d->balance_conf.turntilt_mode == YAW_BASED_TURNTILT;
+
+	float abs_yaw_scaled = d->abs_yaw_change * 100;
+	float turn_angle = is_yaw_based ? abs_yaw_scaled : d->abs_roll_angle; 
 
 	// Apply cutzone
-	if (d->abs_roll_angle < d->balance_conf.turntilt_start_angle) {
+	if ((turn_angle < d->balance_conf.turntilt_start_angle) || (d->state != RUNNING)) {
 		d->turntilt_target = 0;
 	}
+	else {
+		// Calculate desired angle
+		float turn_change = is_yaw_based ? d->abs_yaw_change : d->abs_roll_angle_sin;
+		d->turntilt_target = turn_change * d->turntilt_strength;
 
-	// Disable below erpm threshold otherwise add directionality
-	if (d->abs_erpm < d->balance_conf.turntilt_start_erpm) {
-		d->turntilt_target = 0;
-	} else {
-		d->turntilt_target *= SIGN(d->erpm);
-	}
+		// Apply speed scaling
+		float boost;
+		if (d->abs_erpm < d->balance_conf.turntilt_erpm_boost_end) {
+			boost = 1.0 + d->abs_erpm * d->turntilt_boost_per_erpm;
+		} else {
+			boost = 1.0 + (float)d->balance_conf.turntilt_erpm_boost / 100.0;
+		}
+		d->turntilt_target *= boost;
 
-	// Apply speed scaling
-	if (d->abs_erpm < d->balance_conf.turntilt_erpm_boost_end) {
-		d->turntilt_target *= 1 + ((d->balance_conf.turntilt_erpm_boost / 100.0f) *
-				(d->abs_erpm / d->balance_conf.turntilt_erpm_boost_end));
-	} else {
-		d->turntilt_target *= 1 + (d->balance_conf.turntilt_erpm_boost / 100.0f);
-	}
+		if (is_yaw_based) {
+			// Increase turntilt based on aggregate yaw change (at most: double it)
+			float aggregate_damper = 1.0;
+			if (d->abs_erpm < 2000) {
+				aggregate_damper = 0.5;
+			}
+			boost = 1 + aggregate_damper * fabsf(d->yaw_aggregate) / d->yaw_aggregate_target;
+			boost = fminf(boost, 2);
+			d->turntilt_target *= boost;
+		}
 
-	// Limit angle to max angle
-	if (d->turntilt_target > 0) {
-		d->turntilt_target = fminf(d->turntilt_target, d->balance_conf.turntilt_angle_limit);
-	} else {
-		d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit);
+		// Limit angle to max angle
+		if (d->turntilt_target > 0) {
+			d->turntilt_target = fminf(d->turntilt_target, d->balance_conf.turntilt_angle_limit);
+		} else {
+			d->turntilt_target = fmaxf(d->turntilt_target, -d->balance_conf.turntilt_angle_limit);
+		}
+
+		// Disable below erpm threshold otherwise add directionality
+		if (d->abs_erpm < d->balance_conf.turntilt_start_erpm) {
+			d->turntilt_target = 0;
+		} else {
+			d->turntilt_target *= SIGN(d->erpm);
+		}
 	}
 
 	// Move towards target limited by max speed
@@ -554,6 +591,30 @@ static void balance_thd(void *arg) {
 		if (d->adc2 < 0.0) {
 			d->adc2 = 0.0;
 		}
+
+		// Turn tilt:
+		d->yaw_angle = VESC_IF->imu_get_yaw() * 180.0f / M_PI;
+		float new_change = d->yaw_angle - d->last_yaw_angle;
+		bool unchanged = false;
+		if ((new_change == 0) // Exact 0's only happen when the IMU is not updating between loops
+			|| (fabsf(new_change) > 100)) // yaw flips signs at 180, ignore those changes
+		{
+			new_change = d->last_yaw_change;
+			unchanged = true;
+		}
+		d->last_yaw_change = new_change;
+		d->last_yaw_angle = d->yaw_angle;
+
+		// To avoid overreactions at low speed, limit change here:
+		new_change = fminf(new_change, 0.10);
+		new_change = fmaxf(new_change, -0.10);
+		d->yaw_change = d->yaw_change * 0.8 + 0.2 * (new_change);
+		// Clear the aggregate yaw whenever we change direction
+		if (SIGN(d->yaw_change) != SIGN(d->yaw_aggregate))
+			d->yaw_aggregate = 0;
+		d->abs_yaw_change = fabsf(d->yaw_change);
+		if ((d->abs_yaw_change > 0.04) && !unchanged)	// don't count tiny yaw changes towards aggregate
+			d->yaw_aggregate += d->yaw_change;
 
 		// Calculate switch state from ADC values
 		if (d->balance_conf.fault_adc1 == 0 && d->balance_conf.fault_adc2 == 0){ // No Switch
@@ -661,7 +722,7 @@ static void balance_thd(void *arg) {
 
 			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
 
-			if (d->balance_conf.pid_mode == BALANCE_PID_MODE_ANGLE_RATE_CASCADE) { // Cascading PID's
+			if (d->balance_conf.pid_mode == ANGLE_RATE_CASCADE) { // Cascading PID's
 				d->proportional2 = d->pid_value - d->gyro[1];
 				d->pid_value = 0; // Prepping for += later; pid_value already utilized above
 			} else { // Classic Behavior (Angle PID + Rate PID)

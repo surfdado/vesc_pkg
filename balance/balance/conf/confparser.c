@@ -55,6 +55,7 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	buffer_append_float32_auto(buffer, conf->torquetilt_off_speed, &ind);
 	buffer_append_float32_auto(buffer, conf->torquetilt_strength, &ind);
 	buffer_append_float32_auto(buffer, conf->torquetilt_filter, &ind);
+	buffer[ind++] = conf->turntilt_mode;
 	buffer_append_float32_auto(buffer, conf->turntilt_strength, &ind);
 	buffer_append_float32_auto(buffer, conf->turntilt_angle_limit, &ind);
 	buffer_append_float32_auto(buffer, conf->turntilt_start_angle, &ind);
@@ -62,6 +63,7 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	buffer_append_float32_auto(buffer, conf->turntilt_speed, &ind);
 	buffer_append_uint16(buffer, conf->turntilt_erpm_boost, &ind);
 	buffer_append_uint16(buffer, conf->turntilt_erpm_boost_end, &ind);
+	buffer[ind++] = (uint8_t)conf->turntilt_yaw_aggregate;
 
 	return ind;
 }
@@ -119,6 +121,7 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	conf->torquetilt_off_speed = buffer_get_float32_auto(buffer, &ind);
 	conf->torquetilt_strength = buffer_get_float32_auto(buffer, &ind);
 	conf->torquetilt_filter = buffer_get_float32_auto(buffer, &ind);
+	conf->turntilt_mode = buffer[ind++];
 	conf->turntilt_strength = buffer_get_float32_auto(buffer, &ind);
 	conf->turntilt_angle_limit = buffer_get_float32_auto(buffer, &ind);
 	conf->turntilt_start_angle = buffer_get_float32_auto(buffer, &ind);
@@ -126,6 +129,7 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	conf->turntilt_speed = buffer_get_float32_auto(buffer, &ind);
 	conf->turntilt_erpm_boost = buffer_get_uint16(buffer, &ind);
 	conf->turntilt_erpm_boost_end = buffer_get_uint16(buffer, &ind);
+	conf->turntilt_yaw_aggregate = buffer[ind++];
 
 	return true;
 }
@@ -176,6 +180,7 @@ void confparser_set_defaults_balance_config(balance_config *conf) {
 	conf->torquetilt_off_speed = APPCONF_BALANCE_TORQUETILT_OFF_SPEED;
 	conf->torquetilt_strength = APPCONF_BALANCE_TORQUETILT_STRENGTH;
 	conf->torquetilt_filter = APPCONF_BALANCE_TORQUETILT_FILTER;
+	conf->turntilt_mode = APPCONF_BALANCE_TURNTILT_MODE;
 	conf->turntilt_strength = APPCONF_BALANCE_TURNTILT_STRENGTH;
 	conf->turntilt_angle_limit = APPCONF_BALANCE_TURNTILT_ANGLE_LIMIT;
 	conf->turntilt_start_angle = APPCONF_BALANCE_TURNTILT_START_ANGLE;
@@ -183,5 +188,6 @@ void confparser_set_defaults_balance_config(balance_config *conf) {
 	conf->turntilt_speed = APPCONF_BALANCE_TURNTILT_SPEED;
 	conf->turntilt_erpm_boost = APPCONF_BALANCE_TURNTILT_ERPM_BOOST;
 	conf->turntilt_erpm_boost_end = APPCONF_BALANCE_TURNTILT_ERPM_BOOST_END;
+	conf->turntilt_yaw_aggregate = APPCONF_BALANCE_TURNTILT_YAW_AGGREGATE;
 }
 
