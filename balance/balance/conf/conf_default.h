@@ -5,7 +5,7 @@
 
 // PID Mode
 #ifndef APPCONF_BALANCE_PID_MODE
-#define APPCONF_BALANCE_PID_MODE 1
+#define APPCONF_BALANCE_PID_MODE 0
 #endif
 
 // Angle P
@@ -55,12 +55,12 @@
 
 // Pitch Fault Delay
 #ifndef APPCONF_BALANCE_FAULT_DELAY_PITCH
-#define APPCONF_BALANCE_FAULT_DELAY_PITCH 100
+#define APPCONF_BALANCE_FAULT_DELAY_PITCH 1000
 #endif
 
 // Roll Fault Delay
 #ifndef APPCONF_BALANCE_FAULT_DELAY_ROLL
-#define APPCONF_BALANCE_FAULT_DELAY_ROLL 100
+#define APPCONF_BALANCE_FAULT_DELAY_ROLL 1000
 #endif
 
 // Half Switch Fault Delay
@@ -108,7 +108,7 @@
 #define APPCONF_BALANCE_TILTBACK_HV_SPEED 1
 #endif
 
-// High Voltage
+// High Voltage Threshold
 #ifndef APPCONF_BALANCE_TILTBACK_HV
 #define APPCONF_BALANCE_TILTBACK_HV 64
 #endif
@@ -123,7 +123,7 @@
 #define APPCONF_BALANCE_TILTBACK_LV_SPEED 1
 #endif
 
-// Low Voltage
+// Low Voltage Threshold
 #ifndef APPCONF_BALANCE_TILTBACK_LV
 #define APPCONF_BALANCE_TILTBACK_LV 45
 #endif
@@ -230,12 +230,12 @@
 
 // Turn Tiltback Mode
 #ifndef APPCONF_BALANCE_TURNTILT_MODE
-#define APPCONF_BALANCE_TURNTILT_MODE 0
+#define APPCONF_BALANCE_TURNTILT_MODE 1
 #endif
 
 // Strength
 #ifndef APPCONF_BALANCE_TURNTILT_STRENGTH
-#define APPCONF_BALANCE_TURNTILT_STRENGTH 0
+#define APPCONF_BALANCE_TURNTILT_STRENGTH 6
 #endif
 
 // Tilitback Angle Limit
