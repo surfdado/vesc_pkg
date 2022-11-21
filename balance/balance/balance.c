@@ -102,6 +102,9 @@ typedef struct {
 	float adc1, adc2;
 	SwitchState switch_state;
 
+	// Feature: ATR (Adaptive Torque Response)
+	bool braking;
+
 	// Feature: Turntilt
 	float last_yaw_angle, yaw_angle, abs_yaw_change, last_yaw_change, yaw_change, yaw_aggregate;
 	float turntilt_boost_per_erpm, yaw_aggregate_target;
@@ -119,13 +122,18 @@ typedef struct {
 	float turntilt_target, turntilt_interpolated;
 	SetpointAdjustmentType setpointAdjustmentType;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
+	float disengage_timer; // Seconds
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer; // Seconds
  // float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
+	float tb_highvoltage_timer;
 	float switch_warn_buzz_erpm;
 	float quickstop_erpm;
+
+	// Brake Amp Rate Limiting:
+	float pid_brake_increment;
 
 	// Debug values
 	int debug_render_1, debug_render_2;
@@ -184,8 +192,14 @@ static void configure(data *d) {
 	d->turntilt_step_size = d->balance_conf.turntilt_speed / d->balance_conf.hertz;
 	d->noseangling_step_size = d->balance_conf.noseangling_speed / d->balance_conf.hertz;
 
+	// Maximum amps change when braking
+	d->pid_brake_increment = 5;
+	if (d->pid_brake_increment < 0.1) {
+		d->pid_brake_increment = 5;
+	}
+
 	// Init Filters
-	float loop_time_filter = 5.0; // Originally Parameter, now hard-coded
+	float loop_time_filter = 3.0; // Originally Parameter, now hard-coded to 3Hz
 	d->loop_overshoot_alpha = 2.0 * M_PI * ((float)1.0 / (float)d->balance_conf.hertz) *
 				loop_time_filter / (2.0 * M_PI * (1.0 / (float)d->balance_conf.hertz) *
 						loop_time_filter + 1.0);
@@ -243,6 +257,7 @@ static void reset_vars(data *d) {
 	d->last_time = 0;
 	d->diff_time = 0;
 	d->brake_timeout = 0;
+	d->pid_value = 0;
 
 	// Turntilt:
 	d->last_yaw_angle = 0;
@@ -265,6 +280,66 @@ static float get_setpoint_adjustment_step_size(data *d) {
 			;
 	}
 	return 0;
+}
+
+// Read ADCs and determine switch state
+static SwitchState check_adcs(data *d) {
+	SwitchState sw_state;
+
+	// Calculate switch state from ADC values
+	if(d->balance_conf.fault_adc1 == 0 && d->balance_conf.fault_adc2 == 0){ // No Switch
+		sw_state = ON;
+	}else if(d->balance_conf.fault_adc2 == 0){ // Single switch on ADC1
+		if(d->adc1 > d->balance_conf.fault_adc1){
+			sw_state = ON;
+		} else {
+			sw_state = OFF;
+		}
+	}else if(d->balance_conf.fault_adc1 == 0){ // Single switch on ADC2
+		if(d->adc2 > d->balance_conf.fault_adc2){
+			sw_state = ON;
+		} else {
+			sw_state = OFF;
+		}
+	}else{ // Double switch
+		if(d->adc1 > d->balance_conf.fault_adc1 && d->adc2 > d->balance_conf.fault_adc2){
+			sw_state = ON;
+		}else if(d->adc1 > d->balance_conf.fault_adc1 || d->adc2 > d->balance_conf.fault_adc2){
+			// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
+			bool is_simple_start = d->current_time - d->disengage_timer > 5;
+			if (d->balance_conf.fault_is_dual_switch || is_simple_start)
+				sw_state = ON;
+			else
+				sw_state = HALF;
+		}else{
+			sw_state = OFF;
+		}
+	}
+
+	/* INSERT DADO's BUZZER LOGIC *//////////////////////////////////////////////////
+	// /*
+	// * Use external buzzer to notify rider of foot switch faults.
+	// */
+	// #ifdef HAS_EXT_BUZZER
+	//		if (switch_state == OFF) {
+	//			if (abs_erpm > switch_warn_buzz_erpm) {
+	//				// If we're at riding speed and the switch is off => ALERT the user
+	//				// set force=true since this could indicate an imminent shutdown/nosedive
+	//				beep_on(true);
+	//			}
+	//			else {
+	//				// if we drop below riding speed stop buzzing
+	//				beep_off(false);
+	//			}
+	//		}
+	//		else {
+	//			// if the switch comes back on we stop buzzing
+	//			beep_off(false);
+	//		}
+	// #endif
+	/////////////////////////////////////////////////////////////////////////////////
+
+	return sw_state;
 }
 
 // Fault checking order does not really matter. From a UX perspective, switch should be before angle.
@@ -301,16 +376,6 @@ static bool check_faults(data *d, bool ignoreTimers){
 		}
 	}
 
-	// Check pitch angle
-	if (fabsf(d->pitch_angle/*true_pitch_angle*/) > d->balance_conf.fault_pitch) {
-		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->balance_conf.fault_delay_pitch || ignoreTimers) {
-			d->state = FAULT_ANGLE_PITCH;
-			return true;
-		}
-	} else {
-		d->fault_angle_pitch_timer = d->current_time;
-	}
-
 	// Check roll angle
 	if (fabsf(d->roll_angle) > d->balance_conf.fault_roll) {
 		if ((1000.0 * (d->current_time - d->fault_angle_roll_timer)) > d->balance_conf.fault_delay_roll || ignoreTimers) {
@@ -321,10 +386,26 @@ static bool check_faults(data *d, bool ignoreTimers){
 		d->fault_angle_roll_timer = d->current_time;
 	}
 
+	// Check pitch angle
+	if (fabsf(d->pitch_angle/*true_pitch_angle*/) > d->balance_conf.fault_pitch) {
+		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->balance_conf.fault_delay_pitch || ignoreTimers) {
+			d->state = FAULT_ANGLE_PITCH;
+			return true;
+		}
+	} else {
+		d->fault_angle_pitch_timer = d->current_time;
+	}
+
 	return false;
 }
 
 static void calculate_setpoint_target(data *d) {
+	float input_voltage = VESC_IF->mc_get_input_voltage_filtered();
+
+	if (input_voltage < d->balance_conf.tiltback_hv) {
+		d->tb_highvoltage_timer = d->current_time;
+	}
+
 	if (d->setpointAdjustmentType == CENTERING && d->setpoint_target_interpolated != d->setpoint_target) {
 		// Ignore tiltback during centering sequence
 		d->state = RUNNING;
@@ -336,19 +417,28 @@ static void calculate_setpoint_target(data *d) {
 		}
 		d->setpointAdjustmentType = TILTBACK_DUTY;
 		d->state = RUNNING_TILTBACK_DUTY;
-	} else if (d->abs_duty_cycle > 0.05 && VESC_IF->mc_get_input_voltage_filtered() > d->balance_conf.tiltback_hv) {
-		if (d->erpm > 0){
-			d->setpoint_target = d->balance_conf.tiltback_hv_angle;
-		} else {
-			d->setpoint_target = -d->balance_conf.tiltback_hv_angle;
-		}
+	} else if (d->abs_duty_cycle > 0.05 && input_voltage > d->balance_conf.tiltback_hv) {
+		if (((d->current_time - d->tb_highvoltage_timer) > .5) ||
+		   (input_voltage > d->balance_conf.tiltback_hv + 1)) {
+			// 500ms have passed or voltage is another volt higher, time for some tiltback
+			if (d->erpm > 0){
+				d->setpoint_target = d->balance_conf.tiltback_hv_angle;
+			} else {
+				d->setpoint_target = -d->balance_conf.tiltback_hv_angle;
+			}
 
-		d->setpointAdjustmentType = TILTBACK_HV;
-		d->state = RUNNING_TILTBACK_HIGH_VOLTAGE;
-	} else if (d->abs_duty_cycle > 0.05 && VESC_IF->mc_get_input_voltage_filtered() < d->balance_conf.tiltback_lv) {
+			d->setpointAdjustmentType = TILTBACK_HV;
+			d->state = RUNNING_TILTBACK_HIGH_VOLTAGE;
+		}
+		else {
+			// Was possibly just a short spike
+			d->setpointAdjustmentType = TILTBACK_NONE;
+			d->state = RUNNING;
+		}
+	} else if (d->abs_duty_cycle > 0.05 && input_voltage < d->balance_conf.tiltback_lv) {
 		
 		float abs_motor_current = fabsf(d->motor_current);
-		float vdelta = d->balance_conf.tiltback_lv - VESC_IF->mc_get_input_voltage_filtered();
+		float vdelta = d->balance_conf.tiltback_lv - input_voltage;
 		float ratio = vdelta * 20 / abs_motor_current;
 		// When to do LV tiltback:
 		// a) we're 2V below lv threshold
@@ -422,6 +512,21 @@ static void apply_torquetilt(data *d) {
 	} else {
 		d->torquetilt_filtered_current = d->motor_current;
 	}
+	
+	int torque_sign = SIGN(d->torquetilt_filtered_current);
+	float abs_torque = fabsf(d->torquetilt_filtered_current);
+	float torque_offset = d->balance_conf.torquetilt_start_current;
+	float step_size;
+
+	if ((d->abs_erpm > 250) && (torque_sign != SIGN(d->erpm))) {
+		// current is negative, so we are braking or going downhill
+		// high currents downhill are less likely
+		//torquetilt_strength = tt_strength_downhill;
+		d->braking = true;
+	}
+	else {
+		d->braking = false;
+	}
 
 	// Wat is this line O_o
 	// Take abs motor current, subtract start offset, and take the max of that with 0 to get the current above our start threshold (absolute).
@@ -430,12 +535,17 @@ static void apply_torquetilt(data *d) {
 	d->torquetilt_target = fminf(fmaxf((fabsf(d->torquetilt_filtered_current) - d->balance_conf.torquetilt_start_current), 0) *
 			d->balance_conf.torquetilt_strength, d->balance_conf.torquetilt_angle_limit) * SIGN(d->torquetilt_filtered_current);
 
-	float step_size;
 	if ((d->torquetilt_interpolated - d->torquetilt_target > 0 && d->torquetilt_target > 0) ||
 			(d->torquetilt_interpolated - d->torquetilt_target < 0 && d->torquetilt_target < 0)) {
 		step_size = d->torquetilt_off_step_size;
 	} else {
 		step_size = d->torquetilt_on_step_size;
+	}
+
+	// when slow then erpm data is especially choppy, causing fake spikes in acceleration
+	// mellow down the reaction to reduce noticeable oscillations
+	if (d->abs_erpm < 500) {
+		step_size /= 2;
 	}
 
 	if (fabsf(d->torquetilt_target - d->torquetilt_interpolated) < step_size) {
@@ -445,6 +555,8 @@ static void apply_torquetilt(data *d) {
 	} else {
 		d->torquetilt_interpolated -= step_size;
 	}
+
+	// INSERT BRAKE TILT LOGIC
 
 	d->setpoint += d->torquetilt_interpolated;
 }
@@ -591,8 +703,8 @@ static void balance_thd(void *arg) {
 		if (d->adc2 < 0.0) {
 			d->adc2 = 0.0;
 		}
-
-		// Turn tilt:
+		
+		// Turn Tilt:
 		d->yaw_angle = VESC_IF->imu_get_yaw() * 180.0f / M_PI;
 		float new_change = d->yaw_angle - d->last_yaw_angle;
 		bool unchanged = false;
@@ -616,57 +728,9 @@ static void balance_thd(void *arg) {
 		if ((d->abs_yaw_change > 0.04) && !unchanged)	// don't count tiny yaw changes towards aggregate
 			d->yaw_aggregate += d->yaw_change;
 
-		// Calculate switch state from ADC values
-		if (d->balance_conf.fault_adc1 == 0 && d->balance_conf.fault_adc2 == 0){ // No Switch
-			d->switch_state = ON;
-		} else if (d->balance_conf.fault_adc2 == 0) { // Single switch on ADC1
-			if (d->adc1 > d->balance_conf.fault_adc1) {
-				d->switch_state = ON;
-			} else {
-				d->switch_state = OFF;
-			}
-		} else if (d->balance_conf.fault_adc1 == 0) { // Single switch on ADC2
-			if (d->adc2 > d->balance_conf.fault_adc2) {
-				d->switch_state = ON;
-			} else {
-				d->switch_state = OFF;
-			}
-		} else { // Double switch
-			if (d->adc1 > d->balance_conf.fault_adc1 && d->adc2 > d->balance_conf.fault_adc2) {
-				d->switch_state = ON;
-			} else if (d->adc1 > d->balance_conf.fault_adc1 || d->adc2 > d->balance_conf.fault_adc2) {
-				if (d->balance_conf.fault_is_dual_switch) {
-					d->switch_state = ON;
-				} else {
-					d->switch_state = HALF;
-				}
-			} else {
-				d->switch_state = OFF;
-			}
-		}
+		d->switch_state = check_adcs(d);
 
-		/* INSERT DADO's BUZZER LOGIC(?) *///////////////////////////////////////////////
-// 		/*
-// 		 * Use external buzzer to notify rider of foot switch faults.
-// 		 */
-// #ifdef HAS_EXT_BUZZER
-// 		if (switch_state == OFF) {
-// 			if (abs_erpm > switch_warn_buzz_erpm) {
-// 				// If we're at riding speed and the switch is off => ALERT the user
-// 				// set force=true since this could indicate an imminent shutdown/nosedive
-// 				beep_on(true);
-// 			}
-// 			else {
-// 				// if we drop below riding speed stop buzzing
-// 				beep_off(false);
-// 			}
-// 		}
-// 		else {
-// 			// if the switch comes back on we stop buzzing
-// 			beep_off(false);
-// 		}
-// #endif
-		/////////////////////////////////////////////////////////////////////////////////
+		float new_pid_value = 0;
 
 		// Control Loop State Logic
 		switch(d->state) {
@@ -701,6 +765,8 @@ static void balance_thd(void *arg) {
 				break;
 			}
 
+			d->disengage_timer = d->current_time;
+
 			// Calculate setpoint and interpolation
 			calculate_setpoint_target(d);
 			calculate_setpoint_interpolated(d);
@@ -720,11 +786,11 @@ static void balance_thd(void *arg) {
 				d->integral = d->balance_conf.ki_limit / d->balance_conf.ki * SIGN(d->integral);
 			}
 
-			d->pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
+			new_pid_value = (d->balance_conf.kp * d->proportional) + (d->balance_conf.ki * d->integral);
 
 			if (d->balance_conf.pid_mode == ANGLE_RATE_CASCADE) { // Cascading PID's
-				d->proportional2 = d->pid_value - d->gyro[1];
-				d->pid_value = 0; // Prepping for += later; pid_value already utilized above
+				d->proportional2 = new_pid_value - d->gyro[1];
+				new_pid_value = 0; // Prepping for += later; pid_value already utilized above
 			} else { // Classic Behavior (Angle PID + Rate PID)
 				d->proportional2 = -d->gyro[1];
 			}
@@ -736,20 +802,46 @@ static void balance_thd(void *arg) {
 				d->integral2 = d->balance_conf.ki_limit / d->balance_conf.ki2 * SIGN(d->integral2);
 			}
 
-			d->pid_value += (d->balance_conf.kp2 * d->proportional2) +
+			new_pid_value += (d->balance_conf.kp2 * d->proportional2) +
 					(d->balance_conf.ki2 * d->integral2);
 
 			d->last_proportional = d->proportional;
 
 			// Apply Booster
 			d->abs_proportional = fabsf(d->proportional);
+			float booster_current = d->balance_conf.booster_current;
+
+			// Make booster a bit stronger at higher speed (up to 2x stronger when braking)
+			const float boost_min_erpm = 3000;
+			if (d->abs_erpm > boost_min_erpm) {
+				float speedstiffness = fminf(1, (d->abs_erpm - boost_min_erpm) / 10000);
+				if (d->braking)
+					booster_current += booster_current * speedstiffness;
+				else
+					booster_current += booster_current * speedstiffness / 2;
+			}
+
+
 			if (d->abs_proportional > d->balance_conf.booster_angle) {
 				if (d->abs_proportional - d->balance_conf.booster_angle < d->balance_conf.booster_ramp) {
-					d->pid_value += (d->balance_conf.booster_current * SIGN(d->proportional)) *
+					new_pid_value += (d->balance_conf.booster_current * SIGN(d->proportional)) *
 							((d->abs_proportional - d->balance_conf.booster_angle) / d->balance_conf.booster_ramp);
 				} else {
-					d->pid_value += d->balance_conf.booster_current * SIGN(d->proportional);
+					new_pid_value += d->balance_conf.booster_current * SIGN(d->proportional);
 				}
+			}
+			
+			// Brake Amp Rate Limiting
+			if (d->braking && (fabsf(d->pid_value - new_pid_value) > d->pid_brake_increment)) {
+				if (new_pid_value > d->pid_value) {
+					d->pid_value += d->pid_brake_increment;
+				}
+				else {
+					d->pid_value -= d->pid_brake_increment;
+				}
+			}
+			else {
+				d->pid_value = d->pid_value * 0.8 + new_pid_value * 0.2;
 			}
 
 			// Output to motor
@@ -763,7 +855,8 @@ static void balance_thd(void *arg) {
 		case (FAULT_STARTUP):
 			// Check for valid startup position and switch state
 			if (fabsf(d->pitch_angle) < d->balance_conf.startup_pitch_tolerance &&
-					fabsf(d->roll_angle) < d->balance_conf.startup_roll_tolerance && d->switch_state == ON) {
+				fabsf(d->roll_angle) < d->balance_conf.startup_roll_tolerance && 
+				d->switch_state == ON) {
 				reset_vars(d);
 				break;
 			}
