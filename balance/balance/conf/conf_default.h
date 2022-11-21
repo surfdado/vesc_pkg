@@ -230,7 +230,7 @@
 
 // Turn Tiltback Mode
 #ifndef APPCONF_BALANCE_TURNTILT_MODE
-#define APPCONF_BALANCE_TURNTILT_MODE 1
+#define APPCONF_BALANCE_TURNTILT_MODE 0
 #endif
 
 // Strength
@@ -240,10 +240,10 @@
 
 // Tilitback Angle Limit
 #ifndef APPCONF_BALANCE_TURNTILT_ANGLE_LIMIT
-#define APPCONF_BALANCE_TURNTILT_ANGLE_LIMIT 6
+#define APPCONF_BALANCE_TURNTILT_ANGLE_LIMIT 3
 #endif
 
-// Roll Angle Threshold
+// Turn Angle Threshold
 #ifndef APPCONF_BALANCE_TURNTILT_START_ANGLE
 #define APPCONF_BALANCE_TURNTILT_START_ANGLE 2
 #endif
@@ -255,7 +255,7 @@
 
 // Max Tiltback Speed
 #ifndef APPCONF_BALANCE_TURNTILT_SPEED
-#define APPCONF_BALANCE_TURNTILT_SPEED 4
+#define APPCONF_BALANCE_TURNTILT_SPEED 5
 #endif
 
 // Speed Boost %
