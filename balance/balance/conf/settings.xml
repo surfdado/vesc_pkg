@@ -749,7 +749,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>5</stepDouble>
-            <valDouble>30</valDouble>
+            <valDouble>60</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> °/s</suffix>
             <vTx>9</vTx>

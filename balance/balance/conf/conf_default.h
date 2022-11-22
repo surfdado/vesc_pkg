@@ -170,7 +170,7 @@
 
 // Startup Centering Speed
 #ifndef APPCONF_BALANCE_STARTUP_SPEED
-#define APPCONF_BALANCE_STARTUP_SPEED 30
+#define APPCONF_BALANCE_STARTUP_SPEED 60
 #endif
 
 // Brake Current

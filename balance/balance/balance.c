@@ -90,6 +90,9 @@ typedef struct {
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size;
+	float mc_max_temp_fet, mc_max_temp_mot;
+	float mc_current_max, mc_current_min, max_continuous_current;
+	bool current_beeping;
 
 	// Runtime values read from elsewhere
 	float pitch_angle, last_pitch_angle, roll_angle, abs_roll_angle, abs_roll_angle_sin, last_gyro_y;
@@ -128,7 +131,7 @@ typedef struct {
  // float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
-	float tb_highvoltage_timer;
+	float overcurrent_timer, tb_highvoltage_timer;
 	float switch_warn_buzz_erpm;
 	float quickstop_erpm;
 
@@ -192,11 +195,55 @@ static void configure(data *d) {
 	d->turntilt_step_size = d->balance_conf.turntilt_speed / d->balance_conf.hertz;
 	d->noseangling_step_size = d->balance_conf.noseangling_speed / d->balance_conf.hertz;
 
+	/* WAITING ON FIRMWARE SUPPORT ///////////////////////////////////////////////
+	d->mc_max_temp_fet = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_fet_start) - 3;
+	d->mc_max_temp_mot = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_motor_start) - 3;
+	/////////////////////////////////////////////// WAITING ON FIRMWARE SUPPORT */
+
+	d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
+	int mcm = d->mc_current_max;
+	float mc_max_reduce = d->mc_current_max - mcm;
+	if (mc_max_reduce >= 0.5) {
+		// reduce the max current by X% to save that for torque tilt situations
+		// less than 60 peak amps makes no sense though so I'm not allowing it
+		d->mc_current_max = fmaxf(mc_max_reduce * d->mc_current_max, 60);
+	}
+    
+	// min current is a positive value here!
+	d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
+	mcm = d->mc_current_min;
+	float mc_min_reduce = fabsf(d->mc_current_min - mcm);
+	if (mc_min_reduce >= 0.5) {
+		// reduce the max current by X% to save that for torque tilt situations
+		// less than 50 peak breaking amps makes no sense though so I'm not allowing it
+		d->mc_current_min = fmaxf(mc_min_reduce * d->mc_current_min, 50);
+	}
+
+	// Decimals of abs-max specify max continuous current
+	float max_abs = VESC_IF->get_cfg_float(CFG_PARAM_l_abs_current_max);
+	int mabs = max_abs;
+	d->max_continuous_current = (max_abs - mabs) * 100;
+	if (d->max_continuous_current < 25) {
+		// anything below 25A is suspicious and will be ignored!
+		d->max_continuous_current = d->mc_current_max;
+	}
+	
+
 	// Maximum amps change when braking
 	d->pid_brake_increment = 5;
 	if (d->pid_brake_increment < 0.1) {
 		d->pid_brake_increment = 5;
 	}
+
+
+	/* WIP /////////////////////////////
+
+	// INSERT ASYMMETRICAL BOOSTER INIT's
+
+	// INSERT REVERSE STOP INIT'S
+
+	///////////////////////////// WIP */
+	
 
 	// Init Filters
 	float loop_time_filter = 3.0; // Originally Parameter, now hard-coded to 3Hz
@@ -628,9 +675,10 @@ static void apply_turntilt(data *d) {
 }
 
 static void brake(data *d) {
-	// Brake timeout logic /*Hard-Coded to 1s Brake Timeout*/
+	// Brake timeout logic
+	float brake_timeout_length = 1; // Brake Timeout hard-coded to 1s
 	if ((d->abs_erpm > 1 || d->brake_timeout == 0)) {
-		d->brake_timeout = d->current_time + 1; // Timeout: 1 second
+		d->brake_timeout = d->current_time + brake_timeout_length;
 	}
 
 	if (d->brake_timeout != 0 && d->current_time > d->brake_timeout) {
@@ -828,6 +876,33 @@ static void balance_thd(void *arg) {
 							((d->abs_proportional - d->balance_conf.booster_angle) / d->balance_conf.booster_ramp);
 				} else {
 					new_pid_value += d->balance_conf.booster_current * SIGN(d->proportional);
+				}
+			}
+			
+			// Current Limiting!
+			float current_limit;
+			if (d->braking) {
+				current_limit = d->mc_current_min * (1 + 0.6 * fabsf(d->torquetilt_interpolated / 10));
+			}
+			else {
+				current_limit = d->mc_current_max * (1 + 0.6 * fabsf(d->torquetilt_interpolated / 10));
+			}
+			if (fabsf(new_pid_value) > current_limit) {
+				new_pid_value = SIGN(new_pid_value) * current_limit;
+			}
+			else {
+				// Over continuous current for more than 3 seconds? Just beep, don't actually limit currents
+				if (fabsf(d->torquetilt_filtered_current) < d->max_continuous_current) {
+					d->overcurrent_timer = d->current_time;
+					if (d->current_beeping) {
+						d->current_beeping = false;
+						// beep_off(false);  /* REQUIRES BUZZER SUPPORT */
+					}
+				} else {
+					if (d->current_time - d->overcurrent_timer > 3) {
+						// beep_on(true);  /* REQUIRES BUZZER SUPPORT */
+						d->current_beeping = true;
+					}
 				}
 			}
 			
