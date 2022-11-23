@@ -73,6 +73,7 @@ typedef struct {
 	float startup_pitch_tolerance;
 	float startup_roll_tolerance;
 	float startup_speed;
+	float startup_click_current;
 	float deadzone;
 	float brake_current;
 	uint16_t brake_timeout;

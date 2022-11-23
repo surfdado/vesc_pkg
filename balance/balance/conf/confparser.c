@@ -44,6 +44,7 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	buffer_append_float32_auto(buffer, conf->startup_pitch_tolerance, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_roll_tolerance, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_speed, &ind);
+	buffer[ind++] = (uint8_t)conf->startup_click_current;
 	buffer_append_float32_auto(buffer, conf->brake_current, &ind);
 	buffer_append_float32_auto(buffer, conf->ki_limit, &ind);
 	buffer_append_float32_auto(buffer, conf->booster_angle, &ind);
@@ -110,6 +111,7 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	conf->startup_pitch_tolerance = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_roll_tolerance = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_speed = buffer_get_float32_auto(buffer, &ind);
+	conf->startup_click_current = buffer[ind++];
 	conf->brake_current = buffer_get_float32_auto(buffer, &ind);
 	conf->ki_limit = buffer_get_float32_auto(buffer, &ind);
 	conf->booster_angle = buffer_get_float32_auto(buffer, &ind);
@@ -169,6 +171,7 @@ void confparser_set_defaults_balance_config(balance_config *conf) {
 	conf->startup_pitch_tolerance = APPCONF_BALANCE_STARTUP_PITCH_TOLERANCE;
 	conf->startup_roll_tolerance = APPCONF_BALANCE_STARTUP_ROLL_TOLERANCE;
 	conf->startup_speed = APPCONF_BALANCE_STARTUP_SPEED;
+	conf->startup_click_current = APPCONF_BALANCE_STARTUP_CLICK_CURRENT;
 	conf->brake_current = APPCONF_BALANCE_BRAKE_CURRENT;
 	conf->ki_limit = APPCONF_BALANCE_KI_LIMIT;
 	conf->booster_angle = APPCONF_BALANCE_BOOSTER_ANGLE;

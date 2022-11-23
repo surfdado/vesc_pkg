@@ -749,11 +749,33 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>5</stepDouble>
-            <valDouble>60</valDouble>
+            <valDouble>30</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> °/s</suffix>
             <vTx>9</vTx>
         </startup_speed>
+        <startup_click_current>
+            <longName>Startup Click Current</longName>
+            <type>2</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Strength of the noticeable &amp;quot;click&amp;quot; when engaging.&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;0A = Stealthy start&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;20A = Very noticeable click&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_BALANCE_STARTUP_CLICK_CURRENT</cDefine>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxInt>20</maxInt>
+            <minInt>0</minInt>
+            <showDisplay>1</showDisplay>
+            <stepInt>5</stepInt>
+            <valInt>0</valInt>
+            <suffix> A</suffix>
+            <vTx>1</vTx>
+        </startup_click_current>
         <brake_current>
             <longName>Brake Current</longName>
             <type>1</type>
@@ -1226,6 +1248,7 @@ p, li { white-space: pre-wrap; }
         <ser>startup_pitch_tolerance</ser>
         <ser>startup_roll_tolerance</ser>
         <ser>startup_speed</ser>
+        <ser>startup_click_current</ser>
         <ser>brake_current</ser>
         <ser>ki_limit</ser>
         <ser>booster_angle</ser>
@@ -1305,6 +1328,7 @@ p, li { white-space: pre-wrap; }
                     <param>startup_roll_tolerance</param>
                     <param>::sep::Centering</param>
                     <param>startup_speed</param>
+                    <param>startup_click_current</param>
                     <param>::sep::Holding</param>
                     <param>brake_current</param>
                 </subgroupParams>
