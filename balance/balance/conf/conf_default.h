@@ -63,6 +63,11 @@
 #define APPCONF_BALANCE_FAULT_DELAY_ROLL 1000
 #endif
 
+// Enable Darkride
+#ifndef APPCONF_BALANCE_FAULT_DARKRIDE_ENABLED
+#define APPCONF_BALANCE_FAULT_DARKRIDE_ENABLED 0
+#endif
+
 // Half Switch Fault Delay
 #ifndef APPCONF_BALANCE_FAULT_DELAY_SWITCH_HALF
 #define APPCONF_BALANCE_FAULT_DELAY_SWITCH_HALF 250
@@ -78,7 +83,7 @@
 #define APPCONF_BALANCE_FAULT_ADC_HALF_ERPM 300
 #endif
 
-// Treat both sensors as one
+// Treat Both Sensors as One
 #ifndef APPCONF_BALANCE_FAULT_IS_DUAL_SWITCH
 #define APPCONF_BALANCE_FAULT_IS_DUAL_SWITCH 0
 #endif
@@ -170,7 +175,7 @@
 
 // Startup Centering Speed
 #ifndef APPCONF_BALANCE_STARTUP_SPEED
-#define APPCONF_BALANCE_STARTUP_SPEED 30
+#define APPCONF_BALANCE_STARTUP_SPEED 60
 #endif
 
 // Startup Click Current

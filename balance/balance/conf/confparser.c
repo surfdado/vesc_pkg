@@ -22,6 +22,7 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	buffer_append_float32_auto(buffer, conf->fault_adc2, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_pitch, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_roll, &ind);
+	buffer[ind++] = conf->fault_darkride_enabled;
 	buffer_append_uint16(buffer, conf->fault_delay_switch_half, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_switch_full, &ind);
 	buffer_append_uint16(buffer, conf->fault_adc_half_erpm, &ind);
@@ -89,6 +90,7 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	conf->fault_adc2 = buffer_get_float32_auto(buffer, &ind);
 	conf->fault_delay_pitch = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_roll = buffer_get_uint16(buffer, &ind);
+	conf->fault_darkride_enabled = buffer[ind++];
 	conf->fault_delay_switch_half = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_switch_full = buffer_get_uint16(buffer, &ind);
 	conf->fault_adc_half_erpm = buffer_get_uint16(buffer, &ind);
@@ -149,6 +151,7 @@ void confparser_set_defaults_balance_config(balance_config *conf) {
 	conf->fault_adc2 = APPCONF_BALANCE_FAULT_ADC2;
 	conf->fault_delay_pitch = APPCONF_BALANCE_FAULT_DELAY_PITCH;
 	conf->fault_delay_roll = APPCONF_BALANCE_FAULT_DELAY_ROLL;
+	conf->fault_darkride_enabled = APPCONF_BALANCE_FAULT_DARKRIDE_ENABLED;
 	conf->fault_delay_switch_half = APPCONF_BALANCE_FAULT_DELAY_SWITCH_HALF;
 	conf->fault_delay_switch_full = APPCONF_BALANCE_FAULT_DELAY_SWITCH_FULL;
 	conf->fault_adc_half_erpm = APPCONF_BALANCE_FAULT_ADC_HALF_ERPM;

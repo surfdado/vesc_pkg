@@ -36,18 +36,20 @@ HEADER
 #define DEG2RAD_f(deg)		((deg) * (float)(M_PI / 180.0))
 #define RAD2DEG_f(rad) 		((rad) * (float)(180.0 / M_PI))
 
-// Data type (Values 5 and 10 wer removed, and can be reused at a later date, but i wanted to preserve the current value's numbers for UIs)
+// Data type (Values 5 *NOW RUNNING_UPSIDEDOWN* and 10 wer removed, and can be reused at a later date, but i wanted to preserve the current value's numbers for UIs)
 typedef enum {
 	STARTUP = 0,
 	RUNNING = 1,
 	RUNNING_TILTBACK_DUTY = 2,
 	RUNNING_TILTBACK_HIGH_VOLTAGE = 3,
 	RUNNING_TILTBACK_LOW_VOLTAGE = 4,
+	RUNNING_UPSIDEDOWN = 5,
 	FAULT_ANGLE_PITCH = 6,
 	FAULT_ANGLE_ROLL = 7,
 	FAULT_SWITCH_HALF = 8,
 	FAULT_SWITCH_FULL = 9,
-	FAULT_STARTUP = 11
+	FAULT_STARTUP = 11,
+	FAULT_REVERSE = 12
 } BalanceState;
 
 typedef enum {
@@ -129,12 +131,18 @@ typedef struct {
 	float disengage_timer; // Seconds
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer; // Seconds
- // float d_pt1_lowpass_state, d_pt1_lowpass_k, d_pt1_highpass_state, d_pt1_highpass_k;
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
 	float overcurrent_timer, tb_highvoltage_timer;
 	float switch_warn_buzz_erpm;
 	float quickstop_erpm;
+
+	// Darkride aka upside down mode:
+	bool is_upside_down;			// the board is upside down
+	bool is_upside_down_started;	// dark ride has been engaged
+	bool enable_upside_down;		// dark ride mode is enabled (10 seconds after fault)
+	bool allow_upside_down;			// dark ride mode feature is ON (roll=180) 
+	float delay_upside_down_fault;
 
 	// Brake Amp Rate Limiting:
 	float pid_brake_increment;
@@ -265,6 +273,11 @@ static void configure(data *d) {
 	d->yaw_aggregate_target = fmaxf(50, d->balance_conf.turntilt_yaw_aggregate);
 	d->turntilt_boost_per_erpm = (float)d->balance_conf.turntilt_erpm_boost / 100.0 / (float)d->balance_conf.turntilt_erpm_boost_end;
 	d->turntilt_strength = d->balance_conf.turntilt_strength;
+
+	// Feature: Darkride
+	d->allow_upside_down = (d->balance_conf.fault_darkride_enabled);
+	d->enable_upside_down = false;
+	d->is_upside_down = false;
 
 	// Speed at which to warn users about an impending full switch fault
 	d->switch_warn_buzz_erpm = 2000;
@@ -399,46 +412,93 @@ static SwitchState check_adcs(data *d) {
 
 // Fault checking order does not really matter. From a UX perspective, switch should be before angle.
 static bool check_faults(data *d, bool ignoreTimers){
-	// Check switch
-	// Switch fully open
-	if (d->switch_state == OFF) {
-		if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->balance_conf.fault_delay_switch_full || ignoreTimers){
-			d->state = FAULT_SWITCH_FULL;
+	// Aggressive reverse stop in case the board runs off when upside down
+	if (d->is_upside_down) {
+		if (d->erpm > 1000) {
+			// erpms are also reversed when upside down!
+			if (((d->current_time - d->fault_switch_timer) * 1000 > 100) ||
+				(d->erpm > 2000) /*||
+				((d->state == RUNNING_WHEELSLIP) && (d->current_time - d->delay_upside_down_fault > 1) &&
+				 ((d->current_time - d->fault_switch_timer) * 1000 > 30))*/ ) {
+				
+				// Trigger FAULT_REVERSE when board is going reverse AND
+				// going > 2mph for more than 100ms
+				// going > 4mph
+				// detecting wheelslip (aka excorcist wiggle) after the first second /*REQURIES WHEELSLIP DETECTION*/
+				d->state = FAULT_REVERSE;
+				return true;
+			}
+		}
+		else {
+			d->fault_switch_timer = d->current_time;
+			if (d->erpm > 300) {
+				// erpms are also reversed when upside down!
+				if ((d->current_time - d->fault_angle_roll_timer) * 1000 > 500){
+					d->state = FAULT_REVERSE;
+					return true;
+				}
+			}
+			else {
+				d->fault_angle_roll_timer = d->current_time;
+			}
+		}
+		if (d->switch_state == ON) {
+			// allow turning it off by engaging foot sensors
+			d->state = FAULT_SWITCH_HALF;
 			return true;
 		}
-		// low speed (below 6 x half-fault threshold speed):
-		else if ((d->abs_erpm < d->balance_conf.fault_adc_half_erpm * 6)
-			   && (1000.0 * (d->current_time - d->fault_switch_timer) > d->balance_conf.fault_delay_switch_half)){
-			d->state = FAULT_SWITCH_FULL;
-			return true;
-		}
-
-		/* TRUE PITCH NEEDED FOR QUICKSTOP */
-
-	} else {
-		d->fault_switch_timer = d->current_time;
 	}
+	else {
+		// Check switch
+		// Switch fully open
+		if (d->switch_state == OFF) {
+			if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->balance_conf.fault_delay_switch_full || ignoreTimers){
+				d->state = FAULT_SWITCH_FULL;
+				return true;
+			}
+			// low speed (below 6 x half-fault threshold speed):
+			else if ((d->abs_erpm < d->balance_conf.fault_adc_half_erpm * 6)
+				&& (1000.0 * (d->current_time - d->fault_switch_timer) > d->balance_conf.fault_delay_switch_half)){
+				d->state = FAULT_SWITCH_FULL;
+				return true;
+			}
 
-	// Switch partially open and stopped
-	if(!d->balance_conf.fault_is_dual_switch) {
-		if((d->switch_state == HALF || d->switch_state == OFF) && d->abs_erpm < d->balance_conf.fault_adc_half_erpm){
-			if ((1000.0 * (d->current_time - d->fault_switch_half_timer)) > d->balance_conf.fault_delay_switch_half || ignoreTimers){
-				d->state = FAULT_SWITCH_HALF;
+			/* TRUE PITCH NEEDED FOR QUICKSTOP */
+
+		} else {
+			d->fault_switch_timer = d->current_time;
+		}
+
+		/* TO BE IMPLEMENTED: REVERSE-STOP */
+
+		// Switch partially open and stopped
+		if(!d->balance_conf.fault_is_dual_switch) {
+			if((d->switch_state == HALF || d->switch_state == OFF) && d->abs_erpm < d->balance_conf.fault_adc_half_erpm){
+				if ((1000.0 * (d->current_time - d->fault_switch_half_timer)) > d->balance_conf.fault_delay_switch_half || ignoreTimers){
+					d->state = FAULT_SWITCH_HALF;
+					return true;
+				}
+			} else {
+				d->fault_switch_half_timer = d->current_time;
+			}
+		}
+
+		// Check roll angle
+		if (fabsf(d->roll_angle) > d->balance_conf.fault_roll) {
+			if ((1000.0 * (d->current_time - d->fault_angle_roll_timer)) > d->balance_conf.fault_delay_roll || ignoreTimers) {
+				d->state = FAULT_ANGLE_ROLL;
 				return true;
 			}
 		} else {
-			d->fault_switch_half_timer = d->current_time;
-		}
-	}
+			d->fault_angle_roll_timer = d->current_time;
 
-	// Check roll angle
-	if (fabsf(d->roll_angle) > d->balance_conf.fault_roll) {
-		if ((1000.0 * (d->current_time - d->fault_angle_roll_timer)) > d->balance_conf.fault_delay_roll || ignoreTimers) {
-			d->state = FAULT_ANGLE_ROLL;
-			return true;
+			if (d->allow_upside_down) {
+				if((fabsf(d->roll_angle) > 100) && (fabsf(d->roll_angle) < 135)) {
+					d->state = FAULT_ANGLE_ROLL;
+					return true;
+				}
+			}
 		}
-	} else {
-		d->fault_angle_roll_timer = d->current_time;
 	}
 
 	// Check pitch angle
@@ -450,6 +510,8 @@ static bool check_faults(data *d, bool ignoreTimers){
 	} else {
 		d->fault_angle_pitch_timer = d->current_time;
 	}
+
+	// *Removed Duty Cycle Fault*
 
 	return false;
 }
@@ -518,6 +580,16 @@ static void calculate_setpoint_target(data *d) {
 		d->setpointAdjustmentType = TILTBACK_NONE;
 		d->setpoint_target = 0;
 		d->state = RUNNING;
+	}
+
+	if (d->is_upside_down && (d->state == RUNNING)) {
+		d->state = RUNNING_UPSIDEDOWN;
+		if (!d->is_upside_down_started) {
+			// right after flipping when first engaging dark ride we add a 1 second grace period
+			// before aggressively checking for board wiggle (based on acceleration)
+			d->is_upside_down_started = true;
+			d->delay_upside_down_fault = d->current_time;
+		}
 	}
 }
 
@@ -739,17 +811,39 @@ static void balance_thd(void *arg) {
 		d->motor_current = VESC_IF->mc_get_tot_current_directional_filtered();
 		d->motor_position = VESC_IF->mc_get_pid_pos_now();
 
-		// Set "last" values to previous loops values
-		d->last_pitch_angle = d->pitch_angle;
-		d->last_gyro_y = d->gyro[1];
-
-		// Get the values we want
-	  /*d->true_pitch_angle = RAD2DEG_f(VESC_IF->imu_ref_get_pitch());*/
-		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
+		// Get the IMU Values
 		d->roll_angle = RAD2DEG_f(VESC_IF->imu_get_roll());
 		d->abs_roll_angle = fabsf(d->roll_angle);
 		d->abs_roll_angle_sin = sinf(DEG2RAD_f(d->abs_roll_angle));
+
+		// Darkride:
+		if (d->allow_upside_down) {
+			if (d->is_upside_down) {
+				if (d->abs_roll_angle < 120) {
+					d->is_upside_down = false;
+				}
+			} else if (d->enable_upside_down) {
+				if (d->abs_roll_angle > 150) {
+					d->is_upside_down = true;
+					d->is_upside_down_started = false;
+					d->pitch_angle = -d->pitch_angle;
+				}
+			}
+		}
+
+		// True pitch is derived from the secondary IMU filter running with kp=0.3 or 0.2
+		/*d->true_pitch_angle = RAD2DEG_f(VESC_IF->imu_ref_get_pitch());*/
+		d->last_pitch_angle = d->pitch_angle;
+		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
+		if (d->is_upside_down) {
+			d->pitch_angle = -d->pitch_angle;
+			/*d->true_pitch_angle = -d->true_pitch_angle;*/
+		}
+		
+		d->last_gyro_y = d->gyro[1];
 		VESC_IF->imu_get_gyro(d->gyro);
+
+		// Get the values we want
 		d->duty_cycle = VESC_IF->mc_get_duty_cycle_now();
 		d->abs_duty_cycle = fabsf(d->duty_cycle);
 		d->erpm = VESC_IF->mc_get_rpm();
@@ -816,20 +910,24 @@ static void balance_thd(void *arg) {
 		case (RUNNING_TILTBACK_DUTY):
 		case (RUNNING_TILTBACK_HIGH_VOLTAGE):
 		case (RUNNING_TILTBACK_LOW_VOLTAGE):
+		case (RUNNING_UPSIDEDOWN):
 			// Check for faults
 			if (check_faults(d, false)) {
 				break;
 			}
 
+			d->enable_upside_down = true;
 			d->disengage_timer = d->current_time;
 
 			// Calculate setpoint and interpolation
 			calculate_setpoint_target(d);
 			calculate_setpoint_interpolated(d);
 			d->setpoint = d->setpoint_target_interpolated;
-			apply_noseangling(d);
-			apply_torquetilt(d);
-			apply_turntilt(d);
+			if (!d->is_upside_down) {
+				apply_noseangling(d);
+				apply_torquetilt(d);
+				apply_turntilt(d);
+			}
 
 			// Do PID maths
 			d->proportional = d->setpoint - d->pitch_angle;
@@ -849,11 +947,16 @@ static void balance_thd(void *arg) {
 			// Start Rate PID and Booster portion a few cycles later, after the start clicks have been emitted
 			// this keeps the start smooth and predictable
 			if (d->start_counter_clicks == 0) {
+				float gyro_y = d->gyro[1];
+				// if (d->is_upside_down) {
+				// 	gyro_y *= -1;
+				// }
+
 				if (d->balance_conf.pid_mode == ANGLE_RATE_CASCADE) { // Cascading PID's
-					d->proportional2 = new_pid_value - d->gyro[1];
+					d->proportional2 = new_pid_value - gyro_y;
 					new_pid_value = 0; // Prepping for += later; pid_value already utilized above
 				} else { // Classic Behavior (Angle PID + Rate PID)
-					d->proportional2 = -d->gyro[1];
+					d->proportional2 = -gyro_y;
 				}
 				
 				d->integral2 = d->integral2 + d->proportional2;
@@ -949,9 +1052,19 @@ static void balance_thd(void *arg) {
 
 		case (FAULT_ANGLE_PITCH):
 		case (FAULT_ANGLE_ROLL):
+		case (FAULT_REVERSE):
 		case (FAULT_SWITCH_HALF):
 		case (FAULT_SWITCH_FULL):
 		case (FAULT_STARTUP):
+			if (d->current_time - d->disengage_timer > 10) {
+				// 10 seconds of grace period between flipping the board over and allowing darkride mode...
+				if (d->is_upside_down) {
+					// beep_alert(1, 1); /* REQUIRES BUZZER SUPPORT */
+				}
+				d->enable_upside_down = false;
+				d->is_upside_down = false;
+			}
+			
 			// Check for valid startup position and switch state
 			if (fabsf(d->pitch_angle) < d->balance_conf.startup_pitch_tolerance &&
 				fabsf(d->roll_angle) < d->balance_conf.startup_roll_tolerance && 
@@ -959,7 +1072,15 @@ static void balance_thd(void *arg) {
 				reset_vars(d);
 				break;
 			}
-
+			// Ignore roll while it's upside down
+			if(d->is_upside_down && (fabsf(d->pitch_angle) < d->balance_conf.startup_pitch_tolerance)) {
+				if ((d->state != FAULT_REVERSE) ||
+					// after a reverse fault, wait at least 1 second before allowing to re-engage
+					(d->current_time - d->disengage_timer) > 1) {
+					reset_vars(d);
+				}
+				break;
+			}
 			// Disable output
 			brake(d);
 			break;
