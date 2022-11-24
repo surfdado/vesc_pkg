@@ -66,6 +66,18 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	buffer_append_uint16(buffer, conf->turntilt_erpm_boost, &ind);
 	buffer_append_uint16(buffer, conf->turntilt_erpm_boost_end, &ind);
 	buffer[ind++] = (uint8_t)conf->turntilt_yaw_aggregate;
+	buffer_append_float32_auto(buffer, conf->atr_strength, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_uphill_tilt, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_downhill_tilt, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_torque_offset, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_speed_boost, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_angle_limit, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_on_speed, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_off_speed, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_response_boost, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_transition_boost, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_filter, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_amps_accel_ratio, &ind);
 
 	return ind;
 }
@@ -134,6 +146,18 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	conf->turntilt_erpm_boost = buffer_get_uint16(buffer, &ind);
 	conf->turntilt_erpm_boost_end = buffer_get_uint16(buffer, &ind);
 	conf->turntilt_yaw_aggregate = buffer[ind++];
+	conf->atr_strength = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_uphill_tilt = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_downhill_tilt = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_torque_offset = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_speed_boost = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_angle_limit = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_on_speed = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_off_speed = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_response_boost = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_transition_boost = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_filter = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_amps_accel_ratio = buffer_get_float32_auto(buffer, &ind);
 
 	return true;
 }
@@ -195,5 +219,17 @@ void confparser_set_defaults_balance_config(balance_config *conf) {
 	conf->turntilt_erpm_boost = APPCONF_BALANCE_TURNTILT_ERPM_BOOST;
 	conf->turntilt_erpm_boost_end = APPCONF_BALANCE_TURNTILT_ERPM_BOOST_END;
 	conf->turntilt_yaw_aggregate = APPCONF_BALANCE_TURNTILT_YAW_AGGREGATE;
+	conf->atr_strength = APPCONF_BALANCE_ATR_STRENGTH;
+	conf->atr_uphill_tilt = APPCONF_BALANCE_ATR_UPHILL_TILT;
+	conf->atr_downhill_tilt = APPCONF_BALANCE_ATR_DOWNHILL_TILT;
+	conf->atr_torque_offset = APPCONF_BALANCE_ATR_TORQUE_OFFSET;
+	conf->atr_speed_boost = APPCONF_BALANCE_ATR_SPEED_BOOST;
+	conf->atr_angle_limit = APPCONF_BALANCE_ATR_ANGLE_LIMIT;
+	conf->atr_on_speed = APPCONF_BALANCE_ATR_ON_SPEED;
+	conf->atr_off_speed = APPCONF_BALANCE_ATR_OFF_SPEED;
+	conf->atr_response_boost = APPCONF_BALANCE_ATR_RESPONSE_BOOST;
+	conf->atr_transition_boost = APPCONF_BALANCE_ATR_TRANSITION_BOOST;
+	conf->atr_filter = APPCONF_BALANCE_ATR_FILTER;
+	conf->atr_amps_accel_ratio = APPCONF_BALANCE_ATR_AMPS_ACCEL_RATIO;
 }
 

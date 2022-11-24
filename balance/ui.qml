@@ -121,17 +121,17 @@ Item {
             
             
             valText1.text =
-                "pid    : " + pid_value.toFixed(2) + "A\n" +
-                "pitch  : " + pitch.toFixed(2) + "°\n" +
-                "roll   : " + roll.toFixed(2) + "°\n" +
-                "time   : " + (1/time_diff).toFixed(0) + "hz\n" +
-                "current: " + motor_current.toFixed(2) + "A\n" +
-                "debug1 : " + debug1.toFixed(2) + "\n" +
-                "state  : " + stateString + "\n" +
-                "switch : " + switchString + "\n" +
-                "adc1   : " + adc1.toFixed(2) + "V\n" +
-                "adc2   : " + adc2.toFixed(2) + "V\n" +
-                "debug2 : " + debug2.toFixed(2)
+                "pid        : " + pid_value.toFixed(2) + "A\n" +
+                "pitch      : " + pitch.toFixed(2) + "°\n" +
+                "roll       : " + roll.toFixed(2) + "°\n" +
+                "time       : " + (1/time_diff).toFixed(0) + "hz\n" +
+                "current    : " + motor_current.toFixed(2) + "A\n" +
+                "state      : " + stateString + "\n" +
+                "switch     : " + switchString + "\n" +
+                "adc1       : " + adc1.toFixed(2) + "V\n" +
+                "adc2       : " + adc2.toFixed(2) + "V\n" +
+                "balanceSet : " + debug1.toFixed(2) + "°\n" +
+                "atrSet     : " + debug2.toFixed(2) + "°"
         }
     }
 

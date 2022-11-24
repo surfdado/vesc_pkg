@@ -90,6 +90,18 @@ typedef struct {
 	float torquetilt_off_speed;
 	float torquetilt_strength;
 	float torquetilt_filter;
+	float atr_strength;
+	float atr_torque_offset;
+	float atr_speed_boost;
+	float atr_uphill_tilt;
+	float atr_downhill_tilt;
+	float atr_angle_limit;
+	float atr_on_speed;
+	float atr_off_speed;
+	float atr_response_boost;
+	float atr_transition_boost;
+	float atr_filter;
+	float atr_amps_accel_ratio;
 	BALANCE_TURNTILT_MODE turntilt_mode;
 	float turntilt_strength;
 	float turntilt_angle_limit;
