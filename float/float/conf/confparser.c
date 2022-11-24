@@ -5,10 +5,10 @@
 #include "conf_general.h"
 #include "confparser.h"
 
-int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_config *conf) {
+int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *conf) {
 	int32_t ind = 0;
 
-	buffer_append_uint32(buffer, BALANCE_CONFIG_SIGNATURE, &ind);
+	buffer_append_uint32(buffer, FLOAT_CONFIG_SIGNATURE, &ind);
 
 	buffer[ind++] = conf->pid_mode;
 	buffer_append_float32_auto(buffer, conf->kp, &ind);
@@ -82,11 +82,11 @@ int32_t confparser_serialize_balance_config(uint8_t *buffer, const balance_confi
 	return ind;
 }
 
-bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config *conf) {
+bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *conf) {
 	int32_t ind = 0;
 
 	uint32_t signature = buffer_get_uint32(buffer, &ind);
-	if (signature != BALANCE_CONFIG_SIGNATURE) {
+	if (signature != FLOAT_CONFIG_SIGNATURE) {
 		return false;
 	}
 
@@ -162,74 +162,74 @@ bool confparser_deserialize_balance_config(const uint8_t *buffer, balance_config
 	return true;
 }
 
-void confparser_set_defaults_balance_config(balance_config *conf) {
-	conf->pid_mode = APPCONF_BALANCE_PID_MODE;
-	conf->kp = APPCONF_BALANCE_KP;
-	conf->ki = APPCONF_BALANCE_KI;
-	conf->kp2 = APPCONF_BALANCE_KP2;
-	conf->ki2 = APPCONF_BALANCE_KI2;
-	conf->hertz = APPCONF_BALANCE_HERTZ;
-	conf->fault_pitch = APPCONF_BALANCE_FAULT_PITCH;
-	conf->fault_roll = APPCONF_BALANCE_FAULT_ROLL;
-	conf->fault_adc1 = APPCONF_BALANCE_FAULT_ADC1;
-	conf->fault_adc2 = APPCONF_BALANCE_FAULT_ADC2;
-	conf->fault_delay_pitch = APPCONF_BALANCE_FAULT_DELAY_PITCH;
-	conf->fault_delay_roll = APPCONF_BALANCE_FAULT_DELAY_ROLL;
-	conf->fault_darkride_enabled = APPCONF_BALANCE_FAULT_DARKRIDE_ENABLED;
-	conf->fault_delay_switch_half = APPCONF_BALANCE_FAULT_DELAY_SWITCH_HALF;
-	conf->fault_delay_switch_full = APPCONF_BALANCE_FAULT_DELAY_SWITCH_FULL;
-	conf->fault_adc_half_erpm = APPCONF_BALANCE_FAULT_ADC_HALF_ERPM;
-	conf->fault_is_dual_switch = APPCONF_BALANCE_FAULT_IS_DUAL_SWITCH;
-	conf->tiltback_duty_angle = APPCONF_BALANCE_TILTBACK_DUTY_ANGLE;
-	conf->tiltback_duty_speed = APPCONF_BALANCE_TILTBACK_DUTY_SPEED;
-	conf->tiltback_duty = APPCONF_BALANCE_TILTBACK_DUTY;
-	conf->tiltback_hv_angle = APPCONF_BALANCE_TILTBACK_HV_ANGLE;
-	conf->tiltback_hv_speed = APPCONF_BALANCE_TILTBACK_HV_SPEED;
-	conf->tiltback_hv = APPCONF_BALANCE_TILTBACK_HV;
-	conf->tiltback_lv_angle = APPCONF_BALANCE_TILTBACK_LV_ANGLE;
-	conf->tiltback_lv_speed = APPCONF_BALANCE_TILTBACK_LV_SPEED;
-	conf->tiltback_lv = APPCONF_BALANCE_TILTBACK_LV;
-	conf->tiltback_return_speed = APPCONF_BALANCE_TILTBACK_RETURN_SPEED;
-	conf->tiltback_constant = APPCONF_BALANCE_TILTBACK_CONSTANT;
-	conf->tiltback_constant_erpm = APPCONF_BALANCE_TILTBACK_CONSTANT_ERPM;
-	conf->tiltback_variable = APPCONF_BALANCE_TILTBACK_VARIABLE;
-	conf->tiltback_variable_max = APPCONF_BALANCE_TILTBACK_VARIABLE_MAX;
-	conf->noseangling_speed = APPCONF_BALANCE_NOSEANGLING_SPEED;
-	conf->startup_pitch_tolerance = APPCONF_BALANCE_STARTUP_PITCH_TOLERANCE;
-	conf->startup_roll_tolerance = APPCONF_BALANCE_STARTUP_ROLL_TOLERANCE;
-	conf->startup_speed = APPCONF_BALANCE_STARTUP_SPEED;
-	conf->startup_click_current = APPCONF_BALANCE_STARTUP_CLICK_CURRENT;
-	conf->brake_current = APPCONF_BALANCE_BRAKE_CURRENT;
-	conf->ki_limit = APPCONF_BALANCE_KI_LIMIT;
-	conf->booster_angle = APPCONF_BALANCE_BOOSTER_ANGLE;
-	conf->booster_ramp = APPCONF_BALANCE_BOOSTER_RAMP;
-	conf->booster_current = APPCONF_BALANCE_BOOSTER_CURRENT;
-	conf->torquetilt_start_current = APPCONF_BALANCE_TORQUETILT_START_CURRENT;
-	conf->torquetilt_angle_limit = APPCONF_BALANCE_TORQUETILT_ANGLE_LIMIT;
-	conf->torquetilt_on_speed = APPCONF_BALANCE_TORQUETILT_ON_SPEED;
-	conf->torquetilt_off_speed = APPCONF_BALANCE_TORQUETILT_OFF_SPEED;
-	conf->torquetilt_strength = APPCONF_BALANCE_TORQUETILT_STRENGTH;
-	conf->torquetilt_filter = APPCONF_BALANCE_TORQUETILT_FILTER;
-	conf->turntilt_mode = APPCONF_BALANCE_TURNTILT_MODE;
-	conf->turntilt_strength = APPCONF_BALANCE_TURNTILT_STRENGTH;
-	conf->turntilt_angle_limit = APPCONF_BALANCE_TURNTILT_ANGLE_LIMIT;
-	conf->turntilt_start_angle = APPCONF_BALANCE_TURNTILT_START_ANGLE;
-	conf->turntilt_start_erpm = APPCONF_BALANCE_TURNTILT_START_ERPM;
-	conf->turntilt_speed = APPCONF_BALANCE_TURNTILT_SPEED;
-	conf->turntilt_erpm_boost = APPCONF_BALANCE_TURNTILT_ERPM_BOOST;
-	conf->turntilt_erpm_boost_end = APPCONF_BALANCE_TURNTILT_ERPM_BOOST_END;
-	conf->turntilt_yaw_aggregate = APPCONF_BALANCE_TURNTILT_YAW_AGGREGATE;
-	conf->atr_strength = APPCONF_BALANCE_ATR_STRENGTH;
-	conf->atr_uphill_tilt = APPCONF_BALANCE_ATR_UPHILL_TILT;
-	conf->atr_downhill_tilt = APPCONF_BALANCE_ATR_DOWNHILL_TILT;
-	conf->atr_torque_offset = APPCONF_BALANCE_ATR_TORQUE_OFFSET;
-	conf->atr_speed_boost = APPCONF_BALANCE_ATR_SPEED_BOOST;
-	conf->atr_angle_limit = APPCONF_BALANCE_ATR_ANGLE_LIMIT;
-	conf->atr_on_speed = APPCONF_BALANCE_ATR_ON_SPEED;
-	conf->atr_off_speed = APPCONF_BALANCE_ATR_OFF_SPEED;
-	conf->atr_response_boost = APPCONF_BALANCE_ATR_RESPONSE_BOOST;
-	conf->atr_transition_boost = APPCONF_BALANCE_ATR_TRANSITION_BOOST;
-	conf->atr_filter = APPCONF_BALANCE_ATR_FILTER;
-	conf->atr_amps_accel_ratio = APPCONF_BALANCE_ATR_AMPS_ACCEL_RATIO;
+void confparser_set_defaults_float_config(float_config *conf) {
+	conf->pid_mode = APPCONF_FLOAT_PID_MODE;
+	conf->kp = APPCONF_FLOAT_KP;
+	conf->ki = APPCONF_FLOAT_KI;
+	conf->kp2 = APPCONF_FLOAT_KP2;
+	conf->ki2 = APPCONF_FLOAT_KI2;
+	conf->hertz = APPCONF_FLOAT_HERTZ;
+	conf->fault_pitch = APPCONF_FLOAT_FAULT_PITCH;
+	conf->fault_roll = APPCONF_FLOAT_FAULT_ROLL;
+	conf->fault_adc1 = APPCONF_FLOAT_FAULT_ADC1;
+	conf->fault_adc2 = APPCONF_FLOAT_FAULT_ADC2;
+	conf->fault_delay_pitch = APPCONF_FLOAT_FAULT_DELAY_PITCH;
+	conf->fault_delay_roll = APPCONF_FLOAT_FAULT_DELAY_ROLL;
+	conf->fault_darkride_enabled = APPCONF_FLOAT_FAULT_DARKRIDE_ENABLED;
+	conf->fault_delay_switch_half = APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF;
+	conf->fault_delay_switch_full = APPCONF_FLOAT_FAULT_DELAY_SWITCH_FULL;
+	conf->fault_adc_half_erpm = APPCONF_FLOAT_FAULT_ADC_HALF_ERPM;
+	conf->fault_is_dual_switch = APPCONF_FLOAT_FAULT_IS_DUAL_SWITCH;
+	conf->tiltback_duty_angle = APPCONF_FLOAT_TILTBACK_DUTY_ANGLE;
+	conf->tiltback_duty_speed = APPCONF_FLOAT_TILTBACK_DUTY_SPEED;
+	conf->tiltback_duty = APPCONF_FLOAT_TILTBACK_DUTY;
+	conf->tiltback_hv_angle = APPCONF_FLOAT_TILTBACK_HV_ANGLE;
+	conf->tiltback_hv_speed = APPCONF_FLOAT_TILTBACK_HV_SPEED;
+	conf->tiltback_hv = APPCONF_FLOAT_TILTBACK_HV;
+	conf->tiltback_lv_angle = APPCONF_FLOAT_TILTBACK_LV_ANGLE;
+	conf->tiltback_lv_speed = APPCONF_FLOAT_TILTBACK_LV_SPEED;
+	conf->tiltback_lv = APPCONF_FLOAT_TILTBACK_LV;
+	conf->tiltback_return_speed = APPCONF_FLOAT_TILTBACK_RETURN_SPEED;
+	conf->tiltback_constant = APPCONF_FLOAT_TILTBACK_CONSTANT;
+	conf->tiltback_constant_erpm = APPCONF_FLOAT_TILTBACK_CONSTANT_ERPM;
+	conf->tiltback_variable = APPCONF_FLOAT_TILTBACK_VARIABLE;
+	conf->tiltback_variable_max = APPCONF_FLOAT_TILTBACK_VARIABLE_MAX;
+	conf->noseangling_speed = APPCONF_FLOAT_NOSEANGLING_SPEED;
+	conf->startup_pitch_tolerance = APPCONF_FLOAT_STARTUP_PITCH_TOLERANCE;
+	conf->startup_roll_tolerance = APPCONF_FLOAT_STARTUP_ROLL_TOLERANCE;
+	conf->startup_speed = APPCONF_FLOAT_STARTUP_SPEED;
+	conf->startup_click_current = APPCONF_FLOAT_STARTUP_CLICK_CURRENT;
+	conf->brake_current = APPCONF_FLOAT_BRAKE_CURRENT;
+	conf->ki_limit = APPCONF_FLOAT_KI_LIMIT;
+	conf->booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;
+	conf->booster_ramp = APPCONF_FLOAT_BOOSTER_RAMP;
+	conf->booster_current = APPCONF_FLOAT_BOOSTER_CURRENT;
+	conf->torquetilt_start_current = APPCONF_FLOAT_TORQUETILT_START_CURRENT;
+	conf->torquetilt_angle_limit = APPCONF_FLOAT_TORQUETILT_ANGLE_LIMIT;
+	conf->torquetilt_on_speed = APPCONF_FLOAT_TORQUETILT_ON_SPEED;
+	conf->torquetilt_off_speed = APPCONF_FLOAT_TORQUETILT_OFF_SPEED;
+	conf->torquetilt_strength = APPCONF_FLOAT_TORQUETILT_STRENGTH;
+	conf->torquetilt_filter = APPCONF_FLOAT_TORQUETILT_FILTER;
+	conf->turntilt_mode = APPCONF_FLOAT_TURNTILT_MODE;
+	conf->turntilt_strength = APPCONF_FLOAT_TURNTILT_STRENGTH;
+	conf->turntilt_angle_limit = APPCONF_FLOAT_TURNTILT_ANGLE_LIMIT;
+	conf->turntilt_start_angle = APPCONF_FLOAT_TURNTILT_START_ANGLE;
+	conf->turntilt_start_erpm = APPCONF_FLOAT_TURNTILT_START_ERPM;
+	conf->turntilt_speed = APPCONF_FLOAT_TURNTILT_SPEED;
+	conf->turntilt_erpm_boost = APPCONF_FLOAT_TURNTILT_ERPM_BOOST;
+	conf->turntilt_erpm_boost_end = APPCONF_FLOAT_TURNTILT_ERPM_BOOST_END;
+	conf->turntilt_yaw_aggregate = APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE;
+	conf->atr_strength = APPCONF_FLOAT_ATR_STRENGTH;
+	conf->atr_uphill_tilt = APPCONF_FLOAT_ATR_UPHILL_TILT;
+	conf->atr_downhill_tilt = APPCONF_FLOAT_ATR_DOWNHILL_TILT;
+	conf->atr_torque_offset = APPCONF_FLOAT_ATR_TORQUE_OFFSET;
+	conf->atr_speed_boost = APPCONF_FLOAT_ATR_SPEED_BOOST;
+	conf->atr_angle_limit = APPCONF_FLOAT_ATR_ANGLE_LIMIT;
+	conf->atr_on_speed = APPCONF_FLOAT_ATR_ON_SPEED;
+	conf->atr_off_speed = APPCONF_FLOAT_ATR_OFF_SPEED;
+	conf->atr_response_boost = APPCONF_FLOAT_ATR_RESPONSE_BOOST;
+	conf->atr_transition_boost = APPCONF_FLOAT_ATR_TRANSITION_BOOST;
+	conf->atr_filter = APPCONF_FLOAT_ATR_FILTER;
+	conf->atr_amps_accel_ratio = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
 }
 

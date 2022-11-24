@@ -8,10 +8,10 @@
 #include <stdbool.h>
 
 // Constants
-#define DATA_BALANCE_CONFIG__SIZE		8343
+#define DATA_FLOAT_CONFIG__SIZE		8343
 
 // Variables
-extern uint8_t data_balance_config_[];
+extern uint8_t data_float_config_[];
 
 // CONFXML_H_
 #endif

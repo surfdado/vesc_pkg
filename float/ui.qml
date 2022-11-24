@@ -130,7 +130,7 @@ Item {
                 "switch     : " + switchString + "\n" +
                 "adc1       : " + adc1.toFixed(2) + "V\n" +
                 "adc2       : " + adc2.toFixed(2) + "V\n" +
-                "balanceSet : " + debug1.toFixed(2) + "°\n" +
+                "floatSet   : " + debug1.toFixed(2) + "°\n" +
                 "atrSet     : " + debug2.toFixed(2) + "°"
         }
     }

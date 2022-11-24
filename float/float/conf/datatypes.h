@@ -26,15 +26,15 @@
 typedef enum {
 	ANGLE_RATE = 0,
 	ANGLE_RATE_CASCADE
-} BALANCE_PID_MODE;
+} FLOAT_PID_MODE;
 
 typedef enum {
 	ROLL_BASED_TURNTILT = 0,
 	YAW_BASED_TURNTILT
-} BALANCE_TURNTILT_MODE;
+} FLOAT_TURNTILT_MODE;
 
 typedef struct {
-	BALANCE_PID_MODE pid_mode;
+	FLOAT_PID_MODE pid_mode;
 	float kp;
 	float ki;
 	float kd;
@@ -102,7 +102,7 @@ typedef struct {
 	float atr_transition_boost;
 	float atr_filter;
 	float atr_amps_accel_ratio;
-	BALANCE_TURNTILT_MODE turntilt_mode;
+	FLOAT_TURNTILT_MODE turntilt_mode;
 	float turntilt_strength;
 	float turntilt_angle_limit;
 	float turntilt_start_angle;
@@ -111,7 +111,7 @@ typedef struct {
 	uint16_t turntilt_erpm_boost;
 	uint16_t turntilt_erpm_boost_end;
 	int turntilt_yaw_aggregate;
-} balance_config;
+} float_config;
 
 // DATATYPES_H_
 #endif

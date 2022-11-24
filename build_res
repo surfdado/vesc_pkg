@@ -12,12 +12,12 @@ set -e
 # creating it from the editor in VESC tool).
 
 # Float
-cd balance/balance/
+cd float/float/
 make clean
 make
 cd ../
-$VT --buildPkg 'balance.vescpkg:balance.lisp:ui.qml:0:README.md:Float'
-cd balance
+$VT --buildPkg 'float.vescpkg:float.lisp:ui.qml:0:README.md:Float'
+cd float
 make clean
 cd ../../
 
