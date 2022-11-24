@@ -152,7 +152,7 @@ Item {
                     Layout.margins: 0
                     Layout.leftMargin: 0
                     Layout.fillWidth: true
-                    text: "Balance App RT Data"
+                    text: "Float App RT Data"
                     font.underline: true
                     font.weight: Font.Black
                 }

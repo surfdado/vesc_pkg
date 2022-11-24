@@ -1700,7 +1700,7 @@ static void stop(void *arg) {
 	VESC_IF->set_app_data_handler(NULL);
 	VESC_IF->conf_custom_clear_configs();
 	VESC_IF->request_terminate(d->thread);
-	VESC_IF->printf("Balance App Terminated");
+	VESC_IF->printf("Float App Terminated");
 	VESC_IF->free(d);
 }
 
@@ -1747,7 +1747,7 @@ INIT_FUN(lib_info *info) {
 
 	configure(d);
 
-	d->thread = VESC_IF->spawn(balance_thd, 2048, "Balance Main", d);
+	d->thread = VESC_IF->spawn(balance_thd, 2048, "Float Main", d);
 
 	VESC_IF->set_app_data_handler(on_command_recieved);
 	VESC_IF->lbm_add_extension("ext-balance-dbg", ext_bal_dbg);
