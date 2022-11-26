@@ -116,8 +116,6 @@ typedef struct {
 
 	// Feature: ATR (Adaptive Torque Response)
 	float atr_on_step_size, atr_off_step_size;
-	float tt_speedboost_intensity, tt_strength_uphill;
-	float tt_response_boost, tt_release_boost;
 	float integral_tt_impact_uphill, integral_tt_impact_downhill;
 	float acceleration, last_erpm;
 	float accel_gap;
@@ -173,7 +171,8 @@ typedef struct {
 	float pid_brake_increment;
 
 	// Log values
-	float balance_setpoint, balance_atr;
+	float float_setpoint, float_atr;
+	float float_expected_acc, float_measured_acc, float_acc_diff;
 
 	// Debug values
 	int debug_render_1, debug_render_2;
@@ -312,22 +311,10 @@ static void configure(data *d) {
 
 	// Feature: ATR:
 	d->tt_accel_factor = d->float_conf.atr_amps_accel_ratio;	// how many amps per acc?
-	d->atr_disable = (d->tt_strength_uphill == 0);
+	d->atr_disable = (d->float_conf.atr_strength == 0);
+	d->float_acc_diff = 0;
 
 	/* INSERT OG TT LOGIC? */
-
-	// Boost in TT strength above 3000 erpm
-	d->tt_speedboost_intensity = d->float_conf.atr_speed_boost;
-
-	// Torquetilt response time boosts, one for speed, and another for quick release on ATR reversal
-	d->tt_response_boost = d->float_conf.atr_response_boost;
-	d->tt_release_boost = d->float_conf.atr_transition_boost;
-
-	// Torque-Tilt strength is different for up vs downhills
-	d->tt_strength_uphill = d->float_conf.atr_strength;
-
-	// Downhill strength must be higher since downhill amps tend to be lower than uphill amps
-	//tt_strength_downhill = tt_strength_uphill * (1 + float_conf.yaw_kp / 100);
 
 	// Any value above 0 will increase the board angle to match the slope
 	d->integral_tt_impact_downhill = 1.0 - d->float_conf.atr_downhill_tilt; 
@@ -861,12 +848,12 @@ static void apply_torquetilt(data *d) {
 			}
 		}
 
-		float torquetilt_strength = d->tt_strength_uphill;
+		float atr_strength = d->float_conf.atr_strength;
 		// from 3000 to 6000 erpm gradually crank up the torque response
 		if ((d->abs_erpm > 3000) && (!d->braking)) {
 			float speedboost = (d->abs_erpm - 3000) / 3000;
-			speedboost = fminf(1, speedboost) * d->tt_speedboost_intensity;
-			torquetilt_strength += d->tt_strength_uphill * speedboost;
+			speedboost = fminf(1, speedboost) * d->float_conf.atr_speed_boost;
+			atr_strength += d->float_conf.atr_strength * speedboost;
 		}
 
 		// compare measured acceleration to expected acceleration
@@ -890,6 +877,9 @@ static void apply_torquetilt(data *d) {
 		}
 
 		float acc_diff = expected_acc - measured_acc;
+		d->float_expected_acc = expected_acc;
+		d->float_measured_acc = measured_acc;
+		d->float_acc_diff = acc_diff;
 
 		if (d->abs_erpm > 2000)
 			d->accel_gap = 0.9 * d->accel_gap + 0.1 * acc_diff;
@@ -902,7 +892,7 @@ static void apply_torquetilt(data *d) {
 		}
 
 		// now torquetilt target is purely based on gap between expected and actual acceleration
-		float new_ttt = torquetilt_strength * d->accel_gap;
+		float new_ttt = atr_strength * d->accel_gap;
 
 		/* OG TT LOGIC
 		if (!braking && (abs_erpm > 250))  {
@@ -947,10 +937,10 @@ static void apply_torquetilt(data *d) {
 
 		float response_boost = 1;
 		if (d->abs_erpm > 2500) {
-			response_boost = d->tt_response_boost;
+			response_boost = d->float_conf.atr_response_boost;
 		}
 		if (d->abs_erpm > 6000) {
-			response_boost *= d->tt_response_boost;
+			response_boost *= d->float_conf.atr_response_boost;
 		}
 
 		// Key to keeping the board level and consistent is to determine the appropriate step size!
@@ -968,7 +958,7 @@ static void apply_torquetilt(data *d) {
 						&& (d->abs_erpm > 2000))
 					{
 						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						step_size = d->atr_off_step_size * d->tt_release_boost;
+						step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
 					}
 				}
 				else {
@@ -998,7 +988,7 @@ static void apply_torquetilt(data *d) {
 						&& ((d->torquetilt_interpolated - d->torquetilt_target) > TT_BOOST_MARGIN)
 						&& (d->abs_erpm > 2000)) {
 						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						step_size = d->atr_off_step_size * d->tt_release_boost;
+						step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
 					}
 				}
 				else {
@@ -1290,8 +1280,8 @@ static void float_thd(void *arg) {
 
 		d->switch_state = check_adcs(d);
 
-		d->balance_setpoint = d->setpoint;
-		d->balance_atr = d->torquetilt_interpolated;
+		d->float_setpoint = d->setpoint;
+		d->float_atr = d->torquetilt_interpolated;
 
 		float new_pid_value = 0;
 
@@ -1557,11 +1547,11 @@ static float app_float_get_debug(int index) {
 		case(1):
 			return d->setpoint;
 		case(2):
-			return d->balance_setpoint;
+			return d->float_setpoint;
 		case(3):
 			return d->torquetilt_filtered_current;
 		case(4):
-			return d->balance_atr;
+			return d->float_atr;
 		case(5):
 			return d->last_pitch_angle - d->pitch_angle;
 		case(6):
@@ -1602,12 +1592,23 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->roll_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->diff_time, &ind);
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
-	buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_1), &ind);
+	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_1), &ind);
 	buffer_append_uint16(send_buffer, d->state, &ind);
 	buffer_append_uint16(send_buffer, d->switch_state, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc1, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc2, &ind);
-	buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
+	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
+	
+	// -DEBUG-
+	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
+	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
+	buffer_append_float32_auto(send_buffer, d->torquetilt_filtered_current, &ind);
+	buffer_append_float32_auto(send_buffer, d->braking, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_expected_acc, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_measured_acc, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
+
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 

@@ -74,12 +74,20 @@ Item {
             var roll = dv.getFloat32(ind); ind += 4;
             var time_diff = dv.getFloat32(ind); ind += 4;
             var motor_current = dv.getFloat32(ind); ind += 4;
-            var debug1 = dv.getFloat32(ind); ind += 4;
+            // var debug1 = dv.getFloat32(ind); ind += 4;
             var state = dv.getInt16(ind); ind += 2;
             var switch_state = dv.getInt16(ind); ind += 2;
             var adc1 = dv.getFloat32(ind); ind += 4;
             var adc2 = dv.getFloat32(ind); ind += 4;
-            var debug2 = dv.getFloat32(ind); ind += 4;
+            // var debug2 = dv.getFloat32(ind); ind += 4;
+            var float_setpoint = dv.getFloat32(ind); ind += 4;
+            var float_atr = dv.getFloat32(ind); ind += 4;
+            var erpm = dv.getFloat32(ind); ind += 4;
+            var torquetilt_filtered_current = dv.getFloat32(ind); ind += 4;
+            var braking = dv.getFloat32(ind); ind += 4;
+            var float_expected_acc = dv.getFloat32(ind); ind += 4;
+            var float_measured_acc = dv.getFloat32(ind); ind += 4;
+            var float_acc_diff = dv.getFloat32(ind); ind += 4;
 
             var stateString
             if(state == 0){
@@ -121,17 +129,25 @@ Item {
             
             
             valText1.text =
-                "pid        : " + pid_value.toFixed(2) + "A\n" +
-                "pitch      : " + pitch.toFixed(2) + "°\n" +
-                "roll       : " + roll.toFixed(2) + "°\n" +
-                "time       : " + (1/time_diff).toFixed(0) + "hz\n" +
-                "current    : " + motor_current.toFixed(2) + "A\n" +
-                "state      : " + stateString + "\n" +
-                "switch     : " + switchString + "\n" +
-                "adc1       : " + adc1.toFixed(2) + "V\n" +
-                "adc2       : " + adc2.toFixed(2) + "V\n" +
-                "floatSet   : " + debug1.toFixed(2) + "°\n" +
-                "atrSet     : " + debug2.toFixed(2) + "°"
+                "pid            : " + pid_value.toFixed(2) + "A\n" +
+                "pitch          : " + pitch.toFixed(2) + "°\n" +
+                "roll           : " + roll.toFixed(2) + "°\n" +
+                "time           : " + (1/time_diff).toFixed(0) + "hz\n" +
+                "current        : " + motor_current.toFixed(2) + "A\n" +
+                "state          : " + stateString + "\n" +
+                "switch         : " + switchString + "\n" +
+                "adc1           : " + adc1.toFixed(2) + "V\n" +
+                "adc2           : " + adc2.toFixed(2) + "V\n"
+
+             valText2.text =
+                "Setpoint       : " + float_setpoint.toFixed(2) + "°\n" +
+                "ATR Setpoint   : " + float_atr.toFixed(2) + "°\n" +
+                "ERPM           : " + erpm.toFixed(0) + " ERPM\n" +
+                "Torque         : " + torquetilt_filtered_current.toFixed(2) + "A\n" +
+                "Braking        : " + braking.toFixed(0) + "\n" +
+                "Expected Acc.  : " + float_expected_acc.toFixed(2) + "\n" +
+                "Measured Acc.  : " + float_measured_acc.toFixed(2) + "\n" +
+                "Acc. Diff.     : " + float_acc_diff.toFixed(2) + "\n"
         }
     }
 
@@ -146,7 +162,7 @@ Item {
             
             ColumnLayout {
                 Text {
-                    id: header
+                    id: header1
                     color: Utility.getAppHexColor("lightText")
                     font.family: "DejaVu Sans Mono"
                     Layout.margins: 0
@@ -158,6 +174,26 @@ Item {
                 }
                 Text {
                     id: valText1
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.leftMargin: 5
+                    Layout.preferredWidth: parent.width/3
+                    text: "App not connected"
+                }
+                Text {
+                    id: header2
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    text: "DEBUG"
+                    font.underline: true
+                    font.weight: Font.Black
+                }
+                Text {
+                    id: valText2
                     color: Utility.getAppHexColor("lightText")
                     font.family: "DejaVu Sans Mono"
                     Layout.margins: 0
