@@ -61,6 +61,7 @@ typedef enum {
 	TILTBACK_DUTY,
 	TILTBACK_HV,
 	TILTBACK_LV,
+	TILTBACK_TEMP,
 	TILTBACK_NONE
 } SetpointAdjustmentType;
 
@@ -242,10 +243,8 @@ static void configure(data *d) {
 	d->start_click_current = d->float_conf.startup_click_current;
 	d->start_counter_clicks_max = 3;
 
-	/* WAITING ON FIRMWARE SUPPORT ///////////////////////////////////////////////
 	d->mc_max_temp_fet = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_fet_start) - 3;
 	d->mc_max_temp_mot = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_motor_start) - 3;
-	/////////////////////////////////////////////// WAITING ON FIRMWARE SUPPORT */
 
 	d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
 	int mcm = d->mc_current_max;
@@ -406,6 +405,7 @@ static float get_setpoint_adjustment_step_size(data *d) {
 		case (TILTBACK_DUTY):
 			return d->tiltback_duty_step_size;
 		case (TILTBACK_HV):
+		case (TILTBACK_TEMP):
 			return d->tiltback_hv_step_size;
 		case (TILTBACK_LV):
 			return d->tiltback_lv_step_size;
@@ -695,6 +695,40 @@ static void calculate_setpoint_target(data *d) {
 			d->setpointAdjustmentType = TILTBACK_NONE;
 			d->state = RUNNING;
 		}
+	} else if(VESC_IF->mc_temp_fet_filtered() > d->mc_max_temp_fet){
+		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
+		// beep_alert(3, 1);	// Triple-beep (long beeps)  /* BUZZER SUPPORT REQUIRED */
+		if(VESC_IF->mc_temp_fet_filtered() > (d->mc_max_temp_fet + 1)) {
+			if(d->erpm > 0){
+				d->setpoint_target = d->float_conf.tiltback_lv_angle;
+			} else {
+				d->setpoint_target = -d->float_conf.tiltback_lv_angle;
+			}
+			d->setpointAdjustmentType = TILTBACK_TEMP;
+			d->state = RUNNING_TILTBACK;
+		}
+		else {
+			// The rider has 1 degree Celsius left before we start tilting back
+			d->setpointAdjustmentType = TILTBACK_NONE;
+			d->state = RUNNING;
+		}
+	} else if(VESC_IF->mc_temp_motor_filtered() > d->mc_max_temp_mot){
+		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
+		// beep_alert(3, 1);	// Triple-beep (long beeps)  /* BUZZER SUPPORT REQUIRED */
+		if(VESC_IF->mc_temp_motor_filtered() > (d->mc_max_temp_mot + 1)) {
+			if(d->erpm > 0){
+				d->setpoint_target = d->float_conf.tiltback_lv_angle;
+			} else {
+				d->setpoint_target = -d->float_conf.tiltback_lv_angle;
+			}
+			d->setpointAdjustmentType = TILTBACK_TEMP;
+			d->state = RUNNING_TILTBACK;
+		}
+		else {
+			// The rider has 1 degree Celsius left before we start tilting back
+			d->setpointAdjustmentType = TILTBACK_NONE;
+			d->state = RUNNING;
+		}
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage < d->float_conf.tiltback_lv) {
 		
 		float abs_motor_current = fabsf(d->motor_current);
@@ -866,7 +900,6 @@ static void apply_torquetilt(data *d) {
 		else {
 			if ((d->current_time - d->wheelslip_end_timer) * 1000 < 100) {
 				// for 100ms after wheelslip we still don't do ATR to allow the wheel to decelerate
-				/*if (d->float_conf.yaw_current_clamp > 1) beep_alert(1, 0);*/ // TO BE RE-IMPLEMENTED
 				d->torquetilt_interpolated *= 0.998;
 				d->torquetilt_target *= 0.999;
 				d->braketilt_interpolated *= 0.998;
@@ -875,7 +908,6 @@ static void apply_torquetilt(data *d) {
 				return;
 			}
 			else if ((fabsf(d->acceleration) > 10) && (d->abs_erpm > 1000)) {
-				/*if (float_conf.yaw_current_clamp > 1) beep_alert(1, 0);*/
 				d->torquetilt_interpolated *= 0.998;
 				d->torquetilt_target *= 0.999;
 				d->braketilt_interpolated *= 0.998;

@@ -3,5 +3,10 @@ Based on Mitch Lustig's original Balance Package but specifically tailored for O
 
 Ported by Nico Aleman, heavily based on SurfDado's ATR Firmware: https://pev.dev/t/atr-firmware-101/43
 
+Missing ATR24 Features:
+ - Dirty Trick Landing
+ - Buzzer Support
+ - Odometer Filtering/Cleanup
+
 Nico Aleman <NicoAleman1@hotmail.com>
 

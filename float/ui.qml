@@ -151,7 +151,7 @@ Item {
                 "Braking            : " + braking.toFixed(0) + "\n" +
                 "Expected Acc.      : " + float_expected_acc.toFixed(2) + "\n" +
                 "Measured Acc.      : " + float_measured_acc.toFixed(2) + "\n" +
-                "Acc. Diff.         : " + float_acc_diff.toFixed(2) + "\n" +
+                "Acc. Diff.         : " + float_acc_diff.toFixed(2) + "\n"
         }
     }
 
