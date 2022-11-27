@@ -567,7 +567,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 	}
 
 	// Check pitch angle
-	if (fabsf(d->pitch_angle/*true_pitch_angle*/) > d->float_conf.fault_pitch) {
+	if (fabsf(d->true_pitch_angle) > d->float_conf.fault_pitch) {
 		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->float_conf.fault_delay_pitch || ignoreTimers) {
 			d->state = FAULT_ANGLE_PITCH;
 			return true;
@@ -1201,7 +1201,7 @@ static void float_thd(void *arg) {
 		d->motor_position = VESC_IF->mc_get_pid_pos_now();
 
 		// Get the IMU Values
-		d->roll_angle = RAD2DEG_f(VESC_IF->imu_get_roll());
+		d->roll_angle = RAD2DEG_f(VESC_IF->ahrs_get_roll(&d->m_att_ref));
 		d->abs_roll_angle = fabsf(d->roll_angle);
 		d->abs_roll_angle_sin = sinf(DEG2RAD_f(d->abs_roll_angle));
 
@@ -1264,7 +1264,7 @@ static void float_thd(void *arg) {
 		d->acceleration = d->accelavg;
 		
 		// Turn Tilt:
-		d->yaw_angle = VESC_IF->imu_get_yaw() * 180.0f / M_PI;
+		d->yaw_angle = VESC_IF->ahrs_get_yaw(&d->m_att_ref) * 180.0f / M_PI;
 		float new_change = d->yaw_angle - d->last_yaw_angle;
 		bool unchanged = false;
 		if ((new_change == 0) // Exact 0's only happen when the IMU is not updating between loops
