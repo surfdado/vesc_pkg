@@ -80,6 +80,7 @@ Item {
             var adc1 = dv.getFloat32(ind); ind += 4;
             var adc2 = dv.getFloat32(ind); ind += 4;
             // var debug2 = dv.getFloat32(ind); ind += 4;
+            var true_pitch = dv.getFloat32(ind); ind += 4;
             var float_setpoint = dv.getFloat32(ind); ind += 4;
             var float_atr = dv.getFloat32(ind); ind += 4;
             var erpm = dv.getFloat32(ind); ind += 4;
@@ -140,6 +141,7 @@ Item {
                 "adc2           : " + adc2.toFixed(2) + "V\n"
 
              valText2.text =
+                "True Pitch     : " + true_pitch.toFixed(2) + "°\n" +
                 "Setpoint       : " + float_setpoint.toFixed(2) + "°\n" +
                 "ATR Setpoint   : " + float_atr.toFixed(2) + "°\n" +
                 "ERPM           : " + erpm.toFixed(0) + " ERPM\n" +

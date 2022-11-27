@@ -102,9 +102,12 @@ typedef struct {
 	float mc_current_max, mc_current_min, max_continuous_current;
 	bool current_beeping;
 
+	// Feature: True Pitch
+	ATTITUDE_INFO m_att_ref;
+
 	// Runtime values read from elsewhere
 	float pitch_angle, last_pitch_angle, roll_angle, abs_roll_angle, abs_roll_angle_sin, last_gyro_y;
-//  float true_pitch_angle; /*Used for Pitch Fault and ATR Features, requires modified "imu.c"*/
+ 	float true_pitch_angle;
 	float gyro[3];
 	float duty_cycle, abs_duty_cycle;
 	float erpm, abs_erpm, avg_erpm;
@@ -1169,6 +1172,11 @@ static void set_current(data *d, float current){
 	VESC_IF->mc_set_current(current);
 }
 
+static void imu_ref_callback(float *acc, float *gyro, float *mag, float dt) {
+	data *d = (data*)ARG;
+	VESC_IF->ahrs_update_mahony_imu(gyro, acc, dt, &d->m_att_ref);
+}
+
 static void float_thd(void *arg) {
 	data *d = (data*)arg;
 
@@ -1212,13 +1220,14 @@ static void float_thd(void *arg) {
 			}
 		}
 
-		// True pitch is derived from the secondary IMU filter running with kp=0.3 or 0.2
-		/*d->true_pitch_angle = RAD2DEG_f(VESC_IF->imu_ref_get_pitch());*/
 		d->last_pitch_angle = d->pitch_angle;
+
+		// True pitch is derived from the secondary IMU filter running with kp=0.2
+		d->true_pitch_angle = RAD2DEG_f(VESC_IF->ahrs_get_pitch(&d->m_att_ref));
 		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
 		if (d->is_upside_down) {
 			d->pitch_angle = -d->pitch_angle;
-			/*d->true_pitch_angle = -d->true_pitch_angle;*/
+			d->true_pitch_angle = -d->true_pitch_angle;
 		}
 		
 		d->last_gyro_y = d->gyro[1];
@@ -1600,6 +1609,7 @@ static void send_realtime_data(data *d){
 	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
 	
 	// -DEBUG-
+	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
 	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
@@ -1747,6 +1757,12 @@ INIT_FUN(lib_info *info) {
 	VESC_IF->conf_custom_add_config(get_cfg, set_cfg, get_cfg_xml);
 
 	configure(d);
+
+	VESC_IF->ahrs_init_attitude_info(&d->m_att_ref);
+	d->m_att_ref.acc_confidence_decay = 0.1;
+	d->m_att_ref.kp = 0.2;
+
+	VESC_IF->imu_set_read_callback(imu_ref_callback);
 
 	d->thread = VESC_IF->spawn(float_thd, 2048, "Float Main", d);
 
