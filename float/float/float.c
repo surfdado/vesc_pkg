@@ -39,21 +39,20 @@ HEADER
 #define DEG2RAD_f(deg)		((deg) * (float)(M_PI / 180.0))
 #define RAD2DEG_f(rad) 		((rad) * (float)(180.0 / M_PI))
 
-// Data type (Values 5 *NOW RUNNING_UPSIDEDOWN* and 10 *NOW RUNNING_WHEELSLIP wer removed, and can be reused at a later date, but i wanted to preserve the current value's numbers for UIs)
+// Data type
 typedef enum {
 	STARTUP = 0,
 	RUNNING = 1,
-	RUNNING_TILTBACK_DUTY = 2,
-	RUNNING_TILTBACK_HIGH_VOLTAGE = 3,
-	RUNNING_TILTBACK_LOW_VOLTAGE = 4,
-	RUNNING_UPSIDEDOWN = 5,
-	FAULT_ANGLE_PITCH = 6,
-	FAULT_ANGLE_ROLL = 7,
-	FAULT_SWITCH_HALF = 8,
-	FAULT_SWITCH_FULL = 9,
-	RUNNING_WHEELSLIP = 10,
-	FAULT_STARTUP = 11,
-	FAULT_REVERSE = 12
+	RUNNING_TILTBACK = 2,
+	RUNNING_WHEELSLIP = 3,
+	RUNNING_UPSIDEDOWN = 4,
+	FAULT_ANGLE_PITCH = 5,
+	FAULT_ANGLE_ROLL = 6,
+	FAULT_SWITCH_HALF = 7,
+	FAULT_SWITCH_FULL = 8,
+	FAULT_STARTUP = 9,
+	FAULT_REVERSE = 10,
+	FAULT_QUICKSTOP = 11
 } FloatState;
 
 typedef enum {
@@ -141,6 +140,7 @@ typedef struct {
 	float last_proportional, abs_proportional;
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
+	float applied_booster_current;
 	float noseangling_interpolated;
 	float torquetilt_filtered_current, torquetilt_target, torquetilt_interpolated;
 	Biquad torquetilt_current_biquad;
@@ -168,7 +168,6 @@ typedef struct {
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
 	float reverse_timer;
-	bool use_reverse_stop, runtime_reverse_stop;
 
 	// Brake Amp Rate Limiting:
 	float pid_brake_increment;
@@ -291,10 +290,11 @@ static void configure(data *d) {
 
 	// INSERT ASYMMETRICAL BOOSTER INIT's
 
-	// INSERT REVERSE STOP INIT'S (TRUE PITCH NEEDED)
-
 	///////////////////////////// WIP */
 	
+	// Feature: Reverse Stop
+	d->reverse_tolerance = 50000;
+	d->reverse_stop_step_size = 100.0 / d->float_conf.hertz;
 
 	// Init Filters
 	float loop_time_filter = 3.0; // Originally Parameter, now hard-coded to 3Hz
@@ -337,7 +337,7 @@ static void configure(data *d) {
 	d->switch_warn_buzz_erpm = 2000;
 
 	// Speed below which we check for quickstop conditions
-	d->quickstop_erpm = 200; /* Inactive; True Pitch needed for functionality */
+	d->quickstop_erpm = 200;
 
 	// Variable nose angle adjustment / tiltback (setting is per 1000erpm, convert to per erpm)
 	d->tiltback_variable = d->float_conf.tiltback_variable / 1000;
@@ -527,14 +527,44 @@ static bool check_faults(data *d, bool ignoreTimers){
 				d->state = FAULT_SWITCH_FULL;
 				return true;
 			}
-
-			/* TRUE PITCH NEEDED FOR QUICKSTOP */
-
+			else if ((d->abs_erpm < d->quickstop_erpm) && (fabsf(d->true_pitch_angle) > 14) && (SIGN(d->true_pitch_angle) == SIGN(d->erpm))) {
+				// QUICK STOP
+				d->state = FAULT_QUICKSTOP;
+				return true;
+			}
 		} else {
 			d->fault_switch_timer = d->current_time;
 		}
 
-		/* TRUE PITCH NEEDED FOR REVERSE-STOP */
+		// Feature: Reverse-Stop
+		if(d->setpointAdjustmentType == REVERSESTOP){
+			//  Taking your foot off entirely while reversing? Ignore delays
+			if (d->switch_state == OFF) {
+				d->state = FAULT_SWITCH_FULL;
+				return true;
+			}
+			if (fabsf(d->true_pitch_angle) > 15) {
+				d->state = FAULT_REVERSE;
+				return true;
+			}
+			// Above 10 degrees for a half a second? Switch it off
+			if ((fabsf(d->true_pitch_angle) > 10) && (d->current_time - d->reverse_timer > .5)) {
+				d->state = FAULT_REVERSE;
+				return true;
+			}
+			// Above 5 degrees for a full second? Switch it off
+			if ((fabsf(d->true_pitch_angle) > 5) && (d->current_time - d->reverse_timer > 1)) {
+				d->state = FAULT_REVERSE;
+				return true;
+			}
+			if (d->reverse_total_erpm > d->reverse_tolerance * 3) {
+				d->state = FAULT_REVERSE;
+				return true;
+			}
+			if (fabsf(d->true_pitch_angle) < 5) {
+				d->reverse_timer = d->current_time;
+			}
+		}
 
 		// Switch partially open and stopped
 		if(!d->float_conf.fault_is_dual_switch) {
@@ -642,7 +672,7 @@ static void calculate_setpoint_target(data *d) {
 			d->setpoint_target = -d->float_conf.tiltback_duty_angle;
 		}
 		d->setpointAdjustmentType = TILTBACK_DUTY;
-		d->state = RUNNING_TILTBACK_DUTY;
+		d->state = RUNNING_TILTBACK;
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage > d->float_conf.tiltback_hv) {
 		if (((d->current_time - d->tb_highvoltage_timer) > .5) ||
 		   (input_voltage > d->float_conf.tiltback_hv + 1)) {
@@ -654,7 +684,7 @@ static void calculate_setpoint_target(data *d) {
 			}
 
 			d->setpointAdjustmentType = TILTBACK_HV;
-			d->state = RUNNING_TILTBACK_HIGH_VOLTAGE;
+			d->state = RUNNING_TILTBACK;
 		}
 		else {
 			// Was possibly just a short spike
@@ -678,7 +708,7 @@ static void calculate_setpoint_target(data *d) {
 			}
 
 			d->setpointAdjustmentType = TILTBACK_LV;
-			d->state = RUNNING_TILTBACK_LOW_VOLTAGE;
+			d->state = RUNNING_TILTBACK;
 		}
 		else {
 			d->setpointAdjustmentType = TILTBACK_NONE;
@@ -687,7 +717,7 @@ static void calculate_setpoint_target(data *d) {
 		}
 	} else {
 		// Normal running
-		if (d->use_reverse_stop && (d->erpm < -200) && !d->is_upside_down) {
+		if (d->float_conf.fault_reversestop_enabled && (d->erpm < -200) && !d->is_upside_down) {
 			d->setpointAdjustmentType = REVERSESTOP;
 			d->reverse_timer = d->current_time;
 			d->reverse_total_erpm = 0;
@@ -1319,9 +1349,7 @@ static void float_thd(void *arg) {
 				break;
 
 		case (RUNNING):
-		case (RUNNING_TILTBACK_DUTY):
-		case (RUNNING_TILTBACK_HIGH_VOLTAGE):
-		case (RUNNING_TILTBACK_LOW_VOLTAGE):
+		case (RUNNING_TILTBACK):
 		case (RUNNING_WHEELSLIP):
 		case (RUNNING_UPSIDEDOWN):
 			// Check for faults
@@ -1371,14 +1399,6 @@ static void float_thd(void *arg) {
 
 			if (d->setpointAdjustmentType == REVERSESTOP) {
 				d->integral = d->integral * 0.9;
-			}
-			
-			if (d->runtime_reverse_stop) {
-				if (d->erpm > 0) {
-					// ensure we're only runtime-enabling reverse stop when it's safe
-					d->use_reverse_stop = true;
-					d->runtime_reverse_stop = false;
-				}
 			}
 
 			// Apply I term Filter
@@ -1433,12 +1453,14 @@ static void float_thd(void *arg) {
 
 				if (d->abs_proportional > d->float_conf.booster_angle) {
 					if (d->abs_proportional - d->float_conf.booster_angle < d->float_conf.booster_ramp) {
-						new_pid_value += (d->float_conf.booster_current * SIGN(d->proportional)) *
+						d->applied_booster_current = (d->float_conf.booster_current * SIGN(d->proportional)) *
 								((d->abs_proportional - d->float_conf.booster_angle) / d->float_conf.booster_ramp);
 					} else {
-						new_pid_value += d->float_conf.booster_current * SIGN(d->proportional);
+						d->applied_booster_current = d->float_conf.booster_current * SIGN(d->proportional);
 					}
 				}
+
+				new_pid_value += d->applied_booster_current;
 			}
 			
 			// Current Limiting!
@@ -1505,6 +1527,7 @@ static void float_thd(void *arg) {
 		case (FAULT_ANGLE_PITCH):
 		case (FAULT_ANGLE_ROLL):
 		case (FAULT_REVERSE):
+		case (FAULT_QUICKSTOP):
 		case (FAULT_SWITCH_HALF):
 		case (FAULT_SWITCH_FULL):
 		case (FAULT_STARTUP):

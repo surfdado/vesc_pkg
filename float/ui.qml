@@ -96,25 +96,25 @@ Item {
             }else if(state == 1){
                 stateString = "RUNNING"
             }else if(state == 2){
-                stateString = "RUNNING_TILTBACK_DUTY"
+                stateString = "RUNNING_TILTBACK"
             }else if(state == 3){
-                stateString = "RUNNING_TILTBACK_HIGH_VOLTAGE"
+                stateString = "RUNNING_WHEELSLIP"
             }else if(state == 4){
-                stateString = "RUNNING_TILTBACK_LOW_VOLTAGE"
+                stateString = "RUNNING_UPSIDEDOWN"
             }else if(state == 5){
-                stateString = "UNKNOWN"
-            }else if(state == 6){
                 stateString = "FAULT_ANGLE_PITCH"
-            }else if(state == 7){
+            }else if(state == 6){
                 stateString = "FAULT_ANGLE_ROLL"
-            }else if(state == 8){
+            }else if(state == 7){
                 stateString = "FAULT_SWITCH_HALF"
-            }else if(state == 9){
+            }else if(state == 8){
                 stateString = "FAULT_SWITCH_FULL"
-            }else if(state == 10){
-                stateString = "FAULT_DUTY"
-            }else if(state == 11){
+            }else if(state == 9){
                 stateString = "FAULT_STARTUP"
+            }else if(state == 10){
+                stateString = "FAULT_REVERSE"
+            }else if(state == 11){
+                stateString = "FAULT_QUICKSTOP"
             }else{     
                 stateString = "UNKNOWN"
             }
@@ -141,15 +141,15 @@ Item {
                 "adc2           : " + adc2.toFixed(2) + "V\n"
 
              valText2.text =
-                "True Pitch     : " + true_pitch.toFixed(2) + "°\n" +
-                "Setpoint       : " + float_setpoint.toFixed(2) + "°\n" +
-                "ATR Setpoint   : " + float_atr.toFixed(2) + "°\n" +
-                "ERPM           : " + erpm.toFixed(0) + " ERPM\n" +
-                "Torque         : " + torquetilt_filtered_current.toFixed(2) + "A\n" +
-                "Braking        : " + braking.toFixed(0) + "\n" +
-                "Expected Acc.  : " + float_expected_acc.toFixed(2) + "\n" +
-                "Measured Acc.  : " + float_measured_acc.toFixed(2) + "\n" +
-                "Acc. Diff.     : " + float_acc_diff.toFixed(2) + "\n"
+                "True Pitch         : " + true_pitch.toFixed(2) + "°\n" +
+                "Setpoint           : " + float_setpoint.toFixed(2) + "°\n" +
+                "ATR Setpoint       : " + float_atr.toFixed(2) + "°\n" +
+                "ERPM               : " + erpm.toFixed(0) + " ERPM\n" +
+                "Torque             : " + torquetilt_filtered_current.toFixed(2) + "A\n" +
+                "Braking            : " + braking.toFixed(0) + "\n" +
+                "Expected Acc.      : " + float_expected_acc.toFixed(2) + "\n" +
+                "Measured Acc.      : " + float_measured_acc.toFixed(2) + "\n" +
+                "Acc. Diff.         : " + float_acc_diff.toFixed(2) + "\n" +
         }
     }
 

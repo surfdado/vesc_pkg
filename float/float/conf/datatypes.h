@@ -50,12 +50,13 @@ typedef struct {
 	float fault_adc2;
 	uint16_t fault_delay_pitch;
 	uint16_t fault_delay_roll;
-	bool fault_darkride_enabled;
 	uint16_t fault_delay_duty;
 	uint16_t fault_delay_switch_half;
 	uint16_t fault_delay_switch_full;
 	uint16_t fault_adc_half_erpm;
 	bool fault_is_dual_switch;
+	bool fault_darkride_enabled;
+	bool fault_reversestop_enabled;
 	float tiltback_duty_angle;
 	float tiltback_duty_speed;
 	float tiltback_duty;
