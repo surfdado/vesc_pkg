@@ -3,11 +3,6 @@
 #ifndef CONF_DEFAULT_H_
 #define CONF_DEFAULT_H_
 
-// PID Mode
-#ifndef APPCONF_FLOAT_PID_MODE
-#define APPCONF_FLOAT_PID_MODE 0
-#endif
-
 // Angle P
 #ifndef APPCONF_FLOAT_KP
 #define APPCONF_FLOAT_KP 20
@@ -205,7 +200,7 @@
 
 // Ramp Up
 #ifndef APPCONF_FLOAT_BOOSTER_RAMP
-#define APPCONF_FLOAT_BOOSTER_RAMP 10
+#define APPCONF_FLOAT_BOOSTER_RAMP 2
 #endif
 
 // Current Boost

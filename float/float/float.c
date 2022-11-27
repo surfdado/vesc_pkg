@@ -1413,18 +1413,8 @@ static void float_thd(void *arg) {
 			// Start Rate PID and Booster portion a few cycles later, after the start clicks have been emitted
 			// this keeps the start smooth and predictable
 			if (d->start_counter_clicks == 0) {
-				float gyro_y = d->gyro[1];
-				// if (d->is_upside_down) {
-				// 	gyro_y *= -1;
-				// }
-
-				if (d->float_conf.pid_mode == ANGLE_RATE_CASCADE) { // Cascading PID's
-					d->proportional2 = new_pid_value - gyro_y;
-					new_pid_value = 0; // Prepping for += later; pid_value already utilized above
-				} else { // Classic Behavior (Angle PID + Rate PID)
-					d->proportional2 = -gyro_y;
-				}
-				
+				// Rate PID (Angle + Rate, rather than Angle-Rate Cascading)
+				d->proportional2 = -d->gyro[1];
 				d->integral2 = d->integral2 + d->proportional2;
 
 				// Apply I term Filter

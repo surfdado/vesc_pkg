@@ -10,7 +10,6 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 
 	buffer_append_uint32(buffer, FLOAT_CONFIG_SIGNATURE, &ind);
 
-	buffer[ind++] = conf->pid_mode;
 	buffer_append_float32_auto(buffer, conf->kp, &ind);
 	buffer_append_float32_auto(buffer, conf->ki, &ind);
 	buffer_append_float32_auto(buffer, conf->kp2, &ind);
@@ -91,7 +90,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 		return false;
 	}
 
-	conf->pid_mode = buffer[ind++];
 	conf->kp = buffer_get_float32_auto(buffer, &ind);
 	conf->ki = buffer_get_float32_auto(buffer, &ind);
 	conf->kp2 = buffer_get_float32_auto(buffer, &ind);
@@ -165,7 +163,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 }
 
 void confparser_set_defaults_float_config(float_config *conf) {
-	conf->pid_mode = APPCONF_FLOAT_PID_MODE;
 	conf->kp = APPCONF_FLOAT_KP;
 	conf->ki = APPCONF_FLOAT_KI;
 	conf->kp2 = APPCONF_FLOAT_KP2;

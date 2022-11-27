@@ -24,17 +24,11 @@
 #include <stdbool.h>
 
 typedef enum {
-	ANGLE_RATE = 0,
-	ANGLE_RATE_CASCADE
-} FLOAT_PID_MODE;
-
-typedef enum {
 	ROLL_BASED_TURNTILT = 0,
 	YAW_BASED_TURNTILT
 } FLOAT_TURNTILT_MODE;
 
 typedef struct {
-	FLOAT_PID_MODE pid_mode;
 	float kp;
 	float ki;
 	float kd;
