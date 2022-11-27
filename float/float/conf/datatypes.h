@@ -97,6 +97,8 @@ typedef struct {
 	float atr_transition_boost;
 	float atr_filter;
 	float atr_amps_accel_ratio;
+	float braketilt_strength;
+	float braketilt_lingering;
 	FLOAT_TURNTILT_MODE turntilt_mode;
 	float turntilt_strength;
 	float turntilt_angle_limit;

@@ -83,6 +83,7 @@ Item {
             var true_pitch = dv.getFloat32(ind); ind += 4;
             var float_setpoint = dv.getFloat32(ind); ind += 4;
             var float_atr = dv.getFloat32(ind); ind += 4;
+            var float_braketilt = dv.getFloat32(ind); ind += 4;
             var erpm = dv.getFloat32(ind); ind += 4;
             var torquetilt_filtered_current = dv.getFloat32(ind); ind += 4;
             var braking = dv.getFloat32(ind); ind += 4;
@@ -130,20 +131,21 @@ Item {
             
             
             valText1.text =
-                "pid            : " + pid_value.toFixed(2) + "A\n" +
-                "pitch          : " + pitch.toFixed(2) + "°\n" +
-                "roll           : " + roll.toFixed(2) + "°\n" +
-                "time           : " + (1/time_diff).toFixed(0) + "hz\n" +
-                "current        : " + motor_current.toFixed(2) + "A\n" +
-                "state          : " + stateString + "\n" +
-                "switch         : " + switchString + "\n" +
-                "adc1           : " + adc1.toFixed(2) + "V\n" +
-                "adc2           : " + adc2.toFixed(2) + "V\n"
+                "PID                : " + pid_value.toFixed(2) + "A\n" +
+                "Pitch              : " + pitch.toFixed(2) + "°\n" +
+                "Roll               : " + roll.toFixed(2) + "°\n" +
+                "Loop Time          : " + (1/time_diff).toFixed(0) + "hz\n" +
+                "Current (Motor)    : " + motor_current.toFixed(2) + "A\n" +
+                "State              : " + stateString + "\n" +
+                "Switch             : " + switchString + "\n" +
+                "ADC1               : " + adc1.toFixed(2) + "V\n" +
+                "ADC2               : " + adc2.toFixed(2) + "V\n"
 
              valText2.text =
                 "True Pitch         : " + true_pitch.toFixed(2) + "°\n" +
                 "Setpoint           : " + float_setpoint.toFixed(2) + "°\n" +
                 "ATR Setpoint       : " + float_atr.toFixed(2) + "°\n" +
+                "BrakeTilt Setpoint : " + float_braketilt.toFixed(2) + "°\n" +
                 "ERPM               : " + erpm.toFixed(0) + " ERPM\n" +
                 "Torque             : " + torquetilt_filtered_current.toFixed(2) + "A\n" +
                 "Braking            : " + braking.toFixed(0) + "\n" +

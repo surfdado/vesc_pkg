@@ -118,7 +118,6 @@ typedef struct {
 
 	// Feature: ATR (Adaptive Torque Response)
 	float atr_on_step_size, atr_off_step_size;
-	float integral_tt_impact_uphill, integral_tt_impact_downhill;
 	float acceleration, last_erpm;
 	float accel_gap;
 	float accelhist[ACCEL_ARRAY_SIZE];
@@ -145,6 +144,7 @@ typedef struct {
 	float torquetilt_filtered_current, torquetilt_target, torquetilt_interpolated;
 	Biquad torquetilt_current_biquad;
 	Biquad atr_current_biquad;
+	float braketilt_factor, braketilt_target, braketilt_interpolated;
 	float turntilt_target, turntilt_interpolated;
 	SetpointAdjustmentType setpointAdjustmentType;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
@@ -173,7 +173,7 @@ typedef struct {
 	float pid_brake_increment;
 
 	// Log values
-	float float_setpoint, float_atr;
+	float float_setpoint, float_atr, float_braketilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
 
 	// Debug values
@@ -319,9 +319,11 @@ static void configure(data *d) {
 
 	/* INSERT OG TT LOGIC? */
 
-	// Any value above 0 will increase the board angle to match the slope
-	d->integral_tt_impact_downhill = 1.0 - d->float_conf.atr_downhill_tilt; 
-	d->integral_tt_impact_uphill = 1.0 - d->float_conf.atr_uphill_tilt;
+	// Feature: Braketilt
+	d->braketilt_factor = d->float_conf.braketilt_strength;
+	d->braketilt_factor = 20 - d->braketilt_factor;
+	// incorporate negative sign into braketilt factor instead of adding it each balance loop
+	d->braketilt_factor = -(0.5 + d->braketilt_factor / 5.0);
 
 	// Feature: Turntilt
 	d->yaw_aggregate_target = fmaxf(50, d->float_conf.turntilt_yaw_aggregate);
@@ -367,6 +369,8 @@ static void reset_vars(data *d) {
 	d->torquetilt_filtered_current = 0;
 	biquad_reset(&d->torquetilt_current_biquad);
 	biquad_reset(&d->atr_current_biquad);
+	d->braketilt_target = 0;
+	d->braketilt_interpolated = 0;
 	d->turntilt_target = 0;
 	d->turntilt_interpolated = 0;
 	d->setpointAdjustmentType = CENTERING;
@@ -853,9 +857,9 @@ static void apply_torquetilt(data *d) {
 		if (d->state == RUNNING_WHEELSLIP) {
 			d->torquetilt_interpolated *= 0.995;
 			d->torquetilt_target *= 0.99;
-			/*d->braketilt_interpolated *= 0.995; // TO BE IMPLEMENTED
-			d->braketilt_target *= 0.99;*/
-			d->setpoint += d->torquetilt_interpolated /*+ d->braketilt_interpolated*/;
+			d->braketilt_interpolated *= 0.995;
+			d->braketilt_target *= 0.99;
+			d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
 			d->wheelslip_end_timer = d->current_time;
 			return;
 		}
@@ -865,18 +869,18 @@ static void apply_torquetilt(data *d) {
 				/*if (d->float_conf.yaw_current_clamp > 1) beep_alert(1, 0);*/ // TO BE RE-IMPLEMENTED
 				d->torquetilt_interpolated *= 0.998;
 				d->torquetilt_target *= 0.999;
-				/*d->braketilt_interpolated *= 0.998;
-				d->braketilt_target *= 0.999;*/
-				d->setpoint += d->torquetilt_interpolated /*+ d->braketilt_interpolated*/;
+				d->braketilt_interpolated *= 0.998;
+				d->braketilt_target *= 0.999;
+				d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
 				return;
 			}
 			else if ((fabsf(d->acceleration) > 10) && (d->abs_erpm > 1000)) {
 				/*if (float_conf.yaw_current_clamp > 1) beep_alert(1, 0);*/
 				d->torquetilt_interpolated *= 0.998;
 				d->torquetilt_target *= 0.999;
-				/*d->braketilt_interpolated *= 0.998;
-				d->braketilt_target *= 0.999;*/
-				d->setpoint += d->torquetilt_interpolated /*+ braketilt_interpolated*/;
+				d->braketilt_interpolated *= 0.998;
+				d->braketilt_target *= 0.999;
+				d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
 				return;
 			}
 		}
@@ -941,28 +945,26 @@ static void apply_torquetilt(data *d) {
 		}
 		*/
 
-		/* BRAKE TILT LOGIC
 		// braking also should cause setpoint change lift, causing a delayed lingering nose lift
-		if ((braketilt_factor < 0) && braking && (abs_erpm > 2000)) {
+		if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 2000)) {
 			// negative currents alone don't necessarily consitute active braking, look at proportional:
-			if (SIGN(proportional) != SIGN(erpm)) {
+			if (SIGN(d->proportional) != SIGN(d->erpm)) {
 				float downhill_damper = 1;
 				// if we're braking on a downhill we don't want braking to lift the setpoint quite as much
-				if (((erpm > 1000) && (accel_gap < -1)) ||
-					((erpm < -1000) && (accel_gap > 1))) {
-					downhill_damper += fabsf(accel_gap) / 2;
+				if (((d->erpm > 1000) && (d->accel_gap < -1)) ||
+					((d->erpm < -1000) && (d->accel_gap > 1))) {
+					downhill_damper += fabsf(d->accel_gap) / 2;
 				}
-				braketilt_target = proportional / braketilt_factor / downhill_damper;
+				d->braketilt_target = d->proportional / d->braketilt_factor / downhill_damper;
 				if (downhill_damper > 2) {
 					// steep downhills, we don't enable this feature at all!
-					braketilt_target = 0;
+					d->braketilt_target = 0;
 				}
 			}
 		}
 		else {
-			braketilt_target = 0;
+			d->braketilt_target = 0;
 		}
-		*/
 
 		d->torquetilt_target = d->torquetilt_target * 0.95 + 0.05 * new_ttt;
 		d->torquetilt_target = fminf(d->torquetilt_target, d->float_conf.atr_angle_limit);
@@ -1056,26 +1058,25 @@ static void apply_torquetilt(data *d) {
 		d->torquetilt_interpolated -= step_size;
 	}
 
-	/*
+	
 	// Brake Tilt
-	step_size = torquetilt_off_step_size / brakestep_modifier;
-	if(fabsf(braketilt_target) > fabsf(braketilt_interpolated)) {
-		step_size = atr_on_step_size * 1.5;
+	step_size = d->torquetilt_off_step_size / d->float_conf.braketilt_lingering;
+	if(fabsf(d->braketilt_target) > fabsf(d->braketilt_interpolated)) {
+		step_size = d->atr_on_step_size * 1.5;
 	}
-	else if (abs_erpm < 800) {
-		step_size = atr_on_step_size;
+	else if (d->abs_erpm < 800) {
+		step_size = d->atr_on_step_size;
 	}
 
-	if(fabsf(braketilt_target - braketilt_interpolated) < step_size){
-		braketilt_interpolated = braketilt_target;
-	}else if (braketilt_target - braketilt_interpolated > 0){
-		braketilt_interpolated += step_size;
+	if(fabsf(d->braketilt_target - d->braketilt_interpolated) < step_size){
+		d->braketilt_interpolated = d->braketilt_target;
+	}else if (d->braketilt_target - d->braketilt_interpolated > 0){
+		d->braketilt_interpolated += step_size;
 	}else{
-		braketilt_interpolated -= step_size;
+		d->braketilt_interpolated -= step_size;
 	}
-	*/
-
-	d->setpoint += d->torquetilt_interpolated;
+	
+	d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
 }
 
 static void apply_turntilt(data *d) {
@@ -1319,8 +1320,10 @@ static void float_thd(void *arg) {
 
 		d->switch_state = check_adcs(d);
 
+		// Log Values
 		d->float_setpoint = d->setpoint;
 		d->float_atr = d->torquetilt_interpolated;
+		d->float_braketilt = d->braketilt_interpolated;
 
 		float new_pid_value = 0;
 
@@ -1381,9 +1384,9 @@ static void float_thd(void *arg) {
 				float tt_impact;
 				if (d->torquetilt_interpolated < 0)
 					// Downhill tail lift doesn't need to be as high as uphill nose lift
-					tt_impact = d->integral_tt_impact_downhill;
+					tt_impact = d->float_conf.atr_downhill_tilt;
 				else {
-					tt_impact = d->integral_tt_impact_uphill;
+					tt_impact = d->float_conf.atr_uphill_tilt;
 
 					const float max_impact_erpm = 2500;
 					const float starting_impact = 0.5;
@@ -1391,7 +1394,7 @@ static void float_thd(void *arg) {
 						// Reduced nose lift at lower speeds
 						// Creates a value between 0.5 and 1.0
 						float erpm_scaling = fmaxf(starting_impact, d->abs_erpm / max_impact_erpm);
-						tt_impact = (1.0 - (1.0 - tt_impact) * erpm_scaling);
+						tt_impact = (1.0 - (tt_impact * erpm_scaling));
 					}
 				}
 				d->integral -= d->torquetilt_interpolated * tt_impact;
@@ -1625,6 +1628,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_braketilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
 	buffer_append_float32_auto(send_buffer, d->torquetilt_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->braking, &ind);

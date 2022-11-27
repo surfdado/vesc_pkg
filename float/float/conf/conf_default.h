@@ -343,6 +343,16 @@
 #define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 12
 #endif
 
+// Brake Tilt Strength
+#ifndef APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO
+#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 0
+#endif
+
+// Brake Tilt Lingering
+#ifndef APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO
+#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 2
+#endif
+
 // CONF_DEFAULT_H_
 #endif
 
