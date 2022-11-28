@@ -281,9 +281,7 @@ static void configure(data *d) {
 		d->pid_brake_increment = 5;
 	}
 
-	// d->max_duty_with_margin =VESC_IF->get_cfg_float(CFG_PARAM_l_max_duty); - 0.1; /* NEEDS FW SUPPORT */
-	d->max_duty_with_margin = 0.9; /* TEMPORARY, NEEDS FW SUPPORT */
-
+	d->max_duty_with_margin = VESC_IF->get_cfg_float(CFG_PARAM_l_max_duty) - 0.1;
 
 	/* WIP /////////////////////////////
 
@@ -362,6 +360,7 @@ static void reset_vars(data *d) {
 	d->setpoint = d->pitch_angle;
 	d->setpoint_target_interpolated = d->pitch_angle;
 	d->setpoint_target = 0;
+	d->applied_booster_current = 0;
 	d->noseangling_interpolated = 0;
 	d->torquetilt_target = 0;
 	d->torquetilt_interpolated = 0;
@@ -1461,8 +1460,10 @@ static void float_thd(void *arg) {
 						(d->float_conf.ki2 * d->integral2);
 
 
-				// Apply Booster
-				d->abs_proportional = fabsf(d->proportional);
+				// Apply Booster (Now based on True Pitch)
+				float true_proportional = d->setpoint - d->true_pitch_angle;
+				d->abs_proportional = fabsf(true_proportional);
+
 				float booster_current = d->float_conf.booster_current;
 
 				// Make booster a bit stronger at higher speed (up to 2x stronger when braking)
@@ -1478,10 +1479,10 @@ static void float_thd(void *arg) {
 
 				if (d->abs_proportional > d->float_conf.booster_angle) {
 					if (d->abs_proportional - d->float_conf.booster_angle < d->float_conf.booster_ramp) {
-						d->applied_booster_current = (d->float_conf.booster_current * SIGN(d->proportional)) *
+						d->applied_booster_current = (d->float_conf.booster_current * SIGN(true_proportional)) *
 								((d->abs_proportional - d->float_conf.booster_angle) / d->float_conf.booster_ramp);
 					} else {
-						d->applied_booster_current = d->float_conf.booster_current * SIGN(d->proportional);
+						d->applied_booster_current = d->float_conf.booster_current * SIGN(true_proportional);
 					}
 				}
 
@@ -1661,12 +1662,11 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_braketilt, &ind);
-	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
 	buffer_append_float32_auto(send_buffer, d->torquetilt_filtered_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->braking, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_expected_acc, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_measured_acc, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
+	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }

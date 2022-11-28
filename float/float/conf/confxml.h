@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 // Constants
-#define DATA_FLOAT_CONFIG__SIZE		8781
+#define DATA_FLOAT_CONFIG__SIZE		8791
 
 // Variables
 extern uint8_t data_float_config_[];
