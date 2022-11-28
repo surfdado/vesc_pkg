@@ -235,7 +235,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_transition_boost = APPCONF_FLOAT_ATR_TRANSITION_BOOST;
 	conf->atr_filter = APPCONF_FLOAT_ATR_FILTER;
 	conf->atr_amps_accel_ratio = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
-	conf->braketilt_strength = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
-	conf->braketilt_lingering = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
+	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
+	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 }
 
