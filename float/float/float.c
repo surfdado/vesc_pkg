@@ -87,9 +87,15 @@ typedef enum {
 // main firmware and managed from there). This is probably the main limitation of
 // loading applications in runtime, but it is not too bad to work around.
 typedef struct {
-	lib_thread thread; // Float Thread
+	lib_thread thread; // Balance Thread
 
 	float_config float_conf;
+
+	// Buzzer
+	int beep_num_left;
+	int beep_duration;
+	int beep_countdown;
+	bool buzzer_enabled;
 
 	// Config values
 	float loop_time_seconds;
@@ -185,9 +191,69 @@ typedef struct {
 	int debug_experiment_1, debug_experiment_2, debug_experiment_3, debug_experiment_4, debug_experiment_5, debug_experiment_6;
 } data;
 
-// Function Prototypes
-static void set_current(data *d, float current);
-static void configure(data *d);
+
+/**
+ * BUZZER / BEEPER on Servo Pin
+ */
+const VESC_PIN buzzer_pin = VESC_PIN_PPM;
+
+#define EXT_BUZZER_ON()  VESC_IF->io_write(buzzer_pin, 1)
+#define EXT_BUZZER_OFF() VESC_IF->io_write(buzzer_pin, 0)
+
+void buzzer_init()
+{
+	VESC_IF->io_set_mode(buzzer_pin, VESC_PIN_MODE_OUTPUT);
+}
+
+void buzzer_update(data *d)
+{
+	if (d->buzzer_enabled && (d->beep_num_left > 0)) {
+		d->beep_countdown--;
+		if (d->beep_countdown <= 0) {
+			d->beep_countdown = d->beep_duration;
+			d->beep_num_left--;	
+			if (d->beep_num_left & 0x1)
+				EXT_BUZZER_ON();
+			else
+				EXT_BUZZER_OFF();
+		}
+	}
+}
+
+void buzzer_enable(data *d, bool enable)
+{
+	d->buzzer_enabled = enable;
+	if (!enable) {
+		EXT_BUZZER_OFF();
+	}
+}
+
+void beep_alert(data *d, int num_beeps, bool longbeep)
+{
+	if (!d->buzzer_enabled)
+		return;
+	if (d->beep_num_left == 0) {
+		d->beep_num_left = num_beeps * 2 + 1;
+		d->beep_duration = longbeep ? 300 : 80;
+		d->beep_countdown = d->beep_duration;
+	}
+}
+
+void beep_off(data *d, bool force)
+{
+	// don't mess with the buzzer if we're in the process of doing a multi-beep
+	if (force || (d->beep_num_left == 0))
+		EXT_BUZZER_OFF();
+}
+
+void beep_on(data *d, bool force)
+{
+	if (!d->buzzer_enabled)
+		return;
+	// don't mess with the buzzer if we're in the process of doing a multi-beep
+	if (force || (d->beep_num_left == 0))
+		EXT_BUZZER_ON();
+}
 
 // Utility Functions
 static float biquad_process(Biquad *biquad, float in) {
@@ -218,6 +284,16 @@ static void biquad_config(Biquad *biquad, BiquadType type, float Fc) {
 static void biquad_reset(Biquad *biquad) {
 	biquad->z1 = 0;
 	biquad->z2 = 0;
+}
+
+// First start only, set initial state
+static void app_init(data *d) {
+	d->state = STARTUP;
+	d->buzzer_enabled = true;
+	
+	// Allow saving of odometer
+	//odometer_dirty = 0;
+	//odometer = mc_interface_get_odometer();
 }
 
 static void configure(data *d) {
@@ -276,7 +352,6 @@ static void configure(data *d) {
 		// anything below 25A is suspicious and will be ignored!
 		d->max_continuous_current = d->mc_current_max;
 	}
-	
 
 	// Maximum amps change when braking
 	d->pid_brake_increment = 5;
@@ -460,28 +535,21 @@ static SwitchState check_adcs(data *d) {
 		}
 	}
 
-	/* INSERT DADO's BUZZER LOGIC *//////////////////////////////////////////////////
-	// /*
-	// * Use external buzzer to notify rider of foot switch faults.
-	// */
-	// #ifdef HAS_EXT_BUZZER
-	//		if (switch_state == OFF) {
-	//			if (abs_erpm > switch_warn_buzz_erpm) {
-	//				// If we're at riding speed and the switch is off => ALERT the user
-	//				// set force=true since this could indicate an imminent shutdown/nosedive
-	//				beep_on(true);
-	//			}
-	//			else {
-	//				// if we drop below riding speed stop buzzing
-	//				beep_off(false);
-	//			}
-	//		}
-	//		else {
-	//			// if the switch comes back on we stop buzzing
-	//			beep_off(false);
-	//		}
-	// #endif
-	/////////////////////////////////////////////////////////////////////////////////
+	if (sw_state == OFF) {
+		if (d->abs_erpm > d->switch_warn_buzz_erpm) {
+			// If we're at riding speed and the switch is off => ALERT the user
+			// set force=true since this could indicate an imminent shutdown/nosedive
+			beep_on(d, true);
+		}
+		else {
+			// if we drop below riding speed stop buzzing
+			beep_off(d, false);
+		}
+	}
+	else {
+		// if the switch comes back on we stop buzzing
+		beep_off(d, false);
+	}
 
 	return sw_state;
 }
@@ -704,7 +772,7 @@ static void calculate_setpoint_target(data *d) {
 		}
 	} else if(VESC_IF->mc_temp_fet_filtered() > d->mc_max_temp_fet){
 		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
-		// beep_alert(3, 1);	// Triple-beep (long beeps)  /* BUZZER SUPPORT REQUIRED */
+		beep_alert(d, 3, true);	// Triple-beep (long beeps)
 		if(VESC_IF->mc_temp_fet_filtered() > (d->mc_max_temp_fet + 1)) {
 			if(d->erpm > 0){
 				d->setpoint_target = d->float_conf.tiltback_lv_angle;
@@ -721,7 +789,7 @@ static void calculate_setpoint_target(data *d) {
 		}
 	} else if(VESC_IF->mc_temp_motor_filtered() > d->mc_max_temp_mot){
 		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
-		// beep_alert(3, 1);	// Triple-beep (long beeps)  /* BUZZER SUPPORT REQUIRED */
+		beep_alert(d, 3, true);	// Triple-beep (long beeps)
 		if(VESC_IF->mc_temp_motor_filtered() > (d->mc_max_temp_mot + 1)) {
 			if(d->erpm > 0){
 				d->setpoint_target = d->float_conf.tiltback_lv_angle;
@@ -1335,7 +1403,11 @@ static void imu_ref_callback(float *acc, float *gyro, float *mag, float dt) {
 static void float_thd(void *arg) {
 	data *d = (data*)arg;
 
+	app_init(d);
+
 	while (!VESC_IF->should_terminate()) {
+		buzzer_update(d);
+
 		// Update times
 		d->current_time = VESC_IF->system_time();
 		if (d->last_time == 0) {
@@ -1463,18 +1535,17 @@ static void float_thd(void *arg) {
 					reset_vars(d);
 					d->state = FAULT_STARTUP; // Trigger a fault so we need to meet start conditions to start
 
-					/*MORE DADO BUZZER LOGIC*/////////////////////////////////////////////////////////////////
-					// // Let the rider know that the board is ready (one short beep)
-					// beep_alert(1, false);
-					// // Are we within 5V of the LV tiltback threshold? Issue 1 beep for each volt below that
-					// float bat_volts = GET_INPUT_VOLTAGE();
-					// float threshold = float_conf.tiltback_lv + 5;
-					// if (bat_volts < threshold) {
-					// 	int beeps = (int)fminf(6, threshold - bat_volts);
-					// 	beep_alert(beeps, true);
-					// }
-					//////////////////////////////////////////////////////////////////////////////////////////
-
+					// Are we within 5V of the LV tiltback threshold? Issue 1 beep for each volt below that
+					float bat_volts = VESC_IF->mc_get_input_voltage_filtered();
+					float threshold = d->float_conf.tiltback_lv + 5;
+					if (bat_volts < threshold) {
+						int beeps = (int)fminf(6, threshold - bat_volts);
+						beep_alert(d, beeps + 1, true);
+					}
+					else {
+						// // Let the rider know that the board is ready (one long beep)
+						beep_alert(d, 1, true);
+					}
 				}
 				break;
 
@@ -1603,11 +1674,11 @@ static void float_thd(void *arg) {
 					d->overcurrent_timer = d->current_time;
 					if (d->current_beeping) {
 						d->current_beeping = false;
-						// beep_off(false);  /* REQUIRES BUZZER SUPPORT */
+						beep_off(d, false);
 					}
 				} else {
 					if (d->current_time - d->overcurrent_timer > 3) {
-						// beep_on(true);  /* REQUIRES BUZZER SUPPORT */
+						beep_on(d, true);
 						d->current_beeping = true;
 					}
 				}
@@ -1657,7 +1728,7 @@ static void float_thd(void *arg) {
 			if (d->current_time - d->disengage_timer > 10) {
 				// 10 seconds of grace period between flipping the board over and allowing darkride mode...
 				if (d->is_upside_down) {
-					// beep_alert(1, 1); /* REQUIRES BUZZER SUPPORT */
+					beep_alert(d, 1, true);
 				}
 				d->enable_upside_down = false;
 				d->is_upside_down = false;
@@ -1683,8 +1754,6 @@ static void float_thd(void *arg) {
 			brake(d);
 			break;
 		}
-
-	  /*update_beep_alert();*/
 
 		// Debug outputs
 //		app_balance_sample_debug();
@@ -1777,7 +1846,7 @@ static void send_realtime_data(data *d){
 }
 
 // Handler for incoming app commands
-static void on_command_recieved(unsigned char *buffer, unsigned int len) {
+static void on_command_received(unsigned char *buffer, unsigned int len) {
 	data *d = (data*)ARG;
 
 	if(len > 0){
@@ -1785,7 +1854,7 @@ static void on_command_recieved(unsigned char *buffer, unsigned int len) {
 		if(command == 0x01){
 			send_realtime_data(d);
 		}else{
-			VESC_IF->printf("Unknown command received %d", command);
+			VESC_IF->printf("Float App: Unknown command received %d", command);
 		}
 	}
 }
@@ -1862,6 +1931,7 @@ static int get_cfg_xml(uint8_t **buffer) {
 // Called when code is stopped
 static void stop(void *arg) {
 	data *d = (data*)arg;
+	VESC_IF->imu_set_read_callback(NULL);
 	VESC_IF->set_app_data_handler(NULL);
 	VESC_IF->conf_custom_clear_configs();
 	VESC_IF->request_terminate(d->thread);
@@ -1874,11 +1944,12 @@ INIT_FUN(lib_info *info) {
 
 	data *d = VESC_IF->malloc(sizeof(data));
 	memset(d, 0, sizeof(data));
-	
 	if (!d) {
-		VESC_IF->printf("Out of memory!");
+		VESC_IF->printf("Float App: Out of memory, startup failed!");
 		return false;
 	}
+
+	buzzer_init();
 
 	// Read config from EEPROM if signature is correct
 	eeprom_var v;
@@ -1896,7 +1967,7 @@ INIT_FUN(lib_info *info) {
 	} else {
 		read_ok = false;
 	}
-	
+
 	if (read_ok) {
 		memcpy(&(d->float_conf), buffer, sizeof(float_config));
 	} else {
@@ -1920,9 +1991,8 @@ INIT_FUN(lib_info *info) {
 
 	d->thread = VESC_IF->spawn(float_thd, 2048, "Float Main", d);
 
-	VESC_IF->set_app_data_handler(on_command_recieved);
+	VESC_IF->set_app_data_handler(on_command_received);
 	VESC_IF->lbm_add_extension("ext-float-dbg", ext_bal_dbg);
 
 	return true;
 }
-
