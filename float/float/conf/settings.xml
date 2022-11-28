@@ -1641,6 +1641,10 @@ p, li { white-space: pre-wrap; }
                     <param>ki2</param>
                     <param>::sep::Filter</param>
                     <param>ki_limit</param>
+                    <param>::sep::Booster</param>
+                    <param>booster_angle</param>
+                    <param>booster_ramp</param>
+                    <param>booster_current</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>
@@ -1652,17 +1656,6 @@ p, li { white-space: pre-wrap; }
                     <param>tiltback_variable</param>
                     <param>tiltback_variable_max</param>
                     <param>noseangling_speed</param>
-                    <param>::sep::Booster</param>
-                    <param>booster_angle</param>
-                    <param>booster_ramp</param>
-                    <param>booster_current</param>
-                    <param>::sep::Torque Tiltback</param>
-                    <param>torquetilt_strength</param>
-                    <param>torquetilt_start_current</param>
-                    <param>torquetilt_angle_limit</param>
-                    <param>torquetilt_on_speed</param>
-                    <param>torquetilt_off_speed</param>
-                    <param>torquetilt_filter</param>
                     <param>::sep::Turn Tiltback</param>
                     <param>turntilt_mode</param>
                     <param>turntilt_strength</param>
@@ -1673,12 +1666,19 @@ p, li { white-space: pre-wrap; }
                     <param>turntilt_erpm_boost</param>
                     <param>turntilt_erpm_boost_end</param>
                     <param>turntilt_yaw_aggregate</param>
+                    <param>::sep::Torque Tiltback</param>
+                    <param>torquetilt_strength</param>
+                    <param>torquetilt_start_current</param>
+                    <param>torquetilt_angle_limit</param>
+                    <param>torquetilt_on_speed</param>
+                    <param>torquetilt_off_speed</param>
+                    <param>torquetilt_filter</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>
                 <subgroupName>ATR</subgroupName>
                 <subgroupParams>
-                    <param>::sep::Torque Response</param>
+                    <param>::sep::Adaptive Torque Response</param>
                     <param>atr_strength</param>
                     <param>atr_torque_offset</param>
                     <param>atr_speed_boost</param>
