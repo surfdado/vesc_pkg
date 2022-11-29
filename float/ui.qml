@@ -86,10 +86,9 @@ Item {
             var float_atr = dv.getFloat32(ind); ind += 4;
             var float_braketilt = dv.getFloat32(ind); ind += 4;
             var filtered_current = dv.getFloat32(ind); ind += 4;
-            var float_expected_acc = dv.getFloat32(ind); ind += 4;
-            var float_measured_acc = dv.getFloat32(ind); ind += 4;
             var float_acc_diff = dv.getFloat32(ind); ind += 4;
             var applied_booster_current = dv.getFloat32(ind); ind += 4;
+            var float_inputtilt = dv.getFloat32(ind); ind += 4;
 
             var stateString
             if(state == 0){
@@ -148,10 +147,9 @@ Item {
                 "ATR Setpoint        : " + float_atr.toFixed(2) + "°\n" +
                 "BrakeTilt Setpoint  : " + float_braketilt.toFixed(2) + "°\n" +
                 "Torque              : " + filtered_current.toFixed(2) + "A\n" +
-                "Expected Acc.       : " + float_expected_acc.toFixed(2) + "\n" +
-                "Measured Acc.       : " + float_measured_acc.toFixed(2) + "\n" +
                 "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
-                "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n"
+                "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
+                "InputTilt Setpoint  : " + float_inputtilt.toFixed(2) + "°\n"
         }
     }
 

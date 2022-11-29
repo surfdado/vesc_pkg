@@ -42,6 +42,8 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float32_auto(buffer, conf->tiltback_variable, &ind);
 	buffer_append_float32_auto(buffer, conf->tiltback_variable_max, &ind);
 	buffer_append_float16(buffer, conf->noseangling_speed, 100, &ind);
+	buffer_append_float32_auto(buffer, conf->inputtilt_angle_limit, &ind);
+	buffer_append_float32_auto(buffer, conf->inputtilt_speed, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_pitch_tolerance, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_roll_tolerance, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_speed, &ind);
@@ -124,6 +126,8 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->tiltback_variable = buffer_get_float32_auto(buffer, &ind);
 	conf->tiltback_variable_max = buffer_get_float32_auto(buffer, &ind);
 	conf->noseangling_speed = buffer_get_float16(buffer, 100, &ind);
+	conf->inputtilt_angle_limit = buffer_get_float32_auto(buffer, &ind);
+	conf->inputtilt_speed = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_pitch_tolerance = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_roll_tolerance = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_speed = buffer_get_float32_auto(buffer, &ind);
@@ -199,6 +203,8 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->tiltback_variable = APPCONF_FLOAT_TILTBACK_VARIABLE;
 	conf->tiltback_variable_max = APPCONF_FLOAT_TILTBACK_VARIABLE_MAX;
 	conf->noseangling_speed = APPCONF_FLOAT_NOSEANGLING_SPEED;
+	conf->inputtilt_angle_limit = APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT;
+	conf->inputtilt_speed = APPCONF_FLOAT_INPUTTILT_SPEED;
 	conf->startup_pitch_tolerance = APPCONF_FLOAT_STARTUP_PITCH_TOLERANCE;
 	conf->startup_roll_tolerance = APPCONF_FLOAT_STARTUP_ROLL_TOLERANCE;
 	conf->startup_speed = APPCONF_FLOAT_STARTUP_SPEED;

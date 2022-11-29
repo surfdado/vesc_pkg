@@ -97,7 +97,7 @@ typedef struct {
 	float startup_step_size;
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
-	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size;
+	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_step_size;
 	float mc_max_temp_fet, mc_max_temp_mot;
 	float mc_current_max, mc_current_min, max_continuous_current;
 	bool current_beeping;
@@ -141,7 +141,7 @@ typedef struct {
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
 	float applied_booster_current;
-	float noseangling_interpolated;
+	float noseangling_interpolated, inputtilt_interpolated;
 	float filtered_current;
 	float torquetilt_filtered_current, torquetilt_target, torquetilt_interpolated;
 	float atr_filtered_current, atr_target, atr_interpolated;
@@ -177,7 +177,7 @@ typedef struct {
 	float pid_brake_increment;
 
 	// Log values
-	float float_setpoint, float_torquetilt, float_atr, float_braketilt;
+	float float_setpoint, float_torquetilt, float_atr, float_braketilt, float_inputtilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
 
 	// Debug values
@@ -241,6 +241,7 @@ static void configure(data *d) {
 	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
 	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
 	d->noseangling_step_size = d->float_conf.noseangling_speed / d->float_conf.hertz;
+	d->inputtilt_step_size = d->float_conf.inputtilt_speed / d->float_conf.hertz;
 
 	// Feature: Stealthy start vs normal start (noticeable click when engaging) - 0-20A
 	d->start_click_current = d->float_conf.startup_click_current;
@@ -365,6 +366,7 @@ static void reset_vars(data *d) {
 	d->setpoint_target = 0;
 	d->applied_booster_current = 0;
 	d->noseangling_interpolated = 0;
+	d->inputtilt_interpolated = 0;
 	d->filtered_current = 0;
 	d->torquetilt_target = 0;
 	d->torquetilt_interpolated = 0;
@@ -840,6 +842,45 @@ static void apply_noseangling(data *d){
 	}
 
 	d->setpoint += d->noseangling_interpolated;
+}
+
+static void apply_inputtilt(data *d){ // Input Tiltback
+	float input_tiltback_target;
+	input_tiltback_target = -(VESC_IF->app_ppm_get_servo_val()) * d->float_conf.inputtilt_angle_limit; // PPM Remote
+
+	// // Default Behavior: Nose Tilt at any speed, does not invert for reverse (Safer for slow climbs/descents & jumps)
+	// // Alternate Behavior (Negative Tilt Speed): Nose Tilt only while moving, invert to match direction of travel
+	// if (balance_conf.roll_steer_erpm_kp < 0) {
+	// 	if (state == RUNNING_WHEELSLIP) {     // During wheelslip, setpoint drifts back to level for ERPM-based Input Tilt
+	// 		inputtilt_interpolated *= 0.995;  // to prevent chain reaction between setpoint and motor direction
+	// 	} else if (erpm <= -200){
+	// 		input_tiltback_target *= -1; // Invert angles for reverse
+	// 	} else if (erpm < 200){
+	// 		input_tiltback_target = 0; // Disable Input Tiltback at standstill to mitigate oscillations
+	// 	}
+	// }
+
+	// if (d->float_conf.roll_steer_erpm_kp >= 0 || d->state != RUNNING_WHEELSLIP) { // Pause and gradually decrease ERPM-based Input Tilt during wheelslip
+	// 	if (fabsf(input_tiltback_target - d->inputtilt_interpolated) < d->inputtilt_step_size){
+	// 		d->inputtilt_interpolated = input_tiltback_target;
+	// 	} else if (input_tiltback_target - d->inputtilt_interpolated > 0){
+	// 		d->inputtilt_interpolated += d->inputtilt_step_size;
+	// 	} else {
+	// 		d->inputtilt_interpolated -= d->inputtilt_step_size;
+	// 	}
+	// }
+
+	if (fabsf(input_tiltback_target - d->inputtilt_interpolated) < d->inputtilt_step_size){
+		d->inputtilt_interpolated = input_tiltback_target;
+	} else if (input_tiltback_target - d->inputtilt_interpolated > 0){
+		d->inputtilt_interpolated += d->inputtilt_step_size;
+	} else {
+		d->inputtilt_interpolated -= d->inputtilt_step_size;
+	}
+
+	d->float_inputtilt = d->inputtilt_interpolated;
+
+	d->setpoint += d->inputtilt_interpolated;
 }
 
 static void apply_torquetilt(data *d) {
@@ -1443,6 +1484,7 @@ static void float_thd(void *arg) {
 			d->setpoint = d->setpoint_target_interpolated;
 			if (!d->is_upside_down) {
 				apply_noseangling(d);
+				apply_inputtilt(d);
 				apply_torquetilt(d);
 				apply_turntilt(d);
 			}
@@ -1707,10 +1749,9 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_braketilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->filtered_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->float_expected_acc, &ind);
-	buffer_append_float32_auto(send_buffer, d->float_measured_acc, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }
