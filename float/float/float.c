@@ -123,11 +123,11 @@ typedef struct {
 	float accel_gap;
 	float accelhist[ACCEL_ARRAY_SIZE];
 	float accelavg;
-	float tt_accel_factor;
+	float atr_accel_factor;
 	int accelidx;
 	int direction_counter;
 	bool braking;
-	bool atr_disable;
+	bool atr_enabled;
 
 	// Feature: Turntilt
 	float last_yaw_angle, yaw_angle, abs_yaw_change, last_yaw_change, yaw_change, yaw_aggregate;
@@ -142,7 +142,10 @@ typedef struct {
 	float setpoint, setpoint_target, setpoint_target_interpolated;
 	float applied_booster_current;
 	float noseangling_interpolated;
+	float filtered_current;
 	float torquetilt_filtered_current, torquetilt_target, torquetilt_interpolated;
+	float atr_filtered_current, atr_target, atr_interpolated;
+	float torqueresponse_interpolated;
 	Biquad torquetilt_current_biquad;
 	Biquad atr_current_biquad;
 	float braketilt_factor, braketilt_target, braketilt_interpolated;
@@ -174,7 +177,7 @@ typedef struct {
 	float pid_brake_increment;
 
 	// Log values
-	float float_setpoint, float_atr, float_braketilt;
+	float float_setpoint, float_torquetilt, float_atr, float_braketilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
 
 	// Debug values
@@ -304,14 +307,14 @@ static void configure(data *d) {
 		biquad_config(&d->torquetilt_current_biquad, BQ_LOWPASS, Fc);
 	}
 
-	if (d->float_conf.atr_filter > 0) { // Torquetilt / ATR Current Biquad
+	if (d->float_conf.atr_filter > 0) { // ATR Current Biquad
 		float Fc = d->float_conf.atr_filter / d->float_conf.hertz;
 		biquad_config(&d->atr_current_biquad, BQ_LOWPASS, Fc);
 	}
 
 	// Feature: ATR:
-	d->tt_accel_factor = d->float_conf.atr_amps_accel_ratio;	// how many amps per acc?
-	d->atr_disable = (d->float_conf.atr_strength == 0);
+	d->atr_accel_factor = d->float_conf.atr_amps_accel_ratio;	// how many amps per acc?
+	d->atr_enabled = (d->float_conf.atr_strength > 0);
 	d->float_acc_diff = 0;
 
 	/* INSERT OG TT LOGIC? */
@@ -362,13 +365,18 @@ static void reset_vars(data *d) {
 	d->setpoint_target = 0;
 	d->applied_booster_current = 0;
 	d->noseangling_interpolated = 0;
+	d->filtered_current = 0;
 	d->torquetilt_target = 0;
 	d->torquetilt_interpolated = 0;
 	d->torquetilt_filtered_current = 0;
 	biquad_reset(&d->torquetilt_current_biquad);
+	d->atr_target = 0;
+	d->atr_interpolated = 0;
+	d->atr_filtered_current = 0;
 	biquad_reset(&d->atr_current_biquad);
 	d->braketilt_target = 0;
 	d->braketilt_interpolated = 0;
+	d->torqueresponse_interpolated = 0;
 	d->turntilt_target = 0;
 	d->turntilt_interpolated = 0;
 	d->setpointAdjustmentType = CENTERING;
@@ -793,6 +801,19 @@ static void calculate_setpoint_interpolated(data *d) {
 	}
 }
 
+static void calculate_torqueresponse_interpolated(data *d) {
+	float atr_brake_interpolated = d->atr_interpolated + d->braketilt_interpolated;
+
+	// TOTAL: Torque Response Interpolated
+	// If signs match between TorqueTilt and ATR+BrakeTilt, the more significant tilt angle between the two is taken
+	// If signs do not match, they are simply added together
+	if (SIGN(atr_brake_interpolated) == SIGN(d->torquetilt_interpolated)) {
+		d->torqueresponse_interpolated = SIGN(atr_brake_interpolated) * fmaxf(fabsf(atr_brake_interpolated), fabsf(d->torquetilt_interpolated));
+	} else {
+		d->torqueresponse_interpolated = atr_brake_interpolated + d->torquetilt_interpolated;
+	}
+}
+
 static void apply_noseangling(data *d){
 	if (d->state != RUNNING_WHEELSLIP) {
 		// Nose angle adjustment, add variable then constant tiltback
@@ -822,99 +843,106 @@ static void apply_noseangling(data *d){
 }
 
 static void apply_torquetilt(data *d) {
-	float step_size;
+	float tt_step_size = 0;
+	float atr_step_size = 0;
+	float braketilt_step_size = 0;
 	int torque_sign;
 	float abs_torque;
 	float torque_offset;
 	float accel_factor2;
 	float expected_acc;
 
-	if (d->atr_disable) { // ATR Disabled; Revert to Stock Torque Tilt /* NOT PERMANENT BEHAVIOR */
-		// Filter current (Biquad)
-		if (d->float_conf.torquetilt_filter > 0) {
-			d->torquetilt_filtered_current = biquad_process(&d->torquetilt_current_biquad, d->motor_current);
-		} else {
-			d->torquetilt_filtered_current = d->motor_current;
-		}
-
-		torque_sign = SIGN(d->torquetilt_filtered_current);
-
-		if ((d->abs_erpm > 250) && (torque_sign != SIGN(d->erpm))) {
-			// current is negative, so we are braking or going downhill
-			// high currents downhill are less likely
-			d->braking = true;
-		}
-		else {
-			d->braking = false;
-		}
-
-		// Do stock FW torque tilt: (comment from Mitch Lustig)
-		// Take abs motor current, subtract start offset, and take the max of that with 0 to get the current above our start threshold (absolute).
-		// Then multiply it by "power" to get our desired angle, and min with the limit to respect boundaries.
-		// Finally multiply it by sign motor current to get directionality back
-		d->torquetilt_target = fminf(fmaxf((fabsf(d->torquetilt_filtered_current) - d->float_conf.torquetilt_start_current), 0) *
-				d->float_conf.torquetilt_strength, d->float_conf.torquetilt_angle_limit) * SIGN(d->torquetilt_filtered_current);
-
-		if ((d->torquetilt_interpolated - d->torquetilt_target > 0 && d->torquetilt_target > 0) ||
-				(d->torquetilt_interpolated - d->torquetilt_target < 0 && d->torquetilt_target < 0)) {
-			step_size = d->torquetilt_off_step_size;
-		} else {
-			step_size = d->torquetilt_on_step_size;
-		}
+	// Filter current (Biquad)
+	if (d->float_conf.torquetilt_filter > 0) {
+		d->torquetilt_filtered_current = biquad_process(&d->torquetilt_current_biquad, d->motor_current);
+	} else {
+		d->torquetilt_filtered_current = d->motor_current;
 	}
-	else { // ATR Enabled
-		// Filter current (Biquad)
-		if (d->float_conf.atr_filter > 0) {
-			d->torquetilt_filtered_current = biquad_process(&d->atr_current_biquad, d->motor_current);
-		} else {
-			d->torquetilt_filtered_current = d->motor_current;
-		}
 
-		torque_sign = SIGN(d->torquetilt_filtered_current);
-		abs_torque = fabsf(d->torquetilt_filtered_current);
-		torque_offset = d->float_conf.atr_torque_offset;
-		accel_factor2 = d->tt_accel_factor * 1.3;
+	// Filter current (Biquad)
+	if (d->float_conf.atr_filter > 0) {
+		d->atr_filtered_current = biquad_process(&d->atr_current_biquad, d->motor_current);
+	} else {
+		d->atr_filtered_current = d->motor_current;
+	}
 
-		if ((d->abs_erpm > 250) && (torque_sign != SIGN(d->erpm))) {
-			// current is negative, so we are braking or going downhill
-			// high currents downhill are less likely
-			d->braking = true;
-		}
-		else {
-			d->braking = false;
-		}
+	d->filtered_current = d->atr_enabled ? d->atr_filtered_current : d->torquetilt_filtered_current;
 
-		// Are we dealing with a free-spinning wheel?
-		// If yes, don't change the torquetilt till we got traction again
-		// instead slightly decrease it each cycle
-		if (d->state == RUNNING_WHEELSLIP) {
-			d->torquetilt_interpolated *= 0.995;
-			d->torquetilt_target *= 0.99;
-			d->braketilt_interpolated *= 0.995;
-			d->braketilt_target *= 0.99;
-			d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
-			d->wheelslip_end_timer = d->current_time;
+	torque_sign = SIGN(d->filtered_current);
+
+	if ((d->abs_erpm > 250) && (torque_sign != SIGN(d->erpm))) {
+		// current is negative, so we are braking or going downhill
+		// high currents downhill are less likely
+		d->braking = true;
+	}
+	else {
+		d->braking = false;
+	}
+
+	// Are we dealing with a free-spinning wheel?
+	// If yes, don't change the torquetilt till we got traction again
+	// instead slightly decrease it each cycle
+	if (d->state == RUNNING_WHEELSLIP) {
+		d->torquetilt_interpolated *= 0.995;
+		d->torquetilt_target *= 0.99;
+		d->atr_interpolated *= 0.995;
+		d->atr_target *= 0.99;
+		d->braketilt_interpolated *= 0.995;
+		d->braketilt_target *= 0.99;
+		calculate_torqueresponse_interpolated(d);
+		d->setpoint += d->torqueresponse_interpolated;
+		d->wheelslip_end_timer = d->current_time;
+		return;
+	}
+	else {
+		if ((d->current_time - d->wheelslip_end_timer) * 1000 < 100) {
+			// for 100ms after wheelslip we still don't do ATR to allow the wheel to decelerate
+			d->torquetilt_interpolated *= 0.998;
+			d->torquetilt_target *= 0.999;
+			d->atr_interpolated *= 0.998;
+			d->atr_target *= 0.999;
+			d->braketilt_interpolated *= 0.998;
+			d->braketilt_target *= 0.999;
+			calculate_torqueresponse_interpolated(d);
+			d->setpoint += d->torqueresponse_interpolated;
 			return;
 		}
-		else {
-			if ((d->current_time - d->wheelslip_end_timer) * 1000 < 100) {
-				// for 100ms after wheelslip we still don't do ATR to allow the wheel to decelerate
-				d->torquetilt_interpolated *= 0.998;
-				d->torquetilt_target *= 0.999;
-				d->braketilt_interpolated *= 0.998;
-				d->braketilt_target *= 0.999;
-				d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
-				return;
-			}
-			else if ((fabsf(d->acceleration) > 10) && (d->abs_erpm > 1000)) {
-				d->torquetilt_interpolated *= 0.998;
-				d->torquetilt_target *= 0.999;
-				d->braketilt_interpolated *= 0.998;
-				d->braketilt_target *= 0.999;
-				d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
-				return;
-			}
+		else if ((fabsf(d->acceleration) > 10) && (d->abs_erpm > 1000)) {
+			d->torquetilt_interpolated *= 0.998;
+			d->torquetilt_target *= 0.999;
+			d->atr_interpolated *= 0.998;
+			d->atr_target *= 0.999;
+			d->braketilt_interpolated *= 0.998;
+			d->braketilt_target *= 0.999;
+			calculate_torqueresponse_interpolated(d);
+			d->setpoint += d->torqueresponse_interpolated;
+			return;
 		}
+	}
+
+	// CLASSIC TORQUE TILT /////////////////////////////////
+
+	// Do stock FW torque tilt: (comment from Mitch Lustig)
+	// Take abs motor current, subtract start offset, and take the max of that with 0 to get the current above our start threshold (absolute).
+	// Then multiply it by "power" to get our desired angle, and min with the limit to respect boundaries.
+	// Finally multiply it by sign motor current to get directionality back
+	d->torquetilt_target = fminf(fmaxf((fabsf(d->torquetilt_filtered_current) - d->float_conf.torquetilt_start_current), 0) *
+			d->float_conf.torquetilt_strength, d->float_conf.torquetilt_angle_limit) * SIGN(d->torquetilt_filtered_current);
+
+	if ((d->torquetilt_interpolated - d->torquetilt_target > 0 && d->torquetilt_target > 0) ||
+			(d->torquetilt_interpolated - d->torquetilt_target < 0 && d->torquetilt_target < 0)) {
+		tt_step_size = d->torquetilt_off_step_size;
+	} else {
+		tt_step_size = d->torquetilt_on_step_size;
+	}
+
+	
+	// ADAPTIVE TORQUE RESPONSE ////////////////////////////
+
+	if (d->atr_enabled) { // ATR Enabled
+		abs_torque = fabsf(d->atr_filtered_current);
+		torque_offset = d->float_conf.atr_torque_offset;
+		accel_factor2 = d->atr_accel_factor * 1.3;
 
 		float atr_strength = d->float_conf.atr_strength;
 		// from 3000 to 6000 erpm gradually crank up the torque response
@@ -931,11 +959,11 @@ static void apply_torquetilt(data *d) {
 		// expected acceleration is proportional to current (minus an offset, required to balance/maintain speed)
 		//XXXXXfloat expected_acc;
 		if (abs_torque < 25) {
-			expected_acc = (d->torquetilt_filtered_current - SIGN(d->erpm) * torque_offset) / d->tt_accel_factor;
+			expected_acc = (d->atr_filtered_current - SIGN(d->erpm) * torque_offset) / d->atr_accel_factor;
 		}
 		else {
 			// primitive linear approximation of non-linear torque-accel relationship
-			expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / d->tt_accel_factor;
+			expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / d->atr_accel_factor;
 			expected_acc += torque_sign * (abs_torque - 25) / accel_factor2;
 		}
 
@@ -960,7 +988,7 @@ static void apply_torquetilt(data *d) {
 		}
 
 		// now torquetilt target is purely based on gap between expected and actual acceleration
-		float new_ttt = atr_strength * d->accel_gap;
+		float new_atr_target = atr_strength * d->accel_gap;
 
 		/* OG TT LOGIC
 		if (!braking && (abs_erpm > 250))  {
@@ -968,13 +996,92 @@ static void apply_torquetilt(data *d) {
 			float og_tt_start_current = 15;
 			og_tt_target = (abs_torque - og_tt_start_current) * og_tt_strength;
 			og_tt_target = fminf(fmaxf(og_tt_target, 0), og_tt_angle_limit);
-			if (og_tt_target > fabsf(new_ttt)) {
-				new_ttt = og_tt_target * torque_sign;
+			if (og_tt_target > fabsf(new_atr_target)) {
+				new_atr_target = og_tt_target * torque_sign;
 			}
 		} else if (abs_erpm <= 250) {
 			// TODO: fall back to og_tt!
 		}
 		*/
+
+		d->atr_target = d->atr_target * 0.95 + 0.05 * new_atr_target;
+		d->atr_target = fminf(d->atr_target, d->float_conf.atr_angle_limit);
+		d->atr_target = fmaxf(d->atr_target, -d->float_conf.atr_angle_limit);
+
+		float response_boost = 1;
+		if (d->abs_erpm > 2500) {
+			response_boost = d->float_conf.atr_response_boost;
+		}
+		if (d->abs_erpm > 6000) {
+			response_boost *= d->float_conf.atr_response_boost;
+		}
+
+		// Key to keeping the board level and consistent is to determine the appropriate step size!
+		// We want to react quickly to changes, but we don't want to overreact to glitches in acceleration data
+		// or trigger oscillations...
+		const float TT_BOOST_MARGIN = 2;
+		if (forward) {
+			if (d->atr_interpolated < 0) {
+				// downhill
+				if (d->atr_interpolated < d->atr_target) {
+					// to avoid oscillations we go down slower than we go up
+					atr_step_size = d->atr_off_step_size;
+					if ((d->atr_target > 0)
+						&& ((d->atr_target - d->atr_interpolated) > TT_BOOST_MARGIN)
+						&& (d->abs_erpm > 2000))
+					{
+						// boost the speed if tilt target has reversed (and if there's a significant margin)
+						atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
+					}
+				}
+				else {
+					// torquetilt is increasing
+					atr_step_size = d->atr_on_step_size * response_boost;
+				}
+			}
+			else {
+				// uphill or other heavy resistance (grass, mud, etc)
+				if ((d->atr_target > -3) && (d->atr_interpolated > d->atr_target)) {
+					// torquetilt winding down (current torquetilt is bigger than the target)
+					// normal wind down case: to avoid oscillations we go down slower than we go up
+					atr_step_size = d->atr_off_step_size;
+				}else{
+					// standard case of increasing torquetilt
+					atr_step_size = d->atr_on_step_size * response_boost;
+				}
+			}
+		}
+		else {
+			if (d->atr_interpolated > 0) {
+				// downhill
+				if (d->atr_interpolated > d->atr_target) {
+					// to avoid oscillations we go down slower than we go up
+					atr_step_size = d->atr_off_step_size;
+					if ((d->atr_target < 0)
+						&& ((d->atr_interpolated - d->atr_target) > TT_BOOST_MARGIN)
+						&& (d->abs_erpm > 2000)) {
+						// boost the speed if tilt target has reversed (and if there's a significant margin)
+						atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
+					}
+				}
+				else {
+					// torquetilt is increasing
+					atr_step_size = d->atr_on_step_size * response_boost;
+				}
+			}
+			else {
+				// uphill or other heavy resistance (grass, mud, etc)
+				if ((d->atr_target < 3) && (d->atr_interpolated < d->atr_target)) {
+					// normal wind down case: to avoid oscillations we go down slower than we go up
+					atr_step_size = d->atr_off_step_size;
+				}else{
+					// standard case of increasing torquetilt
+					atr_step_size = d->atr_on_step_size * response_boost;
+				}
+			}
+		}
+
+		// Feature: Brake Tiltback
 
 		// braking also should cause setpoint change lift, causing a delayed lingering nose lift
 		if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 2000)) {
@@ -997,117 +1104,52 @@ static void apply_torquetilt(data *d) {
 			d->braketilt_target = 0;
 		}
 
-		d->torquetilt_target = d->torquetilt_target * 0.95 + 0.05 * new_ttt;
-		d->torquetilt_target = fminf(d->torquetilt_target, d->float_conf.atr_angle_limit);
-		d->torquetilt_target = fmaxf(d->torquetilt_target, -d->float_conf.atr_angle_limit);
-
-		float response_boost = 1;
-		if (d->abs_erpm > 2500) {
-			response_boost = d->float_conf.atr_response_boost;
+		braketilt_step_size = d->atr_off_step_size / d->float_conf.braketilt_lingering;
+		if(fabsf(d->braketilt_target) > fabsf(d->braketilt_interpolated)) {
+			braketilt_step_size = d->atr_on_step_size * 1.5;
 		}
-		if (d->abs_erpm > 6000) {
-			response_boost *= d->float_conf.atr_response_boost;
-		}
-
-		// Key to keeping the board level and consistent is to determine the appropriate step size!
-		// We want to react quickly to changes, but we don't want to overreact to glitches in acceleration data
-		// or trigger oscillations...
-		const float TT_BOOST_MARGIN = 2;
-		if (forward) {
-			if (d->torquetilt_interpolated < 0) {
-				// downhill
-				if (d->torquetilt_interpolated < d->torquetilt_target) {
-					// to avoid oscillations we go down slower than we go up
-					step_size = d->atr_off_step_size;
-					if ((d->torquetilt_target > 0)
-						&& ((d->torquetilt_target - d->torquetilt_interpolated) > TT_BOOST_MARGIN)
-						&& (d->abs_erpm > 2000))
-					{
-						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
-					}
-				}
-				else {
-					// torquetilt is increasing
-					step_size = d->atr_on_step_size * response_boost;
-				}
-			}
-			else {
-				// uphill or other heavy resistance (grass, mud, etc)
-				if ((d->torquetilt_target > -3) && (d->torquetilt_interpolated > d->torquetilt_target)) {
-					// torquetilt winding down (current torquetilt is bigger than the target)
-					// normal wind down case: to avoid oscillations we go down slower than we go up
-					step_size = d->atr_off_step_size;
-				}else{
-					// standard case of increasing torquetilt
-					step_size = d->atr_on_step_size * response_boost;
-				}
-			}
-		}
-		else {
-			if (d->torquetilt_interpolated > 0) {
-				// downhill
-				if (d->torquetilt_interpolated > d->torquetilt_target) {
-					// to avoid oscillations we go down slower than we go up
-					step_size = d->atr_off_step_size;
-					if ((d->torquetilt_target < 0)
-						&& ((d->torquetilt_interpolated - d->torquetilt_target) > TT_BOOST_MARGIN)
-						&& (d->abs_erpm > 2000)) {
-						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
-					}
-				}
-				else {
-					// torquetilt is increasing
-					step_size = d->atr_on_step_size * response_boost;
-				}
-			}
-			else {
-				// uphill or other heavy resistance (grass, mud, etc)
-				if ((d->torquetilt_target < 3) && (d->torquetilt_interpolated < d->torquetilt_target)) {
-					// normal wind down case: to avoid oscillations we go down slower than we go up
-					step_size = d->atr_off_step_size;
-				}else{
-					// standard case of increasing torquetilt
-					step_size = d->atr_on_step_size * response_boost;
-				}
-			}
+		else if (d->abs_erpm < 800) {
+			braketilt_step_size = d->atr_on_step_size;
 		}
 	}
 
 	// when slow then erpm data is especially choppy, causing fake spikes in acceleration
 	// mellow down the reaction to reduce noticeable oscillations
 	if (d->abs_erpm < 500) {
-		step_size /= 2;
+		tt_step_size /= 2;
+		atr_step_size /= 2;
+		braketilt_step_size /= 2;
 	}
 
-	if (fabsf(d->torquetilt_target - d->torquetilt_interpolated) < step_size) {
+	// Torque Tilt Interpolated
+	if (fabsf(d->torquetilt_target - d->torquetilt_interpolated) < tt_step_size) {
 		d->torquetilt_interpolated = d->torquetilt_target;
 	} else if (d->torquetilt_target - d->torquetilt_interpolated > 0) {
-		d->torquetilt_interpolated += step_size;
+		d->torquetilt_interpolated += tt_step_size;
 	} else {
-		d->torquetilt_interpolated -= step_size;
+		d->torquetilt_interpolated -= tt_step_size;
 	}
 
-	
-	// Brake Tilt
-	step_size = d->torquetilt_off_step_size / d->float_conf.braketilt_lingering;
-	if(fabsf(d->braketilt_target) > fabsf(d->braketilt_interpolated)) {
-		step_size = d->atr_on_step_size * 1.5;
-	}
-	else if (d->abs_erpm < 800) {
-		step_size = d->atr_on_step_size;
+	// ATR Interpolated
+	if (fabsf(d->atr_target - d->atr_interpolated) < atr_step_size) {
+		d->atr_interpolated = d->atr_target;
+	} else if (d->atr_target - d->atr_interpolated > 0) {
+		d->atr_interpolated += atr_step_size;
+	} else {
+		d->atr_interpolated -= atr_step_size;
 	}
 
-	if(fabsf(d->braketilt_target - d->braketilt_interpolated) < step_size){
+	// Brake Tilt Interpolated
+	if(fabsf(d->braketilt_target - d->braketilt_interpolated) < braketilt_step_size){
 		d->braketilt_interpolated = d->braketilt_target;
 	}else if (d->braketilt_target - d->braketilt_interpolated > 0){
-		d->braketilt_interpolated += step_size;
+		d->braketilt_interpolated += braketilt_step_size;
 	}else{
-		d->braketilt_interpolated -= step_size;
+		d->braketilt_interpolated -= braketilt_step_size;
 	}
-	
-	d->setpoint += d->torquetilt_interpolated + d->braketilt_interpolated;
+
+	calculate_torqueresponse_interpolated(d);
+	d->setpoint += d->torqueresponse_interpolated;
 }
 
 static void apply_turntilt(data *d) {
@@ -1353,7 +1395,8 @@ static void float_thd(void *arg) {
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
-		d->float_atr = d->torquetilt_interpolated;
+		d->float_torquetilt = d->torquetilt_interpolated;
+		d->float_atr = d->atr_interpolated;
 		d->float_braketilt = d->braketilt_interpolated;
 
 		float new_pid_value = 0;
@@ -1410,10 +1453,10 @@ static void float_thd(void *arg) {
 			// Resume real PID maths
 			d->integral = d->integral + d->proportional;
 
-			if (!d->atr_disable) {
+			if (d->atr_enabled) {
 				// Produce controlled nose/tail lift with increased torque
 				float tt_impact;
-				if (d->torquetilt_interpolated < 0)
+				if (d->torqueresponse_interpolated < 0)
 					// Downhill tail lift doesn't need to be as high as uphill nose lift
 					tt_impact = d->float_conf.atr_downhill_tilt;
 				else {
@@ -1428,7 +1471,7 @@ static void float_thd(void *arg) {
 						tt_impact = (1.0 - (tt_impact * erpm_scaling));
 					}
 				}
-				d->integral -= d->torquetilt_interpolated * tt_impact;
+				d->integral -= d->torqueresponse_interpolated * tt_impact;
 			}
 
 			if (d->setpointAdjustmentType == REVERSESTOP) {
@@ -1492,17 +1535,17 @@ static void float_thd(void *arg) {
 			// Current Limiting!
 			float current_limit;
 			if (d->braking) {
-				current_limit = d->mc_current_min * (1 + 0.6 * fabsf(d->torquetilt_interpolated / 10));
+				current_limit = d->mc_current_min * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
 			}
 			else {
-				current_limit = d->mc_current_max * (1 + 0.6 * fabsf(d->torquetilt_interpolated / 10));
+				current_limit = d->mc_current_max * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
 			}
 			if (fabsf(new_pid_value) > current_limit) {
 				new_pid_value = SIGN(new_pid_value) * current_limit;
 			}
 			else {
 				// Over continuous current for more than 3 seconds? Just beep, don't actually limit currents
-				if (fabsf(d->torquetilt_filtered_current) < d->max_continuous_current) {
+				if (fabsf(d->filtered_current) < d->max_continuous_current) {
 					d->overcurrent_timer = d->current_time;
 					if (d->current_beeping) {
 						d->current_beeping = false;
@@ -1607,7 +1650,7 @@ static float app_float_get_debug(int index) {
 		case(2):
 			return d->float_setpoint;
 		case(3):
-			return d->torquetilt_filtered_current;
+			return d->filtered_current;
 		case(4):
 			return d->float_atr;
 		case(5):
@@ -1660,9 +1703,10 @@ static void send_realtime_data(data *d){
 	// -DEBUG-
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_torquetilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_braketilt, &ind);
-	buffer_append_float32_auto(send_buffer, d->torquetilt_filtered_current, &ind);
+	buffer_append_float32_auto(send_buffer, d->filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_expected_acc, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_measured_acc, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);

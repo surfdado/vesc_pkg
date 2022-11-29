@@ -82,9 +82,10 @@ Item {
             // var debug2 = dv.getFloat32(ind); ind += 4;
             var true_pitch = dv.getFloat32(ind); ind += 4;
             var float_setpoint = dv.getFloat32(ind); ind += 4;
+            var float_torquetilt = dv.getFloat32(ind); ind += 4;
             var float_atr = dv.getFloat32(ind); ind += 4;
             var float_braketilt = dv.getFloat32(ind); ind += 4;
-            var torquetilt_filtered_current = dv.getFloat32(ind); ind += 4;
+            var filtered_current = dv.getFloat32(ind); ind += 4;
             var float_expected_acc = dv.getFloat32(ind); ind += 4;
             var float_measured_acc = dv.getFloat32(ind); ind += 4;
             var float_acc_diff = dv.getFloat32(ind); ind += 4;
@@ -130,26 +131,27 @@ Item {
             
             
             valText1.text =
-                "PID                : " + pid_value.toFixed(2) + "A\n" +
-                "Pitch              : " + pitch.toFixed(2) + "°\n" +
-                "Roll               : " + roll.toFixed(2) + "°\n" +
-                "Loop Time          : " + (1/time_diff).toFixed(0) + "hz\n" +
-                "Current (Motor)    : " + motor_current.toFixed(2) + "A\n" +
-                "State              : " + stateString + "\n" +
-                "Switch             : " + switchString + "\n" +
-                "ADC1               : " + adc1.toFixed(2) + "V\n" +
-                "ADC2               : " + adc2.toFixed(2) + "V\n"
+                "PID                 : " + pid_value.toFixed(2) + "A\n" +
+                "Pitch               : " + pitch.toFixed(2) + "°\n" +
+                "Roll                : " + roll.toFixed(2) + "°\n" +
+                "Loop Time           : " + (1/time_diff).toFixed(0) + "hz\n" +
+                "Current (Motor)     : " + motor_current.toFixed(2) + "A\n" +
+                "State               : " + stateString + "\n" +
+                "Switch              : " + switchString + "\n" +
+                "ADC1                : " + adc1.toFixed(2) + "V\n" +
+                "ADC2                : " + adc2.toFixed(2) + "V\n"
 
              valText2.text =
-                "True Pitch         : " + true_pitch.toFixed(2) + "°\n" +
-                "Setpoint           : " + float_setpoint.toFixed(2) + "°\n" +
-                "ATR Setpoint       : " + float_atr.toFixed(2) + "°\n" +
-                "BrakeTilt Setpoint : " + float_braketilt.toFixed(2) + "°\n" +
-                "Torque             : " + torquetilt_filtered_current.toFixed(2) + "A\n" +
-                "Expected Acc.      : " + float_expected_acc.toFixed(2) + "\n" +
-                "Measured Acc.      : " + float_measured_acc.toFixed(2) + "\n" +
-                "Acc. Diff.         : " + float_acc_diff.toFixed(2) + "\n" +
-                "Booster Current    : " + applied_booster_current.toFixed(2) + "A\n"
+                "True Pitch          : " + true_pitch.toFixed(2) + "°\n" +
+                "Setpoint            : " + float_setpoint.toFixed(2) + "°\n" +
+                "TorqueTilt Setpoint : " + float_torquetilt.toFixed(2) + "°\n" +
+                "ATR Setpoint        : " + float_atr.toFixed(2) + "°\n" +
+                "BrakeTilt Setpoint  : " + float_braketilt.toFixed(2) + "°\n" +
+                "Torque              : " + filtered_current.toFixed(2) + "A\n" +
+                "Expected Acc.       : " + float_expected_acc.toFixed(2) + "\n" +
+                "Measured Acc.       : " + float_measured_acc.toFixed(2) + "\n" +
+                "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
+                "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n"
         }
     }
 
