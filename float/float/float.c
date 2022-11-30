@@ -176,7 +176,7 @@ typedef struct {
 	float pid_brake_increment;
 
 	// Log values
-	float float_setpoint, float_torquetilt, float_atr, float_braketilt, float_inputtilt;
+	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
 
 	// Debug values
@@ -844,7 +844,19 @@ static void apply_noseangling(data *d){
 
 static void apply_inputtilt(data *d){ // Input Tiltback
 	float input_tiltback_target;
-	input_tiltback_target = -(VESC_IF->app_ppm_get_servo_val()) * d->float_conf.inputtilt_angle_limit; // PPM Remote
+	float servo_val = 0;
+
+	switch (d->float_conf.inputtilt_remote_type) {
+	case (PPM):
+		servo_val = VESC_IF->app_ppm_get_servo_val(); break;
+	case (UART):
+	case (NONE):
+		break;
+	}
+
+	servo_val *= d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0;
+	 
+	input_tiltback_target = servo_val * d->float_conf.inputtilt_angle_limit;
 
 	// // Default Behavior: Nose Tilt at any speed, does not invert for reverse (Safer for slow climbs/descents & jumps)
 	// // Alternate Behavior (Negative Tilt Speed): Nose Tilt only while moving, invert to match direction of travel
@@ -875,8 +887,6 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 	} else {
 		d->inputtilt_interpolated -= d->inputtilt_step_size;
 	}
-
-	d->float_inputtilt = d->inputtilt_interpolated;
 
 	d->setpoint += d->inputtilt_interpolated;
 }
@@ -1436,9 +1446,11 @@ static void float_thd(void *arg) {
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
-		d->float_torquetilt = d->torquetilt_interpolated;
 		d->float_atr = d->atr_interpolated;
 		d->float_braketilt = d->braketilt_interpolated;
+		d->float_torquetilt = d->torquetilt_interpolated;
+		d->float_turntilt = d->turntilt_interpolated;
+		d->float_inputtilt = d->inputtilt_interpolated;
 
 		float new_pid_value = 0;
 
@@ -1730,28 +1742,36 @@ static void send_realtime_data(data *d){
 	int32_t ind = 0;
 	uint8_t send_buffer[50];
 //	send_buffer[ind++] = COMM_GET_DECODED_BALANCE;
+
+	// RT Data
 	buffer_append_float32_auto(send_buffer, d->pid_value, &ind);
 	buffer_append_float32_auto(send_buffer, d->pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->roll_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->diff_time, &ind);
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
-	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_1), &ind);
 	buffer_append_uint16(send_buffer, d->state, &ind);
 	buffer_append_uint16(send_buffer, d->switch_state, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc1, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc2, &ind);
-	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
-	
-	// -DEBUG-
-	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
+
+	// Setpoints
 	buffer_append_float32_auto(send_buffer, d->float_setpoint, &ind);
-	buffer_append_float32_auto(send_buffer, d->float_torquetilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_atr, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_braketilt, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_torquetilt, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_turntilt, &ind);
+	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
+	
+	// DEBUG
+	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
+	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
 	buffer_append_float32_auto(send_buffer, d->filtered_current, &ind);
+	buffer_append_float32_auto(send_buffer, d->braking, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
+
+	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_1), &ind);
+	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }

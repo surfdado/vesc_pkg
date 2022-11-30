@@ -704,6 +704,23 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>7</vTx>
         </noseangling_speed>
+        <inputtilt_remote_type>
+            <longName>Remote Type</longName>
+            <type>4</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Select how the remote's reciever communicates with VESC (PPM or UART).&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;*CAUTION: REQUIRES CUSTOM FIRMWARE!!&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt; If on stock firmware, this setting &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;MUST&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt; be left on &amp;quot;NONE.&amp;quot; The latest compatible firmware can be found here: &lt;/span&gt;&lt;a href=&quot;https://drive.google.com/drive/folders/1D27XDjs1T9Nq5rEmTcdS1Hc7cVMUBJF_?usp=sharing&quot;&gt;&lt;span style=&quot; text-decoration: underline; color:#9696ff;&quot;&gt;https://drive.google.com/drive/folders/1D27XDjs1T9Nq5rEmTcdS1Hc7cVMUBJF_?usp=sharing&lt;/span&gt;&lt;/a&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE</cDefine>
+            <valInt>0</valInt>
+            <enumNames>NONE</enumNames>
+            <enumNames>UART</enumNames>
+            <enumNames>PPM</enumNames>
+        </inputtilt_remote_type>
         <inputtilt_angle_limit>
             <longName>Tiltback Angle Limit</longName>
             <type>1</type>
@@ -727,14 +744,14 @@ p, li { white-space: pre-wrap; }
             <vTx>9</vTx>
         </inputtilt_angle_limit>
         <inputtilt_speed>
-            <longName>Max Tiltback Speed</longName>
+            <longName>Tiltback Speed</longName>
             <type>1</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Max speed at which Input Tiltback will tilt to the desired angle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Speed at which Input Tiltback will tilt to the desired angle.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_INPUTTILT_SPEED</cDefine>
             <editorDecimalsDouble>0</editorDecimalsDouble>
             <editorScale>1</editorScale>
@@ -748,6 +765,24 @@ p, li { white-space: pre-wrap; }
             <suffix> °/s</suffix>
             <vTx>9</vTx>
         </inputtilt_speed>
+        <inputtilt_invert_throttle>
+            <longName>Invert Throttle</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;False:&lt;/span&gt;&lt;/p&gt;
+&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; font-weight:600;&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Throttle Forward = Nose Lift&lt;/span&gt;&lt;/li&gt;
+&lt;li style=&quot;&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Throttle Backward = Nose Lower&lt;/li&gt;&lt;/ul&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;True &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic; text-decoration: underline;&quot;&gt;(Default)&lt;/span&gt;&lt;span style=&quot; font-weight:600; text-decoration: underline;&quot;&gt;:&lt;/span&gt;&lt;/p&gt;
+&lt;ul style=&quot;margin-top: 0px; margin-bottom: 0px; margin-left: 0px; margin-right: 0px; -qt-list-indent: 1;&quot;&gt;&lt;li style=&quot; font-weight:600;&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:400;&quot;&gt;Throttle Forward = Nose Lower&lt;/span&gt;&lt;/li&gt;
+&lt;li style=&quot;&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Throttle Backward = Nose Lift&lt;/li&gt;&lt;/ul&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_INPUTTILT_INVERT_THROTTLE</cDefine>
+            <valInt>1</valInt>
+        </inputtilt_invert_throttle>
         <startup_pitch_tolerance>
             <longName>Startup Pitch Axis Angle Tolerance</longName>
             <type>1</type>
@@ -1060,7 +1095,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.05</stepDouble>
-            <valDouble>0.15</valDouble>
+            <valDouble>0</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> °/A</suffix>
             <vTx>9</vTx>
@@ -1378,7 +1413,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
-            <valDouble>12</valDouble>
+            <valDouble>10</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix></suffix>
             <vTx>9</vTx>
@@ -1654,8 +1689,10 @@ p, li { white-space: pre-wrap; }
         <ser>tiltback_variable</ser>
         <ser>tiltback_variable_max</ser>
         <ser>noseangling_speed</ser>
+        <ser>inputtilt_remote_type</ser>
         <ser>inputtilt_angle_limit</ser>
         <ser>inputtilt_speed</ser>
+        <ser>inputtilt_invert_throttle</ser>
         <ser>startup_pitch_tolerance</ser>
         <ser>startup_roll_tolerance</ser>
         <ser>startup_speed</ser>
@@ -1742,9 +1779,6 @@ p, li { white-space: pre-wrap; }
                     <param>turntilt_erpm_boost</param>
                     <param>turntilt_erpm_boost_end</param>
                     <param>turntilt_yaw_aggregate</param>
-                    <param>::sep::Input Tiltback</param>
-                    <param>inputtilt_angle_limit</param>
-                    <param>inputtilt_speed</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>
@@ -1818,6 +1852,17 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Features</param>
                     <param>fault_darkride_enabled</param>
                     <param>fault_reversestop_enabled</param>
+                </subgroupParams>
+            </subgroup>
+            <subgroup>
+                <subgroupName>Remote</subgroupName>
+                <subgroupParams>
+                    <param>::sep::*CUSTOM FIRMWARE REQUIRED*</param>
+                    <param>::sep::Input Tiltback</param>
+                    <param>inputtilt_remote_type</param>
+                    <param>inputtilt_angle_limit</param>
+                    <param>inputtilt_speed</param>
+                    <param>inputtilt_invert_throttle</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>

@@ -163,14 +163,24 @@
 #define APPCONF_FLOAT_NOSEANGLING_SPEED 5
 #endif
 
+// Remote Type
+#ifndef APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE
+#define APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE 0
+#endif
+
 // Tiltback Angle Limit
 #ifndef APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT
 #define APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT 10
 #endif
 
-// Max Tiltback Speed
+// Tiltback Speed
 #ifndef APPCONF_FLOAT_INPUTTILT_SPEED
 #define APPCONF_FLOAT_INPUTTILT_SPEED 20
+#endif
+
+// Invert Throttle
+#ifndef APPCONF_FLOAT_INPUTTILT_INVERT_THROTTLE
+#define APPCONF_FLOAT_INPUTTILT_INVERT_THROTTLE 1
 #endif
 
 // Startup Pitch Axis Angle Tolerance
@@ -240,7 +250,7 @@
 
 // Strength
 #ifndef APPCONF_FLOAT_TORQUETILT_STRENGTH
-#define APPCONF_FLOAT_TORQUETILT_STRENGTH 0.15
+#define APPCONF_FLOAT_TORQUETILT_STRENGTH 0
 #endif
 
 // Current Filter
@@ -355,7 +365,7 @@
 
 // Amps to Deceleration Ratio
 #ifndef APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO
-#define APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO 12
+#define APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO 10
 #endif
 
 // Brake Tilt Strength

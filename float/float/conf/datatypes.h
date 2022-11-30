@@ -28,6 +28,12 @@ typedef enum {
 	YAW_BASED_TURNTILT
 } FLOAT_TURNTILT_MODE;
 
+typedef enum {
+	NONE = 0,
+	UART,
+	PPM
+} FLOAT_INPUTTILT_REMOTE_TYPE;
+
 typedef struct {
 	float kp;
 	float ki;
@@ -65,8 +71,10 @@ typedef struct {
 	uint16_t tiltback_constant_erpm;
 	float tiltback_variable;
 	float tiltback_variable_max;
+	FLOAT_INPUTTILT_REMOTE_TYPE inputtilt_remote_type;
 	float inputtilt_speed;
 	float inputtilt_angle_limit;
+	bool inputtilt_invert_throttle;
 	float noseangling_speed;
 	float startup_pitch_tolerance;
 	float startup_roll_tolerance;
