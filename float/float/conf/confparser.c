@@ -80,6 +80,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float32_auto(buffer, conf->atr_transition_boost, &ind);
 	buffer_append_float32_auto(buffer, conf->atr_filter, &ind);
 	buffer_append_float32_auto(buffer, conf->atr_amps_accel_ratio, &ind);
+	buffer_append_float32_auto(buffer, conf->atr_amps_decel_ratio, &ind);
 	buffer_append_float32_auto(buffer, conf->braketilt_strength, &ind);
 	buffer_append_float32_auto(buffer, conf->braketilt_lingering, &ind);
 
@@ -164,6 +165,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->atr_transition_boost = buffer_get_float32_auto(buffer, &ind);
 	conf->atr_filter = buffer_get_float32_auto(buffer, &ind);
 	conf->atr_amps_accel_ratio = buffer_get_float32_auto(buffer, &ind);
+	conf->atr_amps_decel_ratio = buffer_get_float32_auto(buffer, &ind);
 	conf->braketilt_strength = buffer_get_float32_auto(buffer, &ind);
 	conf->braketilt_lingering = buffer_get_float32_auto(buffer, &ind);
 
@@ -241,6 +243,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_transition_boost = APPCONF_FLOAT_ATR_TRANSITION_BOOST;
 	conf->atr_filter = APPCONF_FLOAT_ATR_FILTER;
 	conf->atr_amps_accel_ratio = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
+	conf->atr_amps_decel_ratio = APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO;
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 }

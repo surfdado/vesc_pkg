@@ -123,7 +123,6 @@ typedef struct {
 	float accel_gap;
 	float accelhist[ACCEL_ARRAY_SIZE];
 	float accelavg;
-	float atr_accel_factor;
 	int accelidx;
 	int direction_counter;
 	bool braking;
@@ -314,7 +313,6 @@ static void configure(data *d) {
 	}
 
 	// Feature: ATR:
-	d->atr_accel_factor = d->float_conf.atr_amps_accel_ratio;	// how many amps per acc?
 	d->atr_enabled = (d->float_conf.atr_strength > 0);
 	d->float_acc_diff = 0;
 
@@ -890,6 +888,7 @@ static void apply_torquetilt(data *d) {
 	int torque_sign;
 	float abs_torque;
 	float torque_offset;
+	float accel_factor;
 	float accel_factor2;
 	float expected_acc;
 
@@ -983,7 +982,8 @@ static void apply_torquetilt(data *d) {
 	if (d->atr_enabled) { // ATR Enabled
 		abs_torque = fabsf(d->atr_filtered_current);
 		torque_offset = d->float_conf.atr_torque_offset;
-		accel_factor2 = d->atr_accel_factor * 1.3;
+		accel_factor = d->braking ? d->float_conf.atr_amps_decel_ratio : d->float_conf.atr_amps_accel_ratio;
+		accel_factor2 = accel_factor * 1.3;
 
 		float atr_strength = d->float_conf.atr_strength;
 		// from 3000 to 6000 erpm gradually crank up the torque response
@@ -1000,11 +1000,11 @@ static void apply_torquetilt(data *d) {
 		// expected acceleration is proportional to current (minus an offset, required to balance/maintain speed)
 		//XXXXXfloat expected_acc;
 		if (abs_torque < 25) {
-			expected_acc = (d->atr_filtered_current - SIGN(d->erpm) * torque_offset) / d->atr_accel_factor;
+			expected_acc = (d->atr_filtered_current - SIGN(d->erpm) * torque_offset) / accel_factor;
 		}
 		else {
 			// primitive linear approximation of non-linear torque-accel relationship
-			expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / d->atr_accel_factor;
+			expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / accel_factor;
 			expected_acc += torque_sign * (abs_torque - 25) / accel_factor2;
 		}
 

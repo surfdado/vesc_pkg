@@ -205,12 +205,12 @@
 
 // Start Angle
 #ifndef APPCONF_FLOAT_BOOSTER_ANGLE
-#define APPCONF_FLOAT_BOOSTER_ANGLE 5
+#define APPCONF_FLOAT_BOOSTER_ANGLE 10
 #endif
 
 // Ramp Up
 #ifndef APPCONF_FLOAT_BOOSTER_RAMP
-#define APPCONF_FLOAT_BOOSTER_RAMP 5
+#define APPCONF_FLOAT_BOOSTER_RAMP 10
 #endif
 
 // Current Boost
@@ -351,6 +351,11 @@
 // Amps to Acceleration Ratio
 #ifndef APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO
 #define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 12
+#endif
+
+// Amps to Deceleration Ratio
+#ifndef APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO
+#define APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO 12
 #endif
 
 // Brake Tilt Strength
