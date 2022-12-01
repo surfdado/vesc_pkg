@@ -1592,13 +1592,15 @@ static void float_thd(void *arg) {
 				else {
 					tt_impact = d->float_conf.atr_uphill_tilt;
 
-					const float max_impact_erpm = 2500;
-					const float starting_impact = 0.5;
-					if (d->abs_erpm < max_impact_erpm) {
-						// Reduced nose lift at lower speeds
-						// Creates a value between 0.5 and 1.0
-						float erpm_scaling = fmaxf(starting_impact, d->abs_erpm / max_impact_erpm);
-						tt_impact = (1.0 - (tt_impact * erpm_scaling));
+					if (tt_impact > 0) {
+						const float max_impact_erpm = 2500;
+						const float starting_impact = 0.5;
+						if (d->abs_erpm < max_impact_erpm) {
+							// Reduced nose lift at lower speeds
+							// Creates a value between 0.5 and 1.0
+							float erpm_scaling = fmaxf(starting_impact, d->abs_erpm / max_impact_erpm);
+							tt_impact = (1.0 - (tt_impact * erpm_scaling));
+						}
 					}
 				}
 				d->integral -= d->torqueresponse_interpolated * tt_impact;
