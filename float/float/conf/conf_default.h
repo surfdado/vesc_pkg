@@ -378,6 +378,11 @@
 #define APPCONF_FLOAT_BRAKETILT_LINGERING 2
 #endif
 
+// Buzzer Enable
+#ifndef APPCONF_FLOAT_IS_BUZZER_ENABLED
+#define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
+#endif
+
 // CONF_DEFAULT_H_
 #endif
 

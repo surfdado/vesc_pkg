@@ -85,6 +85,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float32_auto(buffer, conf->atr_amps_decel_ratio, &ind);
 	buffer_append_float32_auto(buffer, conf->braketilt_strength, &ind);
 	buffer_append_float32_auto(buffer, conf->braketilt_lingering, &ind);
+	buffer[ind++] = conf->is_buzzer_enabled;
 
 	return ind;
 }
@@ -172,6 +173,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->atr_amps_decel_ratio = buffer_get_float32_auto(buffer, &ind);
 	conf->braketilt_strength = buffer_get_float32_auto(buffer, &ind);
 	conf->braketilt_lingering = buffer_get_float32_auto(buffer, &ind);
+	conf->is_buzzer_enabled = buffer[ind++];
 
 	return true;
 }
@@ -252,5 +254,6 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_amps_decel_ratio = APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO;
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
+	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
 }
 

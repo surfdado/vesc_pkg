@@ -50,7 +50,6 @@ typedef struct {
 	float fault_adc2;
 	uint16_t fault_delay_pitch;
 	uint16_t fault_delay_roll;
-	uint16_t fault_delay_duty;
 	uint16_t fault_delay_switch_half;
 	uint16_t fault_delay_switch_full;
 	uint16_t fault_adc_half_erpm;
@@ -119,6 +118,7 @@ typedef struct {
 	uint16_t turntilt_erpm_boost;
 	uint16_t turntilt_erpm_boost_end;
 	int turntilt_yaw_aggregate;
+	bool is_buzzer_enabled;
 } float_config;
 
 // DATATYPES_H_
