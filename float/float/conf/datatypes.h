@@ -35,6 +35,7 @@ typedef enum {
 } FLOAT_INPUTTILT_REMOTE_TYPE;
 
 typedef struct {
+	float float_version;
 	float kp;
 	float ki;
 	float kd;

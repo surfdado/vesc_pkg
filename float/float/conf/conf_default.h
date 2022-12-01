@@ -378,9 +378,14 @@
 #define APPCONF_FLOAT_BRAKETILT_LINGERING 2
 #endif
 
-// Buzzer Enable
+// Enable buzzer on Servo/PPM
 #ifndef APPCONF_FLOAT_IS_BUZZER_ENABLED
 #define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
+#endif
+
+// Package Version
+#ifndef APPCONF_FLOAT_VERSION
+#define APPCONF_FLOAT_VERSION 0.1
 #endif
 
 // CONF_DEFAULT_H_

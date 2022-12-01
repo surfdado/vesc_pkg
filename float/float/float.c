@@ -24,6 +24,7 @@
 #include "conf/confparser.h"
 #include "conf/confxml.h"
 #include "conf/buffer.h"
+#include "conf/conf_default.h"
 
 #include <math.h>
 #include <string.h>
@@ -426,6 +427,10 @@ static void configure(data *d) {
 	// Reset loop time variables
 	d->last_time = 0.0;
 	d->filtered_loop_overshoot = 0.0;
+
+	d->buzzer_enabled = d->float_conf.is_buzzer_enabled;
+	VESC_IF->printf("Config written\n");
+	beep_alert(d, 1, false);
 }
 
 static void reset_vars(data *d) {
@@ -1941,6 +1946,7 @@ static void stop(void *arg) {
 
 INIT_FUN(lib_info *info) {
 	INIT_START
+	VESC_IF->printf("Init Float v%.1f\n", (double)APPCONF_FLOAT_VERSION);
 
 	data *d = VESC_IF->malloc(sizeof(data));
 	memset(d, 0, sizeof(data));
@@ -1970,8 +1976,16 @@ INIT_FUN(lib_info *info) {
 
 	if (read_ok) {
 		memcpy(&(d->float_conf), buffer, sizeof(float_config));
+
+		if (d->float_conf.float_version != APPCONF_FLOAT_VERSION) {
+			VESC_IF->printf("Version change since last config write (%.1f vs %.1f) !",
+							(double)d->float_conf.float_version,
+							(double)APPCONF_FLOAT_VERSION);
+			d->float_conf.float_version = APPCONF_FLOAT_VERSION;
+		}
 	} else {
 		confparser_set_defaults_float_config(&(d->float_conf));
+		VESC_IF->printf("Float Package Error: Reverting to default config!\n");
 	}
 	
 	VESC_IF->free(buffer);
