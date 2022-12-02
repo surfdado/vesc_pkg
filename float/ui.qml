@@ -87,9 +87,7 @@ Item {
             var float_inputtilt = dv.getFloat32(ind); ind += 4;
 
             var true_pitch = dv.getFloat32(ind); ind += 4;
-            var erpm = dv.getFloat32(ind); ind += 4;
             var filtered_current = dv.getFloat32(ind); ind += 4;
-            var braking = dv.getFloat32(ind); ind += 4;
             var float_acc_diff = dv.getFloat32(ind); ind += 4;
             var applied_booster_current = dv.getFloat32(ind); ind += 4;
 
@@ -156,9 +154,7 @@ Item {
 
             debug.text =
                 "True Pitch          : " + true_pitch.toFixed(2) + "°\n" +
-                "ERPM                : " + true_pitch.toFixed(0) + " ERPM\n" +
                 "Torque              : " + filtered_current.toFixed(2) + "A\n" +
-                "Braking             : " + filtered_current.toFixed(0) + "A\n" +
                 "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
                 "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n"
         }

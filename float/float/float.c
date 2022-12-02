@@ -1854,9 +1854,7 @@ static void send_realtime_data(data *d){
 	
 	// DEBUG
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
-	buffer_append_float32_auto(send_buffer, d->erpm, &ind);
 	buffer_append_float32_auto(send_buffer, d->filtered_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->braking, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
 

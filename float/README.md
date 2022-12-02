@@ -5,7 +5,6 @@ Ported by Nico Aleman, heavily based on SurfDado's ATR Firmware: https://pev.dev
 
 Missing ATR24 Features:
  - Dirty Trick Landing
- - Buzzer Support
  - Odometer Filtering/Cleanup
 
 Nico Aleman <NicoAleman1@hotmail.com>
