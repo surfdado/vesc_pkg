@@ -215,12 +215,12 @@
 
 // Start Angle
 #ifndef APPCONF_FLOAT_BOOSTER_ANGLE
-#define APPCONF_FLOAT_BOOSTER_ANGLE 10
+#define APPCONF_FLOAT_BOOSTER_ANGLE 8
 #endif
 
 // Ramp Up
 #ifndef APPCONF_FLOAT_BOOSTER_RAMP
-#define APPCONF_FLOAT_BOOSTER_RAMP 10
+#define APPCONF_FLOAT_BOOSTER_RAMP 4
 #endif
 
 // Current Boost
@@ -378,7 +378,7 @@
 #define APPCONF_FLOAT_BRAKETILT_LINGERING 2
 #endif
 
-// Enable buzzer on Servo/PPM
+// Enable Buzzer on Servo/PPM
 #ifndef APPCONF_FLOAT_IS_BUZZER_ENABLED
 #define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
 #endif

@@ -108,6 +108,7 @@ typedef struct {
 	float mc_max_temp_fet, mc_max_temp_mot;
 	float mc_current_max, mc_current_min, max_continuous_current;
 	bool current_beeping;
+	bool duty_beeping;
 
 	// Feature: True Pitch
 	ATTITUDE_INFO m_att_ref;
@@ -540,7 +541,7 @@ static SwitchState check_adcs(data *d) {
 		}
 	}
 
-	if (sw_state == OFF) {
+	if ((sw_state == OFF) && (d->state <= RUNNING_TILTBACK)) {
 		if (d->abs_erpm > d->switch_warn_buzz_erpm) {
 			// If we're at riding speed and the switch is off => ALERT the user
 			// set force=true since this could indicate an imminent shutdown/nosedive
@@ -758,6 +759,7 @@ static void calculate_setpoint_target(data *d) {
 		d->setpointAdjustmentType = TILTBACK_DUTY;
 		d->state = RUNNING_TILTBACK;
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage > d->float_conf.tiltback_hv) {
+		beep_alert(d, 3, false);	// Triple-beep
 		if (((d->current_time - d->tb_highvoltage_timer) > .5) ||
 		   (input_voltage > d->float_conf.tiltback_hv + 1)) {
 			// 500ms have passed or voltage is another volt higher, time for some tiltback
@@ -771,7 +773,7 @@ static void calculate_setpoint_target(data *d) {
 			d->state = RUNNING_TILTBACK;
 		}
 		else {
-			// Was possibly just a short spike
+			// The rider has 500ms to react to the triple-beep, or maybe it was just a short spike
 			d->setpointAdjustmentType = TILTBACK_NONE;
 			d->state = RUNNING;
 		}
@@ -810,7 +812,7 @@ static void calculate_setpoint_target(data *d) {
 			d->state = RUNNING;
 		}
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage < d->float_conf.tiltback_lv) {
-		
+		beep_alert(d, 3, false);	// Triple-beep
 		float abs_motor_current = fabsf(d->motor_current);
 		float vdelta = d->float_conf.tiltback_lv - input_voltage;
 		float ratio = vdelta * 20 / abs_motor_current;
@@ -857,6 +859,18 @@ static void calculate_setpoint_target(data *d) {
 			// before aggressively checking for board wiggle (based on acceleration)
 			d->is_upside_down_started = true;
 			d->delay_upside_down_fault = d->current_time;
+		}
+	}
+
+	if (d->setpointAdjustmentType == TILTBACK_DUTY) {
+		if (d->float_conf.tiltback_duty_angle == 0) {
+			beep_on(d, true);
+			d->duty_beeping = true;
+		}
+	}
+	else {
+		if (d->duty_beeping) {
+			beep_off(d, false);
 		}
 	}
 }

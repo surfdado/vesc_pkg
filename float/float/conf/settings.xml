@@ -939,7 +939,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>10</valDouble>
+            <valDouble>8</valDouble>
             <vTxDoubleScale>1</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>9</vTx>
@@ -963,7 +963,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>1</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>10</valDouble>
+            <valDouble>4</valDouble>
             <vTxDoubleScale>1</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>9</vTx>
@@ -1655,7 +1655,7 @@ p, li { white-space: pre-wrap; }
             <vTx>1</vTx>
         </turntilt_yaw_aggregate>
         <is_buzzer_enabled>
-            <longName>Enable buzzer on Servo/PPM</longName>
+            <longName>Enable Buzzer on Servo/PPM</longName>
             <type>5</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -1669,7 +1669,7 @@ p, li { white-space: pre-wrap; }
         <float_version>
             <longName>Package Version</longName>
             <type>1</type>
-            <transmittable>1</transmittable>
+            <transmittable>0</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
@@ -1677,7 +1677,7 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Version of the Float Package.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_VERSION</cDefine>
             <editorDecimalsDouble>2</editorDecimalsDouble>
-            <editorScale>0.01</editorScale>
+            <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
             <maxDouble>0.1</maxDouble>
             <minDouble>0.1</minDouble>
