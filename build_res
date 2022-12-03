@@ -16,7 +16,19 @@ cd float/float/
 make clean
 make
 cd ../
-$VT --buildPkg 'float.vescpkg:float.lisp:ui.qml:0:README.md:Float'
+cp README.md READMEx.md
+echo "- Version: v" >> READMEx.md
+truncate -s-1 READMEx.md
+#TODO: Maintain version in a single place
+echo "0.1" >> READMEx.md
+echo "- Build Date: " >> READMEx.md
+truncate -s-1 READMEx.md
+date +'%D %T' >> READMEx.md
+echo "- Git Commit: #" >> READMEx.md
+truncate -s-1 READMEx.md
+git rev-parse --short HEAD >> READMEx.md
+$VT --buildPkg 'float.vescpkg:float.lisp:ui.qml:0:READMEx.md:Float'
+rm READMEx.md
 cd float
 make clean
 cd ../../
