@@ -11,6 +11,16 @@ set -e
 # passed. When using 4 flags a package-file must exist beforehand (e.g. by
 # creating it from the editor in VESC tool).
 
+# Balance
+cd balance/balance/
+make clean
+make
+cd ../
+$VT --buildPkg 'balance.vescpkg:balance.lisp:ui.qml:0:README.md:Balance'
+cd balance
+make clean
+cd ../../
+
 # Float
 cd float/float/
 make clean
