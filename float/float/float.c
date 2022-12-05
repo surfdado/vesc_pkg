@@ -40,6 +40,8 @@ HEADER
 #define DEG2RAD_f(deg)		((deg) * (float)(M_PI / 180.0))
 #define RAD2DEG_f(rad) 		((rad) * (float)(180.0 / M_PI))
 
+#define UNUSED(x) (void)(x)
+
 // Data type
 typedef enum {
 	STARTUP = 0,
@@ -1415,6 +1417,7 @@ static void set_current(data *d, float current){
 }
 
 static void imu_ref_callback(float *acc, float *gyro, float *mag, float dt) {
+	UNUSED(mag);
 	data *d = (data*)ARG;
 	VESC_IF->ahrs_update_mahony_imu(gyro, acc, dt, &d->m_att_ref);
 }
