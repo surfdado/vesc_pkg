@@ -1888,6 +1888,15 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		if(command == 0x01){
 			send_realtime_data(d);
+			return;
+		}else if (command == 0x0){
+			int32_t ind = 0;
+			uint8_t send_buffer[10];
+			send_buffer[ind++] = 101;	// magic nr.
+			send_buffer[ind++] = 0x0;	// command ID
+			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
+			VESC_IF->send_app_data(send_buffer, ind);
+			return;
 		}else{
 			if (!VESC_IF->app_is_output_disabled()) {
 				VESC_IF->printf("Float App: Unknown command received %d\n", command);
