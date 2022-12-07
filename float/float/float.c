@@ -934,13 +934,26 @@ static void apply_noseangling(data *d){
 static void apply_inputtilt(data *d){ // Input Tiltback
 	float input_tiltback_target;
 	float servo_val = 0;
+	bool connected = false;
 
 	switch (d->float_conf.inputtilt_remote_type) {
 	case (PPM):
-		servo_val = VESC_IF->get_ppm(); break;
-	case (UART):
+		servo_val = VESC_IF->get_ppm();
+		connected = VESC_IF->get_ppm_age() < 1;
+		break;
+	case (UART): ; // Don't delete ";", required to avoid compiler error with first line variable init
+		remote_state remote = VESC_IF->get_remote_state();
+		servo_val = remote.js_y;
+		connected = remote.age_s < 1;
+		break;
 	case (NONE):
 		break;
+	}
+	
+	if (!connected) {
+		d->inputtilt_interpolated = 0;
+		servo_val = 0;
+		return;
 	}
 
 	servo_val *= d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0;
@@ -1972,7 +1985,6 @@ INIT_FUN(lib_info *info) {
 		return false;
 	}
 
-	buzzer_init();
 
 	// Read config from EEPROM if signature is correct
 	eeprom_var v;
@@ -2013,6 +2025,10 @@ INIT_FUN(lib_info *info) {
 	VESC_IF->conf_custom_add_config(get_cfg, set_cfg, get_cfg_xml);
 
 	configure(d);
+
+	if ((d->float_conf.is_buzzer_enabled) || (d->float_conf.inputtilt_remote_type != PPM)) {
+		buzzer_init();
+	}
 
 	VESC_IF->ahrs_init_attitude_info(&d->m_att_ref);
 	d->m_att_ref.acc_confidence_decay = 0.1;
