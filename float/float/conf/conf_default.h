@@ -350,7 +350,7 @@
 
 // Tiltback Transition Boost
 #ifndef APPCONF_FLOAT_ATR_TRANSITION_BOOST
-#define APPCONF_FLOAT_ATR_TRANSITION_BOOST 3
+#define APPCONF_FLOAT_ATR_TRANSITION_BOOST 2.5
 #endif
 
 // Current Filter
@@ -360,7 +360,7 @@
 
 // Amps to Acceleration Ratio
 #ifndef APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO
-#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 12
+#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 11
 #endif
 
 // Amps to Deceleration Ratio
@@ -385,7 +385,7 @@
 
 // Package Version
 #ifndef APPCONF_FLOAT_VERSION
-#define APPCONF_FLOAT_VERSION 0.1
+#define APPCONF_FLOAT_VERSION 0.3
 #endif
 
 // CONF_DEFAULT_H_
