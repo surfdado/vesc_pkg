@@ -44,7 +44,7 @@ git rev-parse --short HEAD >> READMEx.md
 $VT --buildPkg 'float.vescpkg:float.lisp:ui.qml:0:READMEx.md:Float'
 rm READMEx.md
 cd float
-make clean
+#make clean
 cd ../../
 
 # logui
