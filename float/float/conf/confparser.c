@@ -72,8 +72,6 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_uint16(buffer, conf->turntilt_erpm_boost_end, &ind);
 	buffer[ind++] = (uint8_t)conf->turntilt_yaw_aggregate;
 	buffer_append_float32_auto(buffer, conf->atr_strength, &ind);
-	buffer_append_float32_auto(buffer, conf->atr_uphill_tilt, &ind);
-	buffer_append_float32_auto(buffer, conf->atr_downhill_tilt, &ind);
 	buffer_append_float32_auto(buffer, conf->atr_torque_offset, &ind);
 	buffer_append_float32_auto(buffer, conf->atr_speed_boost, &ind);
 	buffer_append_float32_auto(buffer, conf->atr_angle_limit, &ind);
@@ -162,8 +160,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->turntilt_erpm_boost_end = buffer_get_uint16(buffer, &ind);
 	conf->turntilt_yaw_aggregate = buffer[ind++];
 	conf->atr_strength = buffer_get_float32_auto(buffer, &ind);
-	conf->atr_uphill_tilt = buffer_get_float32_auto(buffer, &ind);
-	conf->atr_downhill_tilt = buffer_get_float32_auto(buffer, &ind);
 	conf->atr_torque_offset = buffer_get_float32_auto(buffer, &ind);
 	conf->atr_speed_boost = buffer_get_float32_auto(buffer, &ind);
 	conf->atr_angle_limit = buffer_get_float32_auto(buffer, &ind);
@@ -245,8 +241,6 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->turntilt_erpm_boost_end = APPCONF_FLOAT_TURNTILT_ERPM_BOOST_END;
 	conf->turntilt_yaw_aggregate = APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE;
 	conf->atr_strength = APPCONF_FLOAT_ATR_STRENGTH;
-	conf->atr_uphill_tilt = APPCONF_FLOAT_ATR_UPHILL_TILT;
-	conf->atr_downhill_tilt = APPCONF_FLOAT_ATR_DOWNHILL_TILT;
 	conf->atr_torque_offset = APPCONF_FLOAT_ATR_TORQUE_OFFSET;
 	conf->atr_speed_boost = APPCONF_FLOAT_ATR_SPEED_BOOST;
 	conf->atr_angle_limit = APPCONF_FLOAT_ATR_ANGLE_LIMIT;

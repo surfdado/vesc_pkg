@@ -100,7 +100,7 @@
 
 // Duty Cycle
 #ifndef APPCONF_FLOAT_TILTBACK_DUTY
-#define APPCONF_FLOAT_TILTBACK_DUTY 0.75
+#define APPCONF_FLOAT_TILTBACK_DUTY 0.8
 #endif
 
 // Angle
@@ -115,7 +115,7 @@
 
 // High Voltage Threshold
 #ifndef APPCONF_FLOAT_TILTBACK_HV
-#define APPCONF_FLOAT_TILTBACK_HV 64
+#define APPCONF_FLOAT_TILTBACK_HV 64.5
 #endif
 
 // Angle
@@ -311,16 +311,6 @@
 // ATR Strength
 #ifndef APPCONF_FLOAT_ATR_STRENGTH
 #define APPCONF_FLOAT_ATR_STRENGTH 1.2
-#endif
-
-// Uphill Tilt Factor
-#ifndef APPCONF_FLOAT_ATR_UPHILL_TILT
-#define APPCONF_FLOAT_ATR_UPHILL_TILT 0.9
-#endif
-
-// Downhill Tilt Factor
-#ifndef APPCONF_FLOAT_ATR_DOWNHILL_TILT
-#define APPCONF_FLOAT_ATR_DOWNHILL_TILT 0.2
 #endif
 
 // Torque Offset

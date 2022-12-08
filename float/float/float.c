@@ -1623,29 +1623,6 @@ static void float_thd(void *arg) {
 			// Resume real PID maths
 			d->integral = d->integral + d->proportional;
 
-			if (d->atr_enabled) {
-				// Produce controlled nose/tail lift with increased torque
-				float tt_impact;
-				if (d->torqueresponse_interpolated < 0)
-					// Downhill tail lift doesn't need to be as high as uphill nose lift
-					tt_impact = d->float_conf.atr_downhill_tilt;
-				else {
-					tt_impact = d->float_conf.atr_uphill_tilt;
-
-					if (tt_impact > 0) {
-						const float max_impact_erpm = 2500;
-						const float starting_impact = 0.5;
-						if (d->abs_erpm < max_impact_erpm) {
-							// Reduced nose lift at lower speeds
-							// Creates a value between 0.5 and 1.0
-							float erpm_scaling = fmaxf(starting_impact, d->abs_erpm / max_impact_erpm);
-							tt_impact = (1.0 - (tt_impact * erpm_scaling));
-						}
-					}
-				}
-				d->integral -= d->torqueresponse_interpolated * tt_impact;
-			}
-
 			if (d->setpointAdjustmentType == REVERSESTOP) {
 				d->integral = d->integral * 0.9;
 			}
