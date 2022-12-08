@@ -956,8 +956,18 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 		return;
 	}
 
+	// Apply Deadband
+	float deadband = d->float_conf.inputtilt_deadband;
+	if (fabsf(servo_val) < deadband) {
+		servo_val = 0.0;
+	} else {
+		servo_val = SIGN(servo_val) * (fabsf(servo_val) - deadband) / (1 - deadband);
+	}
+
+	// Invert Throttle
 	servo_val *= d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0;
 	 
+	// Scale by Max Angle
 	input_tiltback_target = servo_val * d->float_conf.inputtilt_angle_limit;
 
 	// // Default Behavior: Nose Tilt at any speed, does not invert for reverse (Safer for slow climbs/descents & jumps)
