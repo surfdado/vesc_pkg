@@ -1884,7 +1884,9 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		if(command == 0x01){
 			send_realtime_data(d);
 		}else{
-			VESC_IF->printf("Float App: Unknown command received %d", command);
+			if (!VESC_IF->app_is_output_disabled()) {
+				VESC_IF->printf("Float App: Unknown command received %d\n", command);
+			}
 		}
 	}
 	else {
@@ -1970,18 +1972,24 @@ static void stop(void *arg) {
 	VESC_IF->set_app_data_handler(NULL);
 	VESC_IF->conf_custom_clear_configs();
 	VESC_IF->request_terminate(d->thread);
-	VESC_IF->printf("Float App Terminated");
+	if (!VESC_IF->app_is_output_disabled()) {
+		VESC_IF->printf("Float App Terminated");
+	}
 	VESC_IF->free(d);
 }
 
 INIT_FUN(lib_info *info) {
 	INIT_START
-	VESC_IF->printf("Init Float v%.1f\n", (double)APPCONF_FLOAT_VERSION);
+	if (!VESC_IF->app_is_output_disabled()) {
+		VESC_IF->printf("Init Float v%.1f\n", (double)APPCONF_FLOAT_VERSION);
+	}
 
 	data *d = VESC_IF->malloc(sizeof(data));
 	memset(d, 0, sizeof(data));
 	if (!d) {
-		VESC_IF->printf("Float App: Out of memory, startup failed!");
+		if (!VESC_IF->app_is_output_disabled()) {
+			VESC_IF->printf("Float App: Out of memory, startup failed!");
+		}
 		return false;
 	}
 
@@ -2007,14 +2015,18 @@ INIT_FUN(lib_info *info) {
 		memcpy(&(d->float_conf), buffer, sizeof(float_config));
 
 		if (d->float_conf.float_version != APPCONF_FLOAT_VERSION) {
-			VESC_IF->printf("Version change since last config write (%.1f vs %.1f) !",
-							(double)d->float_conf.float_version,
-							(double)APPCONF_FLOAT_VERSION);
+			if (!VESC_IF->app_is_output_disabled()) {
+				VESC_IF->printf("Version change since last config write (%.1f vs %.1f) !",
+								(double)d->float_conf.float_version,
+								(double)APPCONF_FLOAT_VERSION);
+			}
 			d->float_conf.float_version = APPCONF_FLOAT_VERSION;
 		}
 	} else {
 		confparser_set_defaults_float_config(&(d->float_conf));
-		VESC_IF->printf("Float Package Error: Reverting to default config!\n");
+		if (!VESC_IF->app_is_output_disabled()) {
+			VESC_IF->printf("Float Package Error: Reverting to default config!\n");
+		}
 	}
 	
 	VESC_IF->free(buffer);
