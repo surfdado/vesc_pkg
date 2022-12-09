@@ -380,7 +380,7 @@
 
 // Package Version
 #ifndef APPCONF_FLOAT_VERSION
-#define APPCONF_FLOAT_VERSION 0.3
+#define APPCONF_FLOAT_VERSION 0.4
 #endif
 
 // CONF_DEFAULT_H_
