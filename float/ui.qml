@@ -146,8 +146,7 @@ Item {
                     "Roll                : " + roll.toFixed(2) + "°\n" +
                     "State               : " + stateString + "\n" +
                     "Switch              : " + switchString + "\n" +
-                    "ADC1                : " + adc1.toFixed(2) + "V\n" +
-                    "ADC2                : " + adc2.toFixed(2) + "V\n"
+                    "ADC1 / ADC2         : " + adc1.toFixed(2) + "V / " + adc2.toFixed(2) + "V\n"
 
                 setpoints.text =
                     "Setpoint            : " + float_setpoint.toFixed(2) + "°\n" +
