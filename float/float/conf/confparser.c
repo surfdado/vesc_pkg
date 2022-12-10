@@ -14,6 +14,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float32_auto(buffer, conf->ki, &ind);
 	buffer_append_float32_auto(buffer, conf->kp2, &ind);
 	buffer_append_float32_auto(buffer, conf->ki2, &ind);
+	buffer_append_float32_auto(buffer, conf->mahony_kp, &ind);
 	buffer_append_uint16(buffer, conf->hertz, &ind);
 	buffer_append_float32_auto(buffer, conf->fault_pitch, &ind);
 	buffer_append_float32_auto(buffer, conf->fault_roll, &ind);
@@ -102,6 +103,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->ki = buffer_get_float32_auto(buffer, &ind);
 	conf->kp2 = buffer_get_float32_auto(buffer, &ind);
 	conf->ki2 = buffer_get_float32_auto(buffer, &ind);
+	conf->mahony_kp = buffer_get_float32_auto(buffer, &ind);
 	conf->hertz = buffer_get_uint16(buffer, &ind);
 	conf->fault_pitch = buffer_get_float32_auto(buffer, &ind);
 	conf->fault_roll = buffer_get_float32_auto(buffer, &ind);
@@ -183,6 +185,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->ki = APPCONF_FLOAT_KI;
 	conf->kp2 = APPCONF_FLOAT_KP2;
 	conf->ki2 = APPCONF_FLOAT_KI2;
+	conf->mahony_kp = APPCONF_FLOAT_MAHONY_KP;
 	conf->hertz = APPCONF_FLOAT_HERTZ;
 	conf->fault_pitch = APPCONF_FLOAT_FAULT_PITCH;
 	conf->fault_roll = APPCONF_FLOAT_FAULT_ROLL;

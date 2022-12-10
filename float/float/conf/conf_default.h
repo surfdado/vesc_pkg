@@ -23,6 +23,11 @@
 #define APPCONF_FLOAT_KI2 0
 #endif
 
+// Mahony KP
+#ifndef APPCONF_FLOAT_MAHONY_KP
+#define APPCONF_FLOAT_MAHONY_KP 2
+#endif
+
 // Loop Hertz
 #ifndef APPCONF_FLOAT_HERTZ
 #define APPCONF_FLOAT_HERTZ 832

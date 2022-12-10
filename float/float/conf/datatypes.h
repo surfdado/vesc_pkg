@@ -42,6 +42,7 @@ typedef struct {
 	float kp2;
 	float ki2;
 	float kd2;
+	float mahony_kp;
 	uint16_t hertz;
 	uint16_t loop_time_filter;
 	float fault_pitch;
