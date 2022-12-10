@@ -51,7 +51,7 @@ Item {
         interval: 100
         
         onTriggered: {
-            var buffer = new ArrayBuffer(1)
+            var buffer = new ArrayBuffer(2)
             var dv = new DataView(buffer)
             var ind = 0
             dv.setUint8(ind, 101); ind += 1
