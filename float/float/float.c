@@ -1763,6 +1763,71 @@ static void float_thd(void *arg) {
 	}
 }
 
+static void write_cfg_to_eeprom(data *d) {
+	uint32_t ints = sizeof(float_config) / 4 + 1;
+	uint32_t *buffer = VESC_IF->malloc(ints * sizeof(uint32_t));
+	bool write_ok = true;
+	memcpy(buffer, &(d->float_conf), sizeof(float_config));
+	for (uint32_t i = 0;i < ints;i++) {
+		eeprom_var v;
+		v.as_u32 = buffer[i];
+		if (!VESC_IF->store_eeprom_var(&v, i + 1)) {
+			write_ok = false;
+			break;
+		}
+	}
+
+	VESC_IF->free(buffer);
+
+	if (write_ok) {
+		eeprom_var v;
+		v.as_u32 = FLOAT_CONFIG_SIGNATURE;
+		VESC_IF->store_eeprom_var(&v, 0);
+	}
+
+	// Emit 1 short beep to confirm writing all settings to eeprom
+	beep_alert(d, 1, 0);
+}
+
+static void read_cfg_from_eeprom(data *d) {
+	// Read config from EEPROM if signature is correct
+	eeprom_var v;
+	uint32_t ints = sizeof(float_config) / 4 + 1;
+	uint32_t *buffer = VESC_IF->malloc(ints * sizeof(uint32_t));
+	bool read_ok = VESC_IF->read_eeprom_var(&v, 0);
+	if (read_ok && v.as_u32 == FLOAT_CONFIG_SIGNATURE) {
+		for (uint32_t i = 0;i < ints;i++) {
+			if (!VESC_IF->read_eeprom_var(&v, i + 1)) {
+				read_ok = false;
+				break;
+			}
+			buffer[i] = v.as_u32;
+		}
+	} else {
+		read_ok = false;
+	}
+
+	if (read_ok) {
+		memcpy(&(d->float_conf), buffer, sizeof(float_config));
+
+		if (d->float_conf.float_version != APPCONF_FLOAT_VERSION) {
+			if (!VESC_IF->app_is_output_disabled()) {
+				VESC_IF->printf("Version change since last config write (%.1f vs %.1f) !",
+								(double)d->float_conf.float_version,
+								(double)APPCONF_FLOAT_VERSION);
+			}
+			d->float_conf.float_version = APPCONF_FLOAT_VERSION;
+		}
+	} else {
+		confparser_set_defaults_float_config(&(d->float_conf));
+		if (!VESC_IF->app_is_output_disabled()) {
+			VESC_IF->printf("Float Package Error: Reverting to default config!\n");
+		}
+	}
+
+	VESC_IF->free(buffer);
+}
+
 static float app_float_get_debug(int index) {
 	data *d = (data*)ARG;
 
@@ -1914,27 +1979,7 @@ static bool set_cfg(uint8_t *buffer) {
 
 	// Store to EEPROM
 	if (res) {
-		uint32_t ints = sizeof(float_config) / 4 + 1;
-		uint32_t *buffer = VESC_IF->malloc(ints * sizeof(uint32_t));
-		bool write_ok = true;
-		memcpy(buffer, &(d->float_conf), sizeof(float_config));
-		for (uint32_t i = 0;i < ints;i++) {
-			eeprom_var v;
-			v.as_u32 = buffer[i];
-			if (!VESC_IF->store_eeprom_var(&v, i + 1)) {
-				write_ok = false;
-				break;
-			}
-		}
-
-		VESC_IF->free(buffer);
-
-		if (write_ok) {
-			eeprom_var v;
-			v.as_u32 = FLOAT_CONFIG_SIGNATURE;
-			VESC_IF->store_eeprom_var(&v, 0);
-		}
-
+		write_cfg_to_eeprom(d);
 		configure(d);
 	}
 
@@ -1978,43 +2023,7 @@ INIT_FUN(lib_info *info) {
 		return false;
 	}
 
-
-	// Read config from EEPROM if signature is correct
-	eeprom_var v;
-	uint32_t ints = sizeof(float_config) / 4 + 1;
-	uint32_t *buffer = VESC_IF->malloc(ints * sizeof(uint32_t));
-	bool read_ok = VESC_IF->read_eeprom_var(&v, 0);
-	if (read_ok && v.as_u32 == FLOAT_CONFIG_SIGNATURE) {
-		for (uint32_t i = 0;i < ints;i++) {
-			if (!VESC_IF->read_eeprom_var(&v, i + 1)) {
-				read_ok = false;
-				break;
-			}
-			buffer[i] = v.as_u32;
-		}
-	} else {
-		read_ok = false;
-	}
-
-	if (read_ok) {
-		memcpy(&(d->float_conf), buffer, sizeof(float_config));
-
-		if (d->float_conf.float_version != APPCONF_FLOAT_VERSION) {
-			if (!VESC_IF->app_is_output_disabled()) {
-				VESC_IF->printf("Version change since last config write (%.1f vs %.1f) !",
-								(double)d->float_conf.float_version,
-								(double)APPCONF_FLOAT_VERSION);
-			}
-			d->float_conf.float_version = APPCONF_FLOAT_VERSION;
-		}
-	} else {
-		confparser_set_defaults_float_config(&(d->float_conf));
-		if (!VESC_IF->app_is_output_disabled()) {
-			VESC_IF->printf("Float Package Error: Reverting to default config!\n");
-		}
-	}
-	
-	VESC_IF->free(buffer);
+	read_cfg_from_eeprom(d);
 
 	info->stop_fun = stop;	
 	info->arg = d;
