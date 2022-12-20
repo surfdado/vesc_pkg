@@ -1911,7 +1911,123 @@ static void send_realtime_data(data *d){
 enum {
 	FLOAT_COMMAND_GET_INFO = 0,		// get version / package info
 	FLOAT_COMMAND_GET_RTDATA = 1,	// get rt data
+	FLOAT_COMMAND_RT_TUNE = 2,		// runtime tuning (don't write to eeprom)
+	FLOAT_COMMAND_TUNE_DEFAULTS = 3,// set tune to defaults (no eeprom)
+	FLOAT_COMMAND_CFG_SAVE = 4,		// save config to eeprom
+	FLOAT_COMMAND_CFG_RESTORE = 5,	// restore config from eeprom
 } float_commands;
+
+static void split(unsigned char byte, int* h1, int* h2)
+{
+	*h1 = byte & 0xF;
+	*h2 = byte >> 4;
+}
+
+/**
+ * runtime_tune		Extract tune info from 20byte message but don't write to EEPROM!
+ */
+static void runtime_tune(data *d, unsigned char *cfg)
+{
+	int h1, h2;
+	split(cfg[2], &h1, &h2);
+	d->float_conf.kp = h1 + 15;
+	d->float_conf.kp2 = ((float)h2) / 10;
+
+	split(cfg[3], &h1, &h2);
+	d->float_conf.ki = h1;
+	if (h1 == 1)
+		d->float_conf.ki = 0.005;
+	else if (h1 > 1)
+		d->float_conf.ki = ((float)(h1 - 1)) / 100;
+	d->float_conf.ki_limit = h2 + 20;
+
+	split(cfg[4], &h1, &h2);
+	d->float_conf.booster_angle = h1 + 5;
+	d->float_conf.booster_ramp = h2 + 2;
+
+	split(cfg[5], &h1, &h2);
+	if (h1 == 0)
+		d->float_conf.booster_current = 0;
+	else
+		d->float_conf.booster_current = 18 + h1 * 2;
+	d->float_conf.turntilt_strength = h2;
+
+	split(cfg[6], &h1, &h2);
+	d->float_conf.turntilt_angle_limit = (h1 & 0x3) + 2;
+	d->float_conf.turntilt_start_erpm = (float)(h1 >> 2) * 500 + 1000;
+	d->float_conf.mahony_kp = ((float)h2) / 10 + 1.5;
+	VESC_IF->set_cfg_float(CFG_PARAM_IMU_mahony_kp + 100, d->float_conf.mahony_kp);
+
+	split(cfg[7], &h1, &h2);
+	if (h1 == 0)
+		d->float_conf.atr_strength_up = 0;
+	else
+		d->float_conf.atr_strength_up = ((float)h1) / 10.0 + 0.9;
+	if (h2 == 0)
+		d->float_conf.atr_strength_down = 0;
+	else
+		d->float_conf.atr_strength_down = ((float)h2) / 10.0 + 0.9;
+
+	split(cfg[8], &h1, &h2);
+	d->float_conf.atr_torque_offset = h1 + 5;
+	d->float_conf.atr_speed_boost = ((float)(h2 * 5)) / 100;
+
+	split(cfg[9], &h1, &h2);
+	d->float_conf.atr_angle_limit = h1 + 5;
+	d->float_conf.atr_on_speed = (h2 & 0x3) + 3;
+	d->float_conf.atr_off_speed = (h2 >> 2) + 2;
+
+	split(cfg[10], &h1, &h2);
+	d->float_conf.atr_response_boost = ((float)h1) / 10 + 1;
+	d->float_conf.atr_transition_boost = ((float)h2) / 5 + 1;
+
+	split(cfg[11], &h1, &h2);
+	d->float_conf.atr_amps_accel_ratio = h1 + 5;
+	d->float_conf.atr_amps_decel_ratio = h2 + 5;
+
+	split(cfg[12], &h1, &h2);
+	d->float_conf.braketilt_strength = h1;
+	d->float_conf.braketilt_lingering = h2;
+
+	split(cfg[13], &h1, &h2);
+	d->mc_current_max = h1 * 5 + 55;
+	d->mc_current_min = h2 * 5 + 55;
+	if (h1 == 0) d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
+	if (h2 == 0) d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
+}
+
+static void tune_defaults(data *d){
+	d->float_conf.kp = APPCONF_FLOAT_KP;
+	d->float_conf.kp2 = APPCONF_FLOAT_KP2;
+	d->float_conf.ki = APPCONF_FLOAT_KI;
+	d->float_conf.mahony_kp = APPCONF_FLOAT_MAHONY_KP;
+	d->float_conf.ki_limit = APPCONF_FLOAT_KI_LIMIT;
+	d->float_conf.booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;
+	d->float_conf.booster_ramp = APPCONF_FLOAT_BOOSTER_RAMP;
+	d->float_conf.booster_current = APPCONF_FLOAT_BOOSTER_CURRENT;
+	d->float_conf.turntilt_strength = APPCONF_FLOAT_TURNTILT_STRENGTH;
+	d->float_conf.turntilt_angle_limit = APPCONF_FLOAT_TURNTILT_ANGLE_LIMIT;
+	d->float_conf.turntilt_start_angle = APPCONF_FLOAT_TURNTILT_START_ANGLE;
+	d->float_conf.turntilt_start_erpm = APPCONF_FLOAT_TURNTILT_START_ERPM;
+	d->float_conf.turntilt_speed = APPCONF_FLOAT_TURNTILT_SPEED;
+	d->float_conf.turntilt_erpm_boost = APPCONF_FLOAT_TURNTILT_ERPM_BOOST;
+	d->float_conf.turntilt_erpm_boost_end = APPCONF_FLOAT_TURNTILT_ERPM_BOOST_END;
+	d->float_conf.turntilt_yaw_aggregate = APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE;
+	d->float_conf.atr_strength_up = APPCONF_FLOAT_ATR_UPHILL_STRENGTH;
+	d->float_conf.atr_strength_down = APPCONF_FLOAT_ATR_DOWNHILL_STRENGTH;
+	d->float_conf.atr_torque_offset = APPCONF_FLOAT_ATR_TORQUE_OFFSET;
+	d->float_conf.atr_speed_boost = APPCONF_FLOAT_ATR_SPEED_BOOST;
+	d->float_conf.atr_angle_limit = APPCONF_FLOAT_ATR_ANGLE_LIMIT;
+	d->float_conf.atr_on_speed = APPCONF_FLOAT_ATR_ON_SPEED;
+	d->float_conf.atr_off_speed = APPCONF_FLOAT_ATR_OFF_SPEED;
+	d->float_conf.atr_response_boost = APPCONF_FLOAT_ATR_RESPONSE_BOOST;
+	d->float_conf.atr_transition_boost = APPCONF_FLOAT_ATR_TRANSITION_BOOST;
+	d->float_conf.atr_filter = APPCONF_FLOAT_ATR_FILTER;
+	d->float_conf.atr_amps_accel_ratio = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
+	d->float_conf.atr_amps_decel_ratio = APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO;
+	d->float_conf.braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
+	d->float_conf.braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
+}
 
 // Handler for incoming app commands
 static void on_command_received(unsigned char *buffer, unsigned int len) {
@@ -1944,6 +2060,31 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_GET_RTDATA: {
 			send_realtime_data(d);
+			return;
+		}
+		case FLOAT_COMMAND_RT_TUNE: {
+			if (len == 14) {
+				runtime_tune(d, buffer);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command too short %d\n", len);
+				}
+			}
+			return;
+		}
+		case FLOAT_COMMAND_CFG_RESTORE: {
+			read_cfg_from_eeprom(d);
+			VESC_IF->set_cfg_float(CFG_PARAM_IMU_mahony_kp + 100, d->float_conf.mahony_kp);
+			return;
+		}
+		case FLOAT_COMMAND_TUNE_DEFAULTS: {
+			tune_defaults(d);
+			VESC_IF->set_cfg_float(CFG_PARAM_IMU_mahony_kp + 100, d->float_conf.mahony_kp);
+			return;
+		}
+		case FLOAT_COMMAND_CFG_SAVE: {
+			write_cfg_to_eeprom(d);
 			return;
 		}
 		default: {
