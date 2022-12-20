@@ -1908,24 +1908,32 @@ static void send_realtime_data(data *d){
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 
+enum {
+	FLOAT_COMMAND_GET_INFO = 0,		// get version / package info
+	FLOAT_COMMAND_GET_RTDATA = 1,	// get rt data
+} float_commands;
+
 // Handler for incoming app commands
 static void on_command_received(unsigned char *buffer, unsigned int len) {
 	data *d = (data*)ARG;
+	uint8_t magicnr = buffer[0];
+	uint8_t command = buffer[1];
 
-	if(len > 1){
-		uint8_t magicnr = buffer[0];
-		uint8_t command = buffer[1];
-
-		if (magicnr != 101) {
-			if (!VESC_IF->app_is_output_disabled()) {
-				VESC_IF->printf("Float App: Wrong magic number %d\n", magicnr);
-			}
+	if(len < 2){
+		if (!VESC_IF->app_is_output_disabled()) {
+			VESC_IF->printf("Float App: Missing Args\n");
 			return;
 		}
-		if(command == 0x01){
-			send_realtime_data(d);
-			return;
-		}else if (command == 0x0){
+	}
+	if (magicnr != 101) {
+		if (!VESC_IF->app_is_output_disabled()) {
+			VESC_IF->printf("Float App: Wrong magic number %d\n", magicnr);
+		}
+		return;
+	}
+
+	switch(command) {
+		case FLOAT_COMMAND_GET_INFO: {
 			int32_t ind = 0;
 			uint8_t send_buffer[10];
 			send_buffer[ind++] = 101;	// magic nr.
@@ -1933,15 +1941,15 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
-		}else{
+		}
+		case FLOAT_COMMAND_GET_RTDATA: {
+			send_realtime_data(d);
+			return;
+		}
+		default: {
 			if (!VESC_IF->app_is_output_disabled()) {
 				VESC_IF->printf("Float App: Unknown command received %d\n", command);
 			}
-		}
-	}
-	else {
-		if (!VESC_IF->app_is_output_disabled()) {
-			VESC_IF->printf("Float App: Command too short %d\n", len);
 		}
 	}
 }
