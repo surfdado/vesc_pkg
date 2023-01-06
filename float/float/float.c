@@ -184,6 +184,11 @@ typedef struct {
 	// Brake Amp Rate Limiting:
 	float pid_brake_increment;
 
+	// Odometer
+	float odo_timer;
+	int odometer_dirty;
+	uint64_t odometer;
+
 	// Log values
 	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
@@ -295,8 +300,8 @@ static void app_init(data *d) {
 	d->buzzer_enabled = true;
 	
 	// Allow saving of odometer
-	//odometer_dirty = 0;
-	//odometer = mc_interface_get_odometer();
+	d->odometer_dirty = 0;
+	d->odometer = VESC_IF->mc_get_odometer();
 }
 
 static void configure(data *d) {
@@ -481,6 +486,29 @@ static void reset_vars(data *d) {
 
 	// Feature: click on start
 	d->start_counter_clicks = d->start_counter_clicks_max;
+}
+
+
+/**
+ *	check_odometer: see if we need to write back the odometer during fault state
+ */
+static void check_odometer(data *d)
+{
+	// Make odometer persistent if we've gone 200m or more
+	if (d->odometer_dirty > 0) {
+		if (VESC_IF->mc_get_odometer() > d->odometer + 200) {
+			if (d->odometer_dirty == 1) {
+				// Wait 10 seconds before writing to avoid writing if immediately continuing to ride
+				d->odo_timer = d->current_time;
+				d->odometer_dirty++;
+			}
+			else if ((d->current_time - d->odo_timer) > 10) {
+				VESC_IF->store_backup_data();
+				d->odometer = VESC_IF->mc_get_odometer();
+				d->odometer_dirty = 0;
+			}
+		}
+	}
 }
 
 static float get_setpoint_adjustment_step_size(data *d) {
@@ -1585,7 +1613,8 @@ static void float_thd(void *arg) {
 			if (check_faults(d, false)) {
 				break;
 			}
-
+			d->odometer_dirty = 1;
+			
 			d->enable_upside_down = true;
 			d->disengage_timer = d->current_time;
 
@@ -1732,7 +1761,9 @@ static void float_thd(void *arg) {
 				d->enable_upside_down = false;
 				d->is_upside_down = false;
 			}
-			
+
+			check_odometer(d);
+
 			// Check for valid startup position and switch state
 			if (fabsf(d->pitch_angle) < d->float_conf.startup_pitch_tolerance &&
 				fabsf(d->roll_angle) < d->float_conf.startup_roll_tolerance && 
