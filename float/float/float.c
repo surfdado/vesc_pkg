@@ -49,13 +49,14 @@ typedef enum {
 	RUNNING_TILTBACK = 2,
 	RUNNING_WHEELSLIP = 3,
 	RUNNING_UPSIDEDOWN = 4,
-	FAULT_ANGLE_PITCH = 5,
-	FAULT_ANGLE_ROLL = 6,
-	FAULT_SWITCH_HALF = 7,
-	FAULT_SWITCH_FULL = 8,
-	FAULT_STARTUP = 9,
-	FAULT_REVERSE = 10,
-	FAULT_QUICKSTOP = 11
+	FAULT_ANGLE_PITCH = 6,	// skipped 5 for compatibility
+	FAULT_ANGLE_ROLL = 7,
+	FAULT_SWITCH_HALF = 8,
+	FAULT_SWITCH_FULL = 9,
+	FAULT_DUTY = 10, 		// unused but kept for compatibility
+	FAULT_STARTUP = 11,
+	FAULT_REVERSE = 12,
+	FAULT_QUICKSTOP = 13
 } FloatState;
 
 typedef enum {
@@ -1783,6 +1784,7 @@ static void float_thd(void *arg) {
 			// Disable output
 			brake(d);
 			break;
+		default:;
 		}
 
 		// Debug outputs
