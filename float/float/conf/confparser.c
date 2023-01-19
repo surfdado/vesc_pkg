@@ -51,6 +51,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float32_auto(buffer, conf->startup_roll_tolerance, &ind);
 	buffer_append_float32_auto(buffer, conf->startup_speed, &ind);
 	buffer[ind++] = (uint8_t)conf->startup_click_current;
+	buffer[ind++] = conf->startup_softstart_enabled;
 	buffer_append_float32_auto(buffer, conf->brake_current, &ind);
 	buffer_append_float32_auto(buffer, conf->ki_limit, &ind);
 	buffer_append_float32_auto(buffer, conf->booster_angle, &ind);
@@ -139,6 +140,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->startup_roll_tolerance = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_speed = buffer_get_float32_auto(buffer, &ind);
 	conf->startup_click_current = buffer[ind++];
+	conf->startup_softstart_enabled = buffer[ind++];
 	conf->brake_current = buffer_get_float32_auto(buffer, &ind);
 	conf->ki_limit = buffer_get_float32_auto(buffer, &ind);
 	conf->booster_angle = buffer_get_float32_auto(buffer, &ind);
@@ -220,6 +222,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->startup_roll_tolerance = APPCONF_FLOAT_STARTUP_ROLL_TOLERANCE;
 	conf->startup_speed = APPCONF_FLOAT_STARTUP_SPEED;
 	conf->startup_click_current = APPCONF_FLOAT_STARTUP_CLICK_CURRENT;
+	conf->startup_softstart_enabled = APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED;
 	conf->brake_current = APPCONF_FLOAT_BRAKE_CURRENT;
 	conf->ki_limit = APPCONF_FLOAT_KI_LIMIT;
 	conf->booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;

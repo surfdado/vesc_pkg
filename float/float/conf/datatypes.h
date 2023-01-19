@@ -74,6 +74,7 @@ typedef struct {
 	float startup_roll_tolerance;
 	float startup_speed;
 	float startup_click_current;
+	bool startup_softstart_enabled;
 	float deadzone;
 	float brake_current;
 	float ki_limit;
