@@ -368,6 +368,20 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_FAULT_IS_DUAL_SWITCH</cDefine>
             <valInt>0</valInt>
         </fault_is_dual_switch>
+        <fault_moving_fault_disabled>
+            <longName>Disable Moving Faults</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Disables ADC Faults completely as long as ERPM is positive (moving forward) and above the Half State Fault ERPM x2, as well as the Roll angle being within 40° of level. Outside of the threshold, the board will not disengage on its own, but rather just default to allowing ADC Faults to disengage the board.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;*DISCLAIMER: Requires correct speed calibration and Tail Heavy Board!! The board &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;WILL&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt; ghost for sure if your normal speeds read as negative or if your board is nose heavy!!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_FAULT_MOVING_FAULT_DISABLED</cDefine>
+            <valInt>0</valInt>
+        </fault_moving_fault_disabled>
         <fault_darkride_enabled>
             <longName>Enable Darkride</longName>
             <type>5</type>
@@ -1766,6 +1780,7 @@ p, li { white-space: pre-wrap; }
         <ser>fault_delay_switch_full</ser>
         <ser>fault_adc_half_erpm</ser>
         <ser>fault_is_dual_switch</ser>
+        <ser>fault_moving_fault_disabled</ser>
         <ser>fault_darkride_enabled</ser>
         <ser>fault_reversestop_enabled</ser>
         <ser>tiltback_duty_angle</ser>
@@ -1943,6 +1958,7 @@ p, li { white-space: pre-wrap; }
                     <param>fault_delay_switch_full</param>
                     <param>fault_adc_half_erpm</param>
                     <param>fault_is_dual_switch</param>
+                    <param>fault_moving_fault_disabled</param>
                     <param>::sep::Features</param>
                     <param>fault_darkride_enabled</param>
                     <param>fault_reversestop_enabled</param>

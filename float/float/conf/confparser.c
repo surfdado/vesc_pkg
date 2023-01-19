@@ -25,6 +25,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_uint16(buffer, conf->fault_delay_switch_full, &ind);
 	buffer_append_uint16(buffer, conf->fault_adc_half_erpm, &ind);
 	buffer[ind++] = conf->fault_is_dual_switch;
+	buffer[ind++] = conf->fault_moving_fault_disabled;
 	buffer[ind++] = conf->fault_darkride_enabled;
 	buffer[ind++] = conf->fault_reversestop_enabled;
 	buffer_append_float16(buffer, conf->tiltback_duty_angle, 100, &ind);
@@ -114,6 +115,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->fault_delay_switch_full = buffer_get_uint16(buffer, &ind);
 	conf->fault_adc_half_erpm = buffer_get_uint16(buffer, &ind);
 	conf->fault_is_dual_switch = buffer[ind++];
+	conf->fault_moving_fault_disabled = buffer[ind++];
 	conf->fault_darkride_enabled = buffer[ind++];
 	conf->fault_reversestop_enabled = buffer[ind++];
 	conf->tiltback_duty_angle = buffer_get_float16(buffer, 100, &ind);
@@ -196,6 +198,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->fault_delay_switch_full = APPCONF_FLOAT_FAULT_DELAY_SWITCH_FULL;
 	conf->fault_adc_half_erpm = APPCONF_FLOAT_FAULT_ADC_HALF_ERPM;
 	conf->fault_is_dual_switch = APPCONF_FLOAT_FAULT_IS_DUAL_SWITCH;
+	conf->fault_moving_fault_disabled = APPCONF_FLOAT_FAULT_MOVING_FAULT_DISABLED;
 	conf->fault_darkride_enabled = APPCONF_FLOAT_FAULT_DARKRIDE_ENABLED;
 	conf->fault_reversestop_enabled = APPCONF_FLOAT_FAULT_REVERSESTOP_ENABLED;
 	conf->tiltback_duty_angle = APPCONF_FLOAT_TILTBACK_DUTY_ANGLE;

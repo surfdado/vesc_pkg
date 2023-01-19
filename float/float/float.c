@@ -671,20 +671,27 @@ static bool check_faults(data *d, bool ignoreTimers){
 		}
 	}
 	else {
+		bool disable_switch_faults = d->float_conf.fault_moving_fault_disabled &&
+									 d->erpm > (d->float_conf.fault_adc_half_erpm * 2) && // Rolling forward (not backwards!)
+									 fabsf(d->roll_angle) < 40; // Not tipped over
+
 		// Check switch
 		// Switch fully open
 		if (d->switch_state == OFF) {
-			if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->float_conf.fault_delay_switch_full || ignoreTimers){
-				d->state = FAULT_SWITCH_FULL;
-				return true;
+			if (!disable_switch_faults) {
+				if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->float_conf.fault_delay_switch_full || ignoreTimers){
+					d->state = FAULT_SWITCH_FULL;
+					return true;
+				}
+				// low speed (below 6 x half-fault threshold speed):
+				else if ((d->abs_erpm < d->float_conf.fault_adc_half_erpm * 6)
+					&& (1000.0 * (d->current_time - d->fault_switch_timer) > d->float_conf.fault_delay_switch_half)){
+					d->state = FAULT_SWITCH_FULL;
+					return true;
+				}
 			}
-			// low speed (below 6 x half-fault threshold speed):
-			else if ((d->abs_erpm < d->float_conf.fault_adc_half_erpm * 6)
-				&& (1000.0 * (d->current_time - d->fault_switch_timer) > d->float_conf.fault_delay_switch_half)){
-				d->state = FAULT_SWITCH_FULL;
-				return true;
-			}
-			else if ((d->abs_erpm < d->quickstop_erpm) && (fabsf(d->true_pitch_angle) > 14) && (SIGN(d->true_pitch_angle) == SIGN(d->erpm))) {
+			
+			if ((d->abs_erpm < d->quickstop_erpm) && (fabsf(d->true_pitch_angle) > 14) && (SIGN(d->true_pitch_angle) == SIGN(d->erpm))) {
 				// QUICK STOP
 				d->state = FAULT_QUICKSTOP;
 				return true;
