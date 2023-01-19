@@ -184,6 +184,9 @@ typedef struct {
 	// Feature: Simple start
 	bool enable_simple_start;
 
+	// Feature: Soft Start
+	float softstart_pid_limit, softstart_ramp_step_size;
+
 	// Brake Amp Rate Limiting:
 	float pid_brake_increment;
 
@@ -396,6 +399,9 @@ static void configure(data *d) {
 
 	// Feature: Simple start
 	d->enable_simple_start = true;
+
+	// Feature: Soft Start
+	d->softstart_ramp_step_size = 500 / d->float_conf.hertz;
 		
 	// Init Filters
 	float loop_time_filter = 3.0; // Originally Parameter, now hard-coded to 3Hz
@@ -482,6 +488,7 @@ static void reset_vars(data *d) {
 	d->brake_timeout = 0;
 	d->traction_control = false;
 	d->pid_value = 0;
+	d->softstart_pid_limit = 0;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -1690,10 +1697,10 @@ static void float_thd(void *arg) {
 
 			// Start Rate PID and Booster portion a few cycles later, after the start clicks have been emitted
 			// this keeps the start smooth and predictable
-			if ((d->start_counter_clicks == 0)  && (!d->float_conf.startup_softstart_enabled || d->setpointAdjustmentType != CENTERING)) {
+			if (d->start_counter_clicks == 0) {
 				// Rate P (Angle + Rate, rather than Angle-Rate Cascading)
 				d->proportional2 = -d->gyro[1];
-				new_pid_value += (d->float_conf.kp2 * d->proportional2);
+				float pid_mod = (d->float_conf.kp2 * d->proportional2);
 
 
 				// Apply Booster (Now based on True Pitch)
@@ -1722,7 +1729,14 @@ static void float_thd(void *arg) {
 					}
 				}
 
-				new_pid_value += d->applied_booster_current;
+				pid_mod += d->applied_booster_current;
+
+				if (d->float_conf.startup_softstart_enabled && (d->softstart_pid_limit < d->mc_current_max)) {
+					pid_mod = fminf(pid_mod, d->softstart_pid_limit);
+					d->softstart_pid_limit += d->softstart_ramp_step_size;
+				}
+
+				new_pid_value += pid_mod;
 			}
 			
 			// Current Limiting!
