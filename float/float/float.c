@@ -1707,25 +1707,25 @@ static void float_thd(void *arg) {
 				float true_proportional = d->setpoint - d->true_pitch_angle;
 				d->abs_proportional = fabsf(true_proportional);
 
-				float booster_current = d->float_conf.booster_current;
+				d->applied_booster_current = d->float_conf.booster_current;
 
 				// Make booster a bit stronger at higher speed (up to 2x stronger when braking)
 				const float boost_min_erpm = 3000;
 				if (d->abs_erpm > boost_min_erpm) {
 					float speedstiffness = fminf(1, (d->abs_erpm - boost_min_erpm) / 10000);
 					if (d->braking)
-						booster_current += booster_current * speedstiffness;
+						d->applied_booster_current += d->applied_booster_current * speedstiffness;
 					else
-						booster_current += booster_current * speedstiffness / 2;
+						d->applied_booster_current += d->applied_booster_current * speedstiffness / 2;
 				}
 
 
 				if (d->abs_proportional > d->float_conf.booster_angle) {
 					if (d->abs_proportional - d->float_conf.booster_angle < d->float_conf.booster_ramp) {
-						d->applied_booster_current = (d->float_conf.booster_current * SIGN(true_proportional)) *
+						d->applied_booster_current *= SIGN(true_proportional) *
 								((d->abs_proportional - d->float_conf.booster_angle) / d->float_conf.booster_ramp);
 					} else {
-						d->applied_booster_current = d->float_conf.booster_current * SIGN(true_proportional);
+						d->applied_booster_current *= SIGN(true_proportional);
 					}
 				}
 
