@@ -990,15 +990,13 @@ static void apply_noseangling(data *d){
 		// Nose angle adjustment, add variable then constant tiltback
 		float noseangling_target = 0;
 		if (fabsf(d->erpm) > d->tiltback_variable_max_erpm) {
-			noseangling_target = fabsf(d->float_conf.tiltback_variable_max) * SIGN(d->erpm);
+			noseangling_target = d->float_conf.tiltback_variable_max * SIGN(d->erpm) * SIGN(d->float_conf.tiltback_variable_max);
 		} else {
-			noseangling_target = d->tiltback_variable * d->erpm;
+			noseangling_target = d->tiltback_variable * d->erpm * SIGN(d->float_conf.tiltback_variable_max);
 		}
 
-		if (d->erpm > d->float_conf.tiltback_constant_erpm) {
-			noseangling_target += d->float_conf.tiltback_constant;
-		} else if (d->erpm < -d->float_conf.tiltback_constant_erpm){
-			noseangling_target += -d->float_conf.tiltback_constant;
+		if (fabsf(d->erpm) > d->float_conf.tiltback_constant_erpm) {
+			noseangling_target += d->float_conf.tiltback_constant * SIGN(d->erpm);
 		}
 
 		if (fabsf(noseangling_target - d->noseangling_interpolated) < d->noseangling_step_size) {
@@ -1080,6 +1078,10 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 		d->inputtilt_interpolated += d->inputtilt_step_size;
 	} else {
 		d->inputtilt_interpolated -= d->inputtilt_step_size;
+	}
+
+	if (d->is_upside_down) {
+		d->inputtilt_interpolated *= -1;
 	}
 
 	d->setpoint += d->inputtilt_interpolated;
@@ -1686,9 +1688,9 @@ static void float_thd(void *arg) {
 			calculate_setpoint_target(d);
 			calculate_setpoint_interpolated(d);
 			d->setpoint = d->setpoint_target_interpolated;
+			apply_inputtilt(d); // Allow Input Tilt for Darkride
 			if (!d->is_upside_down) {
 				apply_noseangling(d);
-				apply_inputtilt(d);
 				apply_torquetilt(d);
 				apply_turntilt(d);
 			}
