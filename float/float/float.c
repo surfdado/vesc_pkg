@@ -1014,16 +1014,16 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 	bool connected = false;
 
 	switch (d->float_conf.inputtilt_remote_type) {
-	case (PPM):
+	case (INPUTTILT_PPM):
 		servo_val = VESC_IF->get_ppm();
 		connected = VESC_IF->get_ppm_age() < 1;
 		break;
-	case (UART): ; // Don't delete ";", required to avoid compiler error with first line variable init
+	case (INPUTTILT_UART): ; // Don't delete ";", required to avoid compiler error with first line variable init
 		remote_state remote = VESC_IF->get_remote_state();
 		servo_val = remote.js_y;
 		connected = remote.age_s < 1;
 		break;
-	case (NONE):
+	case (INPUTTILT_NONE):
 		break;
 	}
 	
@@ -2202,6 +2202,11 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
 			d->tiltback_variable_max_erpm = 100000;
 		}
 	}
+
+	int inputtilt = cfg[11];
+	if (inputtilt == 0) {
+		d->float_conf.inputtilt_remote_type = INPUTTILT_NONE;
+	}
 }
 
 void cmd_rc_move(data *d, unsigned char *cfg)//int amps, int time)
@@ -2280,7 +2285,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_TUNE_OTHER: {
-			if (len == 13) {
+			if (len >= 14) {
 				cmd_runtime_tune_other(d, &buffer[2]);
 			}
 			else {
@@ -2409,7 +2414,7 @@ INIT_FUN(lib_info *info) {
 
 	configure(d);
 
-	if ((d->float_conf.is_buzzer_enabled) || (d->float_conf.inputtilt_remote_type != PPM)) {
+	if ((d->float_conf.is_buzzer_enabled) || (d->float_conf.inputtilt_remote_type != INPUTTILT_PPM)) {
 		buzzer_init();
 	}
 

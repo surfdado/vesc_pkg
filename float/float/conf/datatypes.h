@@ -24,9 +24,9 @@
 #include <stdbool.h>
 
 typedef enum {
-	NONE = 0,
-	UART,
-	PPM
+	INPUTTILT_NONE = 0,
+	INPUTTILT_UART,
+	INPUTTILT_PPM
 } FLOAT_INPUTTILT_REMOTE_TYPE;
 
 typedef struct {
