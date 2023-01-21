@@ -2076,7 +2076,7 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg)
 	if (h1 == 0)
 		d->float_conf.booster_current = 0;
 	else
-		d->float_conf.booster_current = 18 + h1 * 2;
+		d->float_conf.booster_current = 8 + h1 * 2;
 	d->float_conf.turntilt_strength = h2;
 
 	split(cfg[4], &h1, &h2);
@@ -2089,11 +2089,11 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg)
 	if (h1 == 0)
 		d->float_conf.atr_strength_up = 0;
 	else
-		d->float_conf.atr_strength_up = ((float)h1) / 10.0 + 0.9;
+		d->float_conf.atr_strength_up = ((float)h1) / 10.0 + 0.5;
 	if (h2 == 0)
 		d->float_conf.atr_strength_down = 0;
 	else
-		d->float_conf.atr_strength_down = ((float)h2) / 10.0 + 0.9;
+		d->float_conf.atr_strength_down = ((float)h2) / 10.0 + 0.5;
 
 	split(cfg[6], &h1, &h2);
 	d->float_conf.atr_torque_offset = h1 + 5;
