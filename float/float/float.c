@@ -104,6 +104,7 @@ typedef struct {
 	// Config values
 	float loop_time_seconds;
 	unsigned int start_counter_clicks, start_counter_clicks_max;
+	float startup_pitch_trickmargin, startup_pitch_tolerance;
 	float startup_step_size;
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
@@ -161,7 +162,7 @@ typedef struct {
 	float turntilt_target, turntilt_interpolated;
 	SetpointAdjustmentType setpointAdjustmentType;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
-	float disengage_timer; // Seconds
+	float disengage_timer, nag_timer; // Seconds
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer; // Seconds
 	float motor_timeout_seconds;
@@ -322,6 +323,9 @@ static void configure(data *d) {
 	d->debug_render_1 = 2;
 	d->debug_render_2 = 4;
 
+	// This timer is used to determine how long the board has been disengaged / idle
+	d->disengage_timer = d->current_time;
+
 	// Set calculated values from config
 	d->loop_time_seconds = 1.0 / d->float_conf.hertz;
 
@@ -342,6 +346,10 @@ static void configure(data *d) {
 
 	// Feature: Stealthy start vs normal start (noticeable click when engaging) - 0-20A
 	d->start_counter_clicks_max = 3;
+	// Feature: Soft Start
+	d->softstart_ramp_step_size = 500 / d->float_conf.hertz;
+	// Feature: Dirty Landings
+	d->startup_pitch_trickmargin = 0;
 
 	// Overwrite App CFG Mahony KP to Float CFG Value
 	if (VESC_IF->get_cfg_float(CFG_PARAM_IMU_mahony_kp) != d->float_conf.mahony_kp) {
@@ -359,7 +367,7 @@ static void configure(data *d) {
 		// less than 60 peak amps makes no sense though so I'm not allowing it
 		d->mc_current_max = fmaxf(mc_max_reduce * d->mc_current_max, 60);
 	}
-    
+
 	// min current is a positive value here!
 	d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
 	mcm = d->mc_current_min;
@@ -397,12 +405,6 @@ static void configure(data *d) {
 	d->reverse_tolerance = 50000;
 	d->reverse_stop_step_size = 100.0 / d->float_conf.hertz;
 
-	// Feature: Simple start
-	d->enable_simple_start = true;
-
-	// Feature: Soft Start
-	d->softstart_ramp_step_size = 500 / d->float_conf.hertz;
-		
 	// Init Filters
 	float loop_time_filter = 3.0; // Originally Parameter, now hard-coded to 3Hz
 	d->loop_overshoot_alpha = 2.0 * M_PI * ((float)1.0 / (float)d->float_conf.hertz) *
@@ -489,6 +491,7 @@ static void reset_vars(data *d) {
 	d->traction_control = false;
 	d->pid_value = 0;
 	d->softstart_pid_limit = 0;
+	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -603,8 +606,10 @@ static SwitchState check_adcs(data *d) {
 			sw_state = ON;
 		}else if(d->adc1 > d->float_conf.fault_adc1 || d->adc2 > d->float_conf.fault_adc2){
 			// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
-			bool is_simple_start = d->current_time - d->disengage_timer > 5;
-			if (d->float_conf.fault_is_dual_switch || (d->enable_simple_start && is_simple_start))
+			bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
+				(d->current_time - d->disengage_timer > 5);
+
+			if (d->float_conf.fault_is_dual_switch || is_simple_start)
 				sw_state = ON;
 			else
 				sw_state = HALF;
@@ -633,7 +638,7 @@ static SwitchState check_adcs(data *d) {
 }
 
 // Fault checking order does not really matter. From a UX perspective, switch should be before angle.
-static bool check_faults(data *d, bool ignoreTimers){
+static bool check_faults(data *d){
 	// Aggressive reverse stop in case the board runs off when upside down
 	if (d->is_upside_down) {
 		if (d->erpm > 1000) {
@@ -679,7 +684,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 		// Switch fully open
 		if (d->switch_state == OFF) {
 			if (!disable_switch_faults) {
-				if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->float_conf.fault_delay_switch_full || ignoreTimers){
+				if((1000.0 * (d->current_time - d->fault_switch_timer)) > d->float_conf.fault_delay_switch_full){
 					d->state = FAULT_SWITCH_FULL;
 					return true;
 				}
@@ -733,7 +738,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 		// Switch partially open and stopped
 		if(!d->float_conf.fault_is_dual_switch) {
 			if((d->switch_state == HALF || d->switch_state == OFF) && d->abs_erpm < d->float_conf.fault_adc_half_erpm){
-				if ((1000.0 * (d->current_time - d->fault_switch_half_timer)) > d->float_conf.fault_delay_switch_half || ignoreTimers){
+				if ((1000.0 * (d->current_time - d->fault_switch_half_timer)) > d->float_conf.fault_delay_switch_half){
 					d->state = FAULT_SWITCH_HALF;
 					return true;
 				}
@@ -744,7 +749,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 
 		// Check roll angle
 		if (fabsf(d->roll_angle) > d->float_conf.fault_roll) {
-			if ((1000.0 * (d->current_time - d->fault_angle_roll_timer)) > d->float_conf.fault_delay_roll || ignoreTimers) {
+			if ((1000.0 * (d->current_time - d->fault_angle_roll_timer)) > d->float_conf.fault_delay_roll) {
 				d->state = FAULT_ANGLE_ROLL;
 				return true;
 			}
@@ -762,7 +767,7 @@ static bool check_faults(data *d, bool ignoreTimers){
 
 	// Check pitch angle
 	if (fabsf(d->true_pitch_angle) > d->float_conf.fault_pitch) {
-		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->float_conf.fault_delay_pitch || ignoreTimers) {
+		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->float_conf.fault_delay_pitch) {
 			d->state = FAULT_ANGLE_PITCH;
 			return true;
 		}
@@ -1664,7 +1669,12 @@ static void float_thd(void *arg) {
 		case (RUNNING_WHEELSLIP):
 		case (RUNNING_UPSIDEDOWN):
 			// Check for faults
-			if (check_faults(d, false)) {
+			if (check_faults(d)) {
+				if (d->state == FAULT_SWITCH_FULL) {
+					// dirty landings: add extra margin
+					d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance + d->startup_pitch_trickmargin;
+					d->fault_angle_pitch_timer = d->current_time;
+				}
 				break;
 			}
 			d->odometer_dirty = 1;
@@ -1821,6 +1831,20 @@ static void float_thd(void *arg) {
 				}
 				d->enable_upside_down = false;
 				d->is_upside_down = false;
+			}	
+			if (d->current_time - d->disengage_timer > 1800) {	// alert user after 30 minutes
+				if (d->current_time - d->nag_timer > 60) {		// beep every 60 seconds
+					d->nag_timer = d->current_time;
+					beep_alert(d, 2, 1);						// 2 long beeps
+				}
+			}
+			else {
+				d->nag_timer = d->current_time;
+			}
+
+			if ((d->current_time - d->fault_angle_pitch_timer) > 1) {
+				// 1 second after disengaging - set startup tolerance back to normal (aka tighter)
+				d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
 			}
 
 			check_odometer(d);
@@ -1839,6 +1863,11 @@ static void float_thd(void *arg) {
 					(d->current_time - d->disengage_timer) > 1) {
 					reset_vars(d);
 				}
+				break;
+			}
+			// Push-start aka dirty landing Part II
+			if(d->float_conf.startup_pushstart_enabled && (d->abs_erpm > 1000) && (d->switch_state == ON)) {
+				reset_vars(d);
 				break;
 			}
 
@@ -1989,15 +2018,17 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_turntilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
 	
+	float landings = d->startup_pitch_trickmargin;
+	if (d->float_conf.startup_pushstart_enabled) {
+		landings += 1000;
+	}
+
 	// DEBUG
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
-
-	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_1), &ind);
-	// buffer_append_float32_auto(send_buffer, app_float_get_debug(d->debug_render_2), &ind);
+	buffer_append_float32_auto(send_buffer, landings/*d->motor_current*/, &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }
@@ -2163,8 +2194,13 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
 	d->float_conf.fault_reversestop_enabled = ((flags & 0x4) == 4);
 	d->float_conf.fault_is_dual_switch = ((flags & 0x8) == 8);
 	d->float_conf.fault_darkride_enabled = ((flags & 0x10) == 0x10);
-	d->enable_simple_start = ((flags & 0x40) == 40);
+	bool dirty_landings = ((flags & 0x20) == 20);
+	d->float_conf.startup_simplestart_enabled = ((flags & 0x40) == 40);
+	d->float_conf.startup_pushstart_enabled = ((flags & 0x80) == 80);
+
 	d->float_conf.is_buzzer_enabled = d->buzzer_enabled;
+	d->startup_pitch_trickmargin = dirty_landings ? 10 : 0;
+	d->float_conf.startup_dirtylandings_enabled = dirty_landings;
 
 	// startup
 	float ctrspeed = cfg[1];

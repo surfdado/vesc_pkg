@@ -961,6 +961,34 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED</cDefine>
             <valInt>1</valInt>
         </startup_softstart_enabled>
+        <startup_simplestart_enabled>
+            <longName>Enable Simple Start</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Allow starting with a single sensor (still allows heel lift)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_SIMPLESTART_ENABLED</cDefine>
+            <valInt>0</valInt>
+        </startup_simplestart_enabled>
+        <startup_pushstart_enabled>
+            <longName>Enable Push Start</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>Allow starting the board by jumping onto it, regardless of pitch angle, as long as the speed is 1000erpm (2mph) or higher</description>
+            <cDefine>APPCONF_PUSHSTART_ENABLED</cDefine>
+            <valInt>0</valInt>
+        </startup_pushstart_enabled>
+        <startup_dirtylandings_enabled>
+            <longName>Enable Dirty Landings</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>Allow landing with an extra 10 degrees pitch tilt within 1 second of disengaging both sensors.</description>
+            <cDefine>APPCONF_DIRTYLANDINGS_ENABLED</cDefine>
+            <valInt>0</valInt>
+        </startup_dirtylandings_enabled>
         <brake_current>
             <longName>Brake Current</longName>
             <type>1</type>
@@ -1754,11 +1782,11 @@ p, li { white-space: pre-wrap; }
             <editorDecimalsDouble>2</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
-            <maxDouble>0.7</maxDouble>
-            <minDouble>0.7</minDouble>
+            <maxDouble>0.8</maxDouble>
+            <minDouble>0.8</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
-            <valDouble>0.7</valDouble>
+            <valDouble>0.8</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix></suffix>
             <vTx>9</vTx>
@@ -1808,6 +1836,9 @@ p, li { white-space: pre-wrap; }
         <ser>startup_speed</ser>
         <ser>startup_click_current</ser>
         <ser>startup_softstart_enabled</ser>
+        <ser>startup_simplestart_enabled</ser>
+        <ser>startup_pushstart_enabled</ser>
+        <ser>startup_dirtylandings_enabled</ser>
         <ser>brake_current</ser>
         <ser>ki_limit</ser>
         <ser>booster_angle</ser>
@@ -1922,10 +1953,33 @@ p, li { white-space: pre-wrap; }
                     <param>startup_roll_tolerance</param>
                     <param>::sep::Centering</param>
                     <param>startup_speed</param>
+                    <param>::sep::Start Options</param>
                     <param>startup_click_current</param>
                     <param>startup_softstart_enabled</param>
+                    <param>startup_simplestart_enabled</param>
+                    <param>startup_pushstart_enabled</param>
+                    <param>startup_dirtylandings_enabled</param>
                     <param>::sep::Holding</param>
                     <param>brake_current</param>
+                </subgroupParams>
+            </subgroup>
+            <subgroup>
+                <subgroupName>Stop</subgroupName>
+                <subgroupParams>
+                    <param>::sep::Angle Faults</param>
+                    <param>fault_pitch</param>
+                    <param>fault_delay_pitch</param>
+                    <param>fault_roll</param>
+                    <param>fault_delay_roll</param>
+                    <param>::sep::Switches</param>
+                    <param>fault_delay_switch_half</param>
+                    <param>fault_delay_switch_full</param>
+                    <param>fault_adc_half_erpm</param>
+                    <param>fault_is_dual_switch</param>
+                    <param>fault_moving_fault_disabled</param>
+                    <param>::sep::Features</param>
+                    <param>fault_darkride_enabled</param>
+                    <param>fault_reversestop_enabled</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>
@@ -1943,25 +1997,6 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Low Voltage Tiltback</param>
                     <param>tiltback_lv_angle</param>
                     <param>tiltback_lv_speed</param>
-                </subgroupParams>
-            </subgroup>
-            <subgroup>
-                <subgroupName>Fault</subgroupName>
-                <subgroupParams>
-                    <param>::sep::Angle Faults</param>
-                    <param>fault_pitch</param>
-                    <param>fault_delay_pitch</param>
-                    <param>fault_roll</param>
-                    <param>fault_delay_roll</param>
-                    <param>::sep::Switches</param>
-                    <param>fault_delay_switch_half</param>
-                    <param>fault_delay_switch_full</param>
-                    <param>fault_adc_half_erpm</param>
-                    <param>fault_is_dual_switch</param>
-                    <param>fault_moving_fault_disabled</param>
-                    <param>::sep::Features</param>
-                    <param>fault_darkride_enabled</param>
-                    <param>fault_reversestop_enabled</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>
