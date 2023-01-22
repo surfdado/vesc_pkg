@@ -349,7 +349,7 @@ static void configure(data *d) {
 	// Feature: Soft Start
 	d->softstart_ramp_step_size = 500 / d->float_conf.hertz;
 	// Feature: Dirty Landings
-	d->startup_pitch_trickmargin = 0;
+	d->startup_pitch_trickmargin = d->float_conf.startup_dirtylandings_enabled ? 10 : 0;
 
 	// Overwrite App CFG Mahony KP to Float CFG Value
 	if (VESC_IF->get_cfg_float(CFG_PARAM_IMU_mahony_kp) != d->float_conf.mahony_kp) {
