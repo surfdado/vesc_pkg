@@ -39,7 +39,6 @@ typedef struct {
 	uint16_t hertz;
 	float fault_pitch;
 	float fault_roll;
-	float fault_duty;
 	float fault_adc1;
 	float fault_adc2;
 	uint16_t fault_delay_pitch;
@@ -79,11 +78,8 @@ typedef struct {
 	bool startup_simplestart_enabled;
 	bool startup_pushstart_enabled;
 	bool startup_dirtylandings_enabled;
-	float deadzone;
 	float brake_current;
 	float ki_limit;
-	uint16_t kd_pt1_lowpass_frequency;
-	uint16_t kd_pt1_highpass_frequency;
 	float booster_angle;
 	float booster_ramp;
 	float booster_current;
