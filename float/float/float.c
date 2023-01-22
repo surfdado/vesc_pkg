@@ -1864,8 +1864,8 @@ static void float_thd(void *arg) {
 					// after a reverse fault, wait at least 1 second before allowing to re-engage
 					(d->current_time - d->disengage_timer) > 1) {
 					reset_vars(d);
+					break;
 				}
-				break;
 			}
 			// Push-start aka dirty landing Part II
 			if(d->float_conf.startup_pushstart_enabled && (d->abs_erpm > 1000) && (d->switch_state == ON)) {
