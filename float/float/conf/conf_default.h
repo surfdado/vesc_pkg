@@ -153,7 +153,7 @@
 #define APPCONF_FLOAT_TILTBACK_CONSTANT_ERPM 500
 #endif
 
-// Variable Tiltback
+// Variable Tiltback Rate
 #ifndef APPCONF_FLOAT_TILTBACK_VARIABLE
 #define APPCONF_FLOAT_TILTBACK_VARIABLE 0.1
 #endif
