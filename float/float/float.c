@@ -1672,8 +1672,8 @@ static void float_thd(void *arg) {
 		case (RUNNING_UPSIDEDOWN):
 			// Check for faults
 			if (check_faults(d)) {
-				if (d->state == FAULT_SWITCH_FULL && !d->is_upside_down) {
-					// dirty landings: add extra margin
+				if ((d->state == FAULT_SWITCH_FULL) && !d->is_upside_down) {
+					// dirty landings: add extra margin when rightside up
 					d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance + d->startup_pitch_trickmargin;
 					d->fault_angle_pitch_timer = d->current_time;
 				}
