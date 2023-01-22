@@ -990,7 +990,7 @@ static void apply_noseangling(data *d){
 		// Nose angle adjustment, add variable then constant tiltback
 		float noseangling_target = 0;
 		if (fabsf(d->erpm) > d->tiltback_variable_max_erpm) {
-			noseangling_target = d->float_conf.tiltback_variable_max * SIGN(d->erpm) * SIGN(d->float_conf.tiltback_variable_max);
+			noseangling_target = d->float_conf.tiltback_variable_max * SIGN(d->erpm);
 		} else {
 			noseangling_target = d->tiltback_variable * d->erpm * SIGN(d->float_conf.tiltback_variable_max);
 		}
@@ -1045,7 +1045,7 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 	}
 
 	// Invert Throttle
-	servo_val *= d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0;
+	servo_val *= (d->float_conf.inputtilt_invert_throttle != d->is_upside_down) ? -1.0 : 1.0;
 	 
 	// Scale by Max Angle
 	input_tiltback_target = servo_val * d->float_conf.inputtilt_angle_limit;
@@ -1078,10 +1078,6 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 		d->inputtilt_interpolated += d->inputtilt_step_size;
 	} else {
 		d->inputtilt_interpolated -= d->inputtilt_step_size;
-	}
-
-	if (d->is_upside_down) {
-		d->inputtilt_interpolated *= -1;
 	}
 
 	d->setpoint += d->inputtilt_interpolated;
@@ -2030,7 +2026,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
-	buffer_append_float32_auto(send_buffer, landings/*d->motor_current*/, &ind);
+	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }
