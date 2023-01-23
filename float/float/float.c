@@ -2064,7 +2064,9 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg)
 		d->float_conf.ki = 0.005;
 	else if (h1 > 1)
 		d->float_conf.ki = ((float)(h1 - 1)) / 100;
-	d->float_conf.ki_limit = h2 + 20;
+	d->float_conf.ki_limit = h2 + 19;
+	if (h2 == 0)
+        d->float_conf.ki_limit = 0;
 
 	split(cfg[2], &h1, &h2);
 	d->float_conf.booster_angle = h1 + 5;
@@ -2124,7 +2126,6 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg)
 	d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
 	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
 	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
-
 	d->atr_enabled = ((d->float_conf.atr_strength_up + d->float_conf.atr_strength_down) > 0);
 
 	// Feature: Braketilt
@@ -2180,6 +2181,25 @@ static void cmd_tune_defaults(data *d){
 	d->float_conf.tiltback_variable = APPCONF_FLOAT_TILTBACK_VARIABLE;
 	d->float_conf.tiltback_variable_max = APPCONF_FLOAT_TILTBACK_VARIABLE_MAX;
 	d->float_conf.noseangling_speed = APPCONF_FLOAT_NOSEANGLING_SPEED;
+	d->float_conf.startup_pushstart_enabled = APPCONF_PUSHSTART_ENABLED;
+	d->float_conf.startup_simplestart_enabled = APPCONF_SIMPLESTART_ENABLED;
+	d->float_conf.startup_dirtylandings_enabled = APPCONF_DIRTYLANDINGS_ENABLED;
+
+	// Update values normally done in configure()
+	d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
+	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
+	d->atr_enabled = ((d->float_conf.atr_strength_up + d->float_conf.atr_strength_down) > 0);
+	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
+
+	d->startup_step_size = d->float_conf.startup_speed / d->float_conf.hertz;
+	d->noseangling_step_size = d->float_conf.noseangling_speed / d->float_conf.hertz;
+	d->startup_pitch_trickmargin = d->float_conf.startup_dirtylandings_enabled ? 10 : 0;
+	d->tiltback_variable = d->float_conf.tiltback_variable / 1000;
+	if (d->tiltback_variable > 0) {
+		d->tiltback_variable_max_erpm = fabsf(d->float_conf.tiltback_variable_max / d->tiltback_variable);
+	} else {
+		d->tiltback_variable_max_erpm = 100000;
+	}
 }
 
 /**
@@ -2229,6 +2249,8 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
 		d->float_conf.tiltback_variable = tiltvarrate / 100;
 		d->float_conf.tiltback_variable_max = tiltvarmax / 10;
 
+		d->startup_step_size = d->float_conf.startup_speed / d->float_conf.hertz;
+		d->noseangling_step_size = d->float_conf.noseangling_speed / d->float_conf.hertz;
 		d->tiltback_variable = d->float_conf.tiltback_variable / 1000;
 		if (d->tiltback_variable > 0) {
 			d->tiltback_variable_max_erpm = fabsf(d->float_conf.tiltback_variable_max / d->tiltback_variable);
