@@ -2011,8 +2011,9 @@ static float app_float_get_debug(int index) {
 }
 
 static void send_realtime_data(data *d){
+	#define BUFSIZE 72
+	uint8_t send_buffer[BUFSIZE];
 	int32_t ind = 0;
-	uint8_t send_buffer[50];
 	send_buffer[ind++] = 101;//Magic Number
 	send_buffer[ind++] = 1;	 //FLOATCOMM_RTSTATS
 
@@ -2034,11 +2035,6 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_turntilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
 	
-	float landings = d->startup_pitch_trickmargin;
-	if (d->float_conf.startup_pushstart_enabled) {
-		landings += 1000;
-	}
-
 	// DEBUG
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
@@ -2047,6 +2043,9 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
 
+	if (ind > BUFSIZE) {
+		VESC_IF->printf("BUFSIZE too small...\n");
+	}
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 
