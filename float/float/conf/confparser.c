@@ -91,6 +91,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->atr_amps_decel_ratio, 100, &ind);
 	buffer_append_float16(buffer, conf->braketilt_strength, 100, &ind);
 	buffer_append_float16(buffer, conf->braketilt_lingering, 1000, &ind);
+	buffer_append_float16(buffer, conf->dark_pitch_offset, 10, &ind);
 	buffer[ind++] = conf->is_buzzer_enabled;
 	buffer_append_float16(buffer, conf->float_version, 1000, &ind);
 
@@ -186,6 +187,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->atr_amps_decel_ratio = buffer_get_float16(buffer, 100, &ind);
 	conf->braketilt_strength = buffer_get_float16(buffer, 100, &ind);
 	conf->braketilt_lingering = buffer_get_float16(buffer, 1000, &ind);
+	conf->dark_pitch_offset = buffer_get_float16(buffer, 10, &ind);
 	conf->is_buzzer_enabled = buffer[ind++];
 	conf->float_version = buffer_get_float16(buffer, 1000, &ind);
 
@@ -274,6 +276,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_amps_decel_ratio = APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO;
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
+	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
 	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }

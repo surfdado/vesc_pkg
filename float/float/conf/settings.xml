@@ -1815,6 +1815,28 @@ p, li { white-space: pre-wrap; }
             <suffix> °</suffix>
             <vTx>1</vTx>
         </turntilt_yaw_aggregate>
+        <dark_pitch_offset>
+            <longName>Darkride Pitch Offset</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;How much to lift/lower the nose to make the board level when it's upside down for darkride. Shouldn't be needed with properly calibrated Gyro and Accelerometer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_DARK_PITCH_OFFSET</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>10</maxDouble>
+            <minDouble>-10</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>0.5</stepDouble>
+            <valDouble>0</valDouble>
+            <vTxDoubleScale>10</vTxDoubleScale>
+            <suffix> °</suffix>
+            <vTx>7</vTx>
+        </dark_pitch_offset>
         <is_buzzer_enabled>
             <longName>Enable Buzzer on Servo/PPM</longName>
             <type>5</type>
@@ -1910,7 +1932,6 @@ p, li { white-space: pre-wrap; }
         <ser>torquetilt_off_speed</ser>
         <ser>torquetilt_strength</ser>
         <ser>torquetilt_strength_regen</ser>
-        <ser>turntilt_mode</ser>
         <ser>turntilt_strength</ser>
         <ser>turntilt_angle_limit</ser>
         <ser>turntilt_start_angle</ser>
@@ -1933,6 +1954,7 @@ p, li { white-space: pre-wrap; }
         <ser>atr_amps_decel_ratio</ser>
         <ser>braketilt_strength</ser>
         <ser>braketilt_lingering</ser>
+        <ser>dark_pitch_offset</ser>
         <ser>is_buzzer_enabled</ser>
         <ser>float_version</ser>
     </SerOrder>
@@ -2087,6 +2109,7 @@ p, li { white-space: pre-wrap; }
                     <param>fault_adc1</param>
                     <param>fault_adc2</param>
                     <param>::sep::Miscellaneous</param>
+                    <param>dark_pitch_offset</param>
                     <param>is_buzzer_enabled</param>
                 </subgroupParams>
             </subgroup>

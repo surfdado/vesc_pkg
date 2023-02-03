@@ -179,6 +179,7 @@ typedef struct {
 	bool is_upside_down_started;	// dark ride has been engaged
 	bool enable_upside_down;		// dark ride mode is enabled (10 seconds after fault)
 	float delay_upside_down_fault;
+	float darkride_setpoint_correction;
 
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
@@ -438,6 +439,7 @@ static void configure(data *d) {
 	// Feature: Darkride
 	d->enable_upside_down = false;
 	d->is_upside_down = false;
+	d->darkride_setpoint_correction = d->float_conf.dark_pitch_offset;
 
 	// Speed at which to warn users about an impending full switch fault
 	d->switch_warn_buzz_erpm = 2000;
@@ -1547,8 +1549,8 @@ static void float_thd(void *arg) {
 		d->true_pitch_angle = RAD2DEG_f(VESC_IF->ahrs_get_pitch(&d->m_att_ref));
 		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
 		if (d->is_upside_down) {
-			d->pitch_angle = -d->pitch_angle;
-			d->true_pitch_angle = -d->true_pitch_angle;
+			d->pitch_angle = -d->pitch_angle - d->darkride_setpoint_correction;;
+			d->true_pitch_angle = -d->true_pitch_angle - d->darkride_setpoint_correction;
 		}
 		
 		d->last_gyro_y = d->gyro[1];
