@@ -555,10 +555,19 @@ static void do_rc_move(data *d)
 		}
 	}
 	else {
-		d->rc_current = 0;
 		d->rc_counter = 0;
-		// Disable output
-		brake(d);
+		
+		if ((d->float_conf.remote_throttle_current_max > 0) && (d->current_time - d->disengage_timer > d->float_conf.remote_throttle_grace_period) && (fabs(d->throttle_val) > (double)0.02)) { // Throttle must be greater than 2% (Help mitigate lingering throttle)
+			float servo_val = d->throttle_val;
+			servo_val *= (d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0);
+			d->rc_current = d->rc_current * 0.95 + (d->float_conf.remote_throttle_current_max * servo_val) * 0.05;
+			set_current(d, d->rc_current);
+		}
+		else {
+			d->rc_current = 0;
+			// Disable output
+			brake(d);
+		}
 	}
 }
 
