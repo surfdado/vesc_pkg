@@ -126,6 +126,7 @@ typedef struct {
 	float motor_current;
 	float motor_position;
 	float adc1, adc2;
+	float throttle_val;
 	float max_duty_with_margin;
 	SwitchState switch_state;
 
@@ -1013,42 +1014,12 @@ static void apply_noseangling(data *d){
 
 static void apply_inputtilt(data *d){ // Input Tiltback
 	float input_tiltback_target;
-	float servo_val = 0;
-	bool connected = false;
-
-	switch (d->float_conf.inputtilt_remote_type) {
-	case (INPUTTILT_PPM):
-		servo_val = VESC_IF->get_ppm();
-		connected = VESC_IF->get_ppm_age() < 1;
-		break;
-	case (INPUTTILT_UART): ; // Don't delete ";", required to avoid compiler error with first line variable init
-		remote_state remote = VESC_IF->get_remote_state();
-		servo_val = remote.js_y;
-		connected = remote.age_s < 1;
-		break;
-	case (INPUTTILT_NONE):
-		break;
-	}
-	
-	if (!connected) {
-		d->inputtilt_interpolated = 0;
-		servo_val = 0;
-		return;
-	}
-
-	// Apply Deadband
-	float deadband = d->float_conf.inputtilt_deadband;
-	if (fabsf(servo_val) < deadband) {
-		servo_val = 0.0;
-	} else {
-		servo_val = SIGN(servo_val) * (fabsf(servo_val) - deadband) / (1 - deadband);
-	}
-
-	// Invert Throttle
-	servo_val *= (d->float_conf.inputtilt_invert_throttle != d->is_upside_down) ? -1.0 : 1.0;
 	 
 	// Scale by Max Angle
-	input_tiltback_target = servo_val * d->float_conf.inputtilt_angle_limit;
+	input_tiltback_target = d->throttle_val * d->float_conf.inputtilt_angle_limit;
+
+	// Invert for Darkride
+	input_tiltback_target *= (d->is_upside_down ? -1.0 : 1.0);
 
 	// // Default Behavior: Nose Tilt at any speed, does not invert for reverse (Safer for slow climbs/descents & jumps)
 	// // Alternate Behavior (Negative Tilt Speed): Nose Tilt only while moving, invert to match direction of travel
@@ -1584,6 +1555,43 @@ static void float_thd(void *arg) {
 			d->adc2 = 0.0;
 		}
 
+		// UART/PPM Remote Throttle ///////////////////////
+		bool remote_connected = false;
+		float servo_val = 0;
+
+		switch (d->float_conf.inputtilt_remote_type) {
+		case (INPUTTILT_PPM):
+			servo_val = VESC_IF->get_ppm();
+			remote_connected = VESC_IF->get_ppm_age() < 1;
+			break;
+		case (INPUTTILT_UART): ; // Don't delete ";", required to avoid compiler error with first line variable init
+			remote_state remote = VESC_IF->get_remote_state();
+			servo_val = remote.js_y;
+			remote_connected = remote.age_s < 1;
+			break;
+		case (INPUTTILT_NONE):
+			break;
+		}
+		
+		if (!remote_connected) {
+			servo_val = 0;
+		} else {
+			// Apply Deadband
+			float deadband = d->float_conf.inputtilt_deadband;
+			if (fabsf(servo_val) < deadband) {
+				servo_val = 0.0;
+			} else {
+				servo_val = SIGN(servo_val) * (fabsf(servo_val) - deadband) / (1 - deadband);
+			}
+
+			// Invert Throttle
+			servo_val *= (d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0);
+		}
+
+		d->throttle_val = servo_val;
+		///////////////////////////////////////////////////
+
+
 		// Torque Tilt:
 
 		/* FW SUPPORT NEEDED FOR SMOOTH ERPM //////////////////////////
@@ -2028,6 +2036,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
+	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }

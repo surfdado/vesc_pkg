@@ -97,6 +97,7 @@ Item {
                 var float_acc_diff = dv.getFloat32(ind); ind += 4;
                 var applied_booster_current = dv.getFloat32(ind); ind += 4;
                 var motor_current = dv.getFloat32(ind); ind += 4;
+                var throttle_val = dv.getFloat32(ind); ind += 4;
 
                 // var debug1 = dv.getFloat32(ind); ind += 4;
                 // var debug2 = dv.getFloat32(ind); ind += 4;
@@ -176,7 +177,8 @@ Item {
                     "True Pitch          : " + true_pitch.toFixed(2) + "°\n" +
                     "Torque              : " + filtered_current.toFixed(2) + "A\n" +
                     "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
-                    "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n"
+                    "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
+                    "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n"
             }
         }
     }
