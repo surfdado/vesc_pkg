@@ -2241,9 +2241,9 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
 	d->float_conf.fault_reversestop_enabled = ((flags & 0x4) == 4);
 	d->float_conf.fault_is_dual_switch = ((flags & 0x8) == 8);
 	d->float_conf.fault_darkride_enabled = ((flags & 0x10) == 0x10);
-	bool dirty_landings = ((flags & 0x20) == 20);
-	d->float_conf.startup_simplestart_enabled = ((flags & 0x40) == 40);
-	d->float_conf.startup_pushstart_enabled = ((flags & 0x80) == 80);
+	bool dirty_landings = ((flags & 0x20) == 0x20);
+	d->float_conf.startup_simplestart_enabled = ((flags & 0x40) == 0x40);
+	d->float_conf.startup_pushstart_enabled = ((flags & 0x80) == 0x80);
 
 	d->float_conf.is_buzzer_enabled = d->buzzer_enabled;
 	d->startup_pitch_trickmargin = dirty_landings ? 10 : 0;
