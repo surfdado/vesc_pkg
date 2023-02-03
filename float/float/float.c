@@ -164,6 +164,7 @@ typedef struct {
 	SetpointAdjustmentType setpointAdjustmentType;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
 	float disengage_timer, nag_timer; // Seconds
+	float idle_voltage;
 	float filtered_loop_overshoot, loop_overshoot_alpha, filtered_diff_time;
 	float fault_angle_pitch_timer, fault_angle_roll_timer, fault_switch_timer, fault_switch_half_timer; // Seconds
 	float motor_timeout_seconds;
@@ -1851,11 +1852,19 @@ static void float_thd(void *arg) {
 			if (d->current_time - d->disengage_timer > 1800) {	// alert user after 30 minutes
 				if (d->current_time - d->nag_timer > 60) {		// beep every 60 seconds
 					d->nag_timer = d->current_time;
-					beep_alert(d, 2, 1);						// 2 long beeps
+					float input_voltage = VESC_IF->mc_get_input_voltage_filtered();
+					if (input_voltage > d->idle_voltage) {
+						// don't beep if the voltage keeps increasing (board is charging)
+						d->idle_voltage = input_voltage;
+					}
+					else {
+						beep_alert(d, 2, 1);						// 2 long beeps
+					}
 				}
 			}
 			else {
 				d->nag_timer = d->current_time;
+				d->idle_voltage = 0;
 			}
 
 			if ((d->current_time - d->fault_angle_pitch_timer) > 1) {
