@@ -288,7 +288,7 @@ Item {
             property int buttonWidth: 120
 
             Repeater {
-                model: ["RT Data", "Controls", "Profiles"]
+                model: ["RT Data", "Controls", "Tunes"]
                 TabButton {
                     text: modelData
                     onClicked:{
@@ -467,6 +467,12 @@ Item {
                     id: tiltEnabled
                     checked: false
                     text: qsTr("Enabled (Overrides Remote)")
+                    onClicked: {
+                        if(tiltEnabled.checked && mCustomConf.getParamEnum("inputtilt_remote_type", 0) != 1){
+                            mCustomConf.updateParamEnum("inputtilt_remote_type", 1)
+                            mCommands.customConfigSet(0, mCustomConf)
+                        }
+                    }
                 }
                 Slider {
                     id: tiltSlider
@@ -477,18 +483,14 @@ Item {
                 }
             }
 
-            ColumnLayout { // Profiles Page
+            ColumnLayout { // Tunes Page
                 id: profilesColumn
                 
                 Button {
                     id: tuneButtonMitch
-                    text: "Apply Mitch's Tune"
+                    text: "Apply Mitch's The BESTEST Tune"
                     Layout.fillWidth: true
                     onClicked: {
-                        // mAppConf.updateParamDouble("imu_conf.accel_confidence_decay", 0.02)
-                        // mAppConf.updateParamDouble("imu_conf.mahony_kp", 2.3)
-                        // mCommands.setAppConfNoStore()
-
                         // mCustomConf.updateParamFloat("float_version", 0)
                         mCustomConf.updateParamDouble("kp", 10)
                         mCustomConf.updateParamDouble("ki", 0)
@@ -574,8 +576,191 @@ Item {
                         mCommands.customConfigSet(0, mCustomConf)
                     }
                 }
+
+                Button {
+                    id: tuneButtonDefault
+                    text: "Lame Default Tune :-/"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        // mCustomConf.updateParamFloat("float_version", 0)
+                        mCustomConf.updateParamDouble("kp", 20)
+                        mCustomConf.updateParamDouble("ki", 0.005)
+                        mCustomConf.updateParamDouble("kd", 0)
+                        mCustomConf.updateParamDouble("kp2", 0.6)
+                        mCustomConf.updateParamDouble("mahony_kp", 2.0)
+                        // mCustomConf.updateParamInt("hertz", 400)
+                        // mCustomConf.updateParamDouble("fault_pitch", 0)
+                        // mCustomConf.updateParamDouble("fault_roll", 0)
+                        // mCustomConf.updateParamDouble("fault_adc1", 0)
+                        // mCustomConf.updateParamDouble("fault_adc2", 0)
+                        // mCustomConf.updateParamInt("fault_delay_pitch", 0)
+                        // mCustomConf.updateParamInt("fault_delay_roll", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_half", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_full", 0)
+                        // mCustomConf.updateParamInt("fault_adc_half_erpm", 0)
+                        // mCustomConf.updateParamBool("fault_is_dual_switch", 0)
+                        // mCustomConf.updateParamBool("fault_moving_fault_disabled", 0)
+                        // mCustomConf.updateParamBool("fault_darkride_enabled", 0)
+                        // mCustomConf.updateParamBool("fault_reversestop_enabled", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_return_speed", 0)
+                        mCustomConf.updateParamDouble("tiltback_constant", 0)
+                        // mCustomConf.updateParamInt("tiltback_constant_erpm", 0)
+                        mCustomConf.updateParamDouble("tiltback_variable", 0)
+                        // mCustomConf.updateParamDouble("tiltback_variable_max", 0)
+                        // mCustomConf.updateParamEnum("inputtilt_remote_type", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_speed", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_angle_limit", 0)
+                        // mCustomConf.updateParamBool("inputtilt_invert_throttle", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_deadband", 0)
+                        mCustomConf.updateParamDouble("noseangling_speed", 5)
+                        // mCustomConf.updateParamDouble("startup_pitch_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_roll_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_speed", 0)
+                        // mCustomConf.updateParamDouble("startup_click_current", 0)
+                        mCustomConf.updateParamBool("startup_softstart_enabled", false)
+                        // mCustomConf.updateParamBool("startup_simplestart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_pushstart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_dirtylandings_enabled", 0)
+                        // mCustomConf.updateParamDouble("brake_current", 0)
+                        mCustomConf.updateParamDouble("ki_limit", 30)
+                        // mCustomConf.updateParamDouble("booster_angle", 8)
+                        // mCustomConf.updateParamDouble("booster_ramp", 4)
+                        mCustomConf.updateParamDouble("booster_current", 0)
+                        // mCustomConf.updateParamDouble("torquetilt_start_current", 5)
+                        // mCustomConf.updateParamDouble("torquetilt_angle_limit", 8)
+                        // mCustomConf.updateParamDouble("torquetilt_on_speed", 5)
+                        // mCustomConf.updateParamDouble("torquetilt_off_speed", 3)
+                        mCustomConf.updateParamDouble("torquetilt_strength", 0.0)
+                        mCustomConf.updateParamDouble("torquetilt_strength_regen", 0.0)
+                        mCustomConf.updateParamDouble("atr_strength_up", 1)
+                        mCustomConf.updateParamDouble("atr_strength_down", 1)
+                        mCustomConf.updateParamDouble("atr_torque_offset", 7)
+                        mCustomConf.updateParamDouble("atr_speed_boost", 0.3)
+                        mCustomConf.updateParamDouble("atr_angle_limit", 8)
+                        mCustomConf.updateParamDouble("atr_on_speed", 4)
+                        mCustomConf.updateParamDouble("atr_off_speed", 3)
+                        mCustomConf.updateParamDouble("atr_response_boost", 1.5)
+                        mCustomConf.updateParamDouble("atr_transition_boost", 2.5)
+                        mCustomConf.updateParamDouble("atr_filter", 5)
+                        mCustomConf.updateParamDouble("atr_amps_accel_ratio", 11)
+                        mCustomConf.updateParamDouble("atr_amps_decel_ratio", 10)
+                        mCustomConf.updateParamDouble("braketilt_strength", 0)
+                        mCustomConf.updateParamDouble("braketilt_lingering", 2)
+                        mCustomConf.updateParamDouble("turntilt_strength", 6)
+                        mCustomConf.updateParamDouble("turntilt_angle_limit", 3)
+                        mCustomConf.updateParamDouble("turntilt_start_angle", 2)
+                        mCustomConf.updateParamInt("turntilt_start_erpm", 1000)
+                        mCustomConf.updateParamDouble("turntilt_speed", 5)
+                        mCustomConf.updateParamInt("turntilt_erpm_boost", 200)
+                        mCustomConf.updateParamInt("turntilt_erpm_boost_end", 5000)
+                        mCustomConf.updateParamInt("turntilt_yaw_aggregate", 90)
+                        // mCustomConf.updateParamBool("is_buzzer_enabled", 0)
+                        mCommands.customConfigSet(0, mCustomConf)
+                    }
+                }
+
+                Button {
+                    id: tuneButtonVESCManPint
+                    text: "Nana nana nana nana VESCMan (Pint)"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        // mCustomConf.updateParamFloat("float_version", 0)
+                        mCustomConf.updateParamDouble("kp", 20)
+                        mCustomConf.updateParamDouble("ki", 0.01)
+                        mCustomConf.updateParamDouble("kd", 0)
+                        mCustomConf.updateParamDouble("kp2", 0.3)
+                        mCustomConf.updateParamDouble("mahony_kp", 2.0)
+                        // mCustomConf.updateParamInt("hertz", 400)
+                        // mCustomConf.updateParamDouble("fault_pitch", 0)
+                        // mCustomConf.updateParamDouble("fault_roll", 0)
+                        // mCustomConf.updateParamDouble("fault_adc1", 0)
+                        // mCustomConf.updateParamDouble("fault_adc2", 0)
+                        // mCustomConf.updateParamInt("fault_delay_pitch", 0)
+                        // mCustomConf.updateParamInt("fault_delay_roll", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_half", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_full", 0)
+                        // mCustomConf.updateParamInt("fault_adc_half_erpm", 0)
+                        // mCustomConf.updateParamBool("fault_is_dual_switch", 0)
+                        // mCustomConf.updateParamBool("fault_moving_fault_disabled", 0)
+                        // mCustomConf.updateParamBool("fault_darkride_enabled", 0)
+                        // mCustomConf.updateParamBool("fault_reversestop_enabled", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_return_speed", 0)
+                        mCustomConf.updateParamDouble("tiltback_constant", 0)
+                        // mCustomConf.updateParamInt("tiltback_constant_erpm", 0)
+                        mCustomConf.updateParamDouble("tiltback_variable", 0)
+                        // mCustomConf.updateParamDouble("tiltback_variable_max", 0)
+                        // mCustomConf.updateParamEnum("inputtilt_remote_type", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_speed", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_angle_limit", 0)
+                        // mCustomConf.updateParamBool("inputtilt_invert_throttle", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_deadband", 0)
+                        mCustomConf.updateParamDouble("noseangling_speed", 5)
+                        // mCustomConf.updateParamDouble("startup_pitch_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_roll_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_speed", 0)
+                        // mCustomConf.updateParamDouble("startup_click_current", 0)
+                        mCustomConf.updateParamBool("startup_softstart_enabled", false)
+                        // mCustomConf.updateParamBool("startup_simplestart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_pushstart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_dirtylandings_enabled", 0)
+                        // mCustomConf.updateParamDouble("brake_current", 0)
+                        mCustomConf.updateParamDouble("ki_limit", 20)
+                        mCustomConf.updateParamDouble("booster_angle", 0)
+                        mCustomConf.updateParamDouble("booster_ramp", 2)
+                        mCustomConf.updateParamDouble("booster_current", 10)
+                        mCustomConf.updateParamDouble("torquetilt_start_current", 15)
+                        mCustomConf.updateParamDouble("torquetilt_angle_limit", 5)
+                        mCustomConf.updateParamDouble("torquetilt_on_speed", 5)
+                        mCustomConf.updateParamDouble("torquetilt_off_speed", 10)
+                        mCustomConf.updateParamDouble("torquetilt_strength", 0.05)
+                        mCustomConf.updateParamDouble("torquetilt_strength_regen", 0.0)
+                        mCustomConf.updateParamDouble("atr_strength_up", 0.5)
+                        mCustomConf.updateParamDouble("atr_strength_down", 0.5)
+                        mCustomConf.updateParamDouble("atr_torque_offset", 7)
+                        mCustomConf.updateParamDouble("atr_speed_boost", 0.3)
+                        mCustomConf.updateParamDouble("atr_angle_limit", 8)
+                        mCustomConf.updateParamDouble("atr_on_speed", 4)
+                        mCustomConf.updateParamDouble("atr_off_speed", 3)
+                        mCustomConf.updateParamDouble("atr_response_boost", 1.5)
+                        mCustomConf.updateParamDouble("atr_transition_boost", 3)
+                        mCustomConf.updateParamDouble("atr_filter", 5)
+                        mCustomConf.updateParamDouble("atr_amps_accel_ratio", 10)
+                        mCustomConf.updateParamDouble("atr_amps_decel_ratio", 15)
+                        mCustomConf.updateParamDouble("braketilt_strength", 0)
+                        mCustomConf.updateParamDouble("braketilt_lingering", 2)
+                        mCustomConf.updateParamDouble("turntilt_strength", 4)
+                        mCustomConf.updateParamDouble("turntilt_angle_limit", 2)
+                        mCustomConf.updateParamDouble("turntilt_start_angle", 2)
+                        mCustomConf.updateParamInt("turntilt_start_erpm", 1000)
+                        mCustomConf.updateParamDouble("turntilt_speed", 3)
+                        mCustomConf.updateParamInt("turntilt_erpm_boost", 200)
+                        mCustomConf.updateParamInt("turntilt_erpm_boost_end", 5000)
+                        mCustomConf.updateParamInt("turntilt_yaw_aggregate", 90)
+                        // mCustomConf.updateParamBool("is_buzzer_enabled", 0)
+                        mCommands.customConfigSet(0, mCustomConf)
+                    }
+                }
                 
             }
+                
         }
     }
 
