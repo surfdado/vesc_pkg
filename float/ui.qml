@@ -20,8 +20,9 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.3
-import Vedder.vesc.utility 1.0
+import Qt.labs.settings 1.0
 
+import Vedder.vesc.utility 1.0
 import Vedder.vesc.commands 1.0
 import Vedder.vesc.configparams 1.0
 
@@ -37,26 +38,84 @@ Item {
 
     property Commands mCommands: VescIf.commands()
     property ConfigParams mMcConf: VescIf.mcConfig()
+    property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
+
+    property var dialogParent: ApplicationWindow.overlay
     
-    Component.onCompleted: {
-//        params.addEditorCustom("pid_mode", 0)
-//        params.addEditorCustom("kp", 0)
-//        params.addEditorCustom("fault_delay_pitch", 0)
+    Settings {
+        id: settingStorage
     }
     
+    // Timer 1, 10hz for ble comms
     Timer {
         running: true
         repeat: true
         interval: 100
         
         onTriggered: {
+            // Poll app data
             var buffer = new ArrayBuffer(2)
             var dv = new DataView(buffer)
             var ind = 0
             dv.setUint8(ind, 101); ind += 1
             dv.setUint8(ind, 0x1); ind += 1
             mCommands.sendCustomAppData(buffer)
+            
+            // Process Controls
+            if(reverseButton.pressed){
+                var buffer = new ArrayBuffer(6)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                dv.setUint8(ind, 0); ind += 1; // Direction
+                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                dv.setUint8(ind, 1); ind += 1; // Time
+                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
+                mCommands.sendCustomAppData(buffer)
+            }
+            if(forwardButton.pressed){
+                var buffer = new ArrayBuffer(6)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                dv.setUint8(ind, 1); ind += 1; // Direction
+                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                dv.setUint8(ind, 1); ind += 1; // Time
+                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
+                mCommands.sendCustomAppData(buffer)
+            }
+            if(tiltEnabled.checked){
+                mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
+            }
+        }
+    }
+
+    // Timer 2, 100hz for for UI updates
+    Timer {
+        running: true
+        repeat: true
+        interval: 10
+        
+        onTriggered: {
+            if(!tiltSlider.pressed){
+                var stepSize = 0.05
+                if(tiltSlider.value > 0){
+                    if(tiltSlider.value < stepSize){
+                        tiltSlider.value = 0
+                    }else{
+                        tiltSlider.value -= stepSize
+                    }
+                }else if(tiltSlider.value < 0){
+                    if(tiltSlider.value > -stepSize){
+                        tiltSlider.value = 0
+                    }else{
+                        tiltSlider.value += stepSize
+                    }
+                } 
+            }
         }
     }
     
@@ -215,136 +274,221 @@ Item {
     }
 
     ColumnLayout {
-        id: gaugeColumn
+        id: root
         anchors.fill: parent
-        
-        ScrollView {
+    
+
+        TabBar {
+            id: tabBar
+            currentIndex: 0
             Layout.fillWidth: true
-            Layout.fillHeight: true
             clip: true
-            
-            ColumnLayout {
-                Text {
-                    id: header0
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
-                    Layout.fillWidth: true
-                    text: "Float App State"
-                    font.underline: true
-                    font.weight: Font.Black
-                    font.pointSize: 14
-                }
-                Text {
-                    id: rt_state
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 5
-                    Layout.preferredWidth: parent.width/3
-                    text: "Waiting for RT Data"
-                }
-                Text {
-                    id: header1
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
-                    Layout.fillWidth: true
-                    text: "Float App RT Data"
-                    font.underline: true
-                    font.weight: Font.Black
-                    font.pointSize: 14
-                }
-                Text {
-                    id: rt_data
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 5
-                    Layout.preferredWidth: parent.width/3
-                    text: "-\n"
-                }
-                Text {
-                    id: header2
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
-                    Layout.fillWidth: true
-                    text: "Setpoints"
-                    font.underline: true
-                    font.weight: Font.Black
-                    font.pointSize: 14
-                }
-                Text {
-                    id: setpoints
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 5
-                    Layout.preferredWidth: parent.width/3
-                    text: "-\n"
-                }
-                Text {
-                    id: header3
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
-                    Layout.fillWidth: true
-                    text: "DEBUG"
-                    font.underline: true
-                    font.weight: Font.Black
-                }
-                Text {
-                    id: debug
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 5
-                    Layout.preferredWidth: parent.width/3
-                    text: "-"
+            enabled: true
+
+            background: Rectangle {
+                opacity: 1
+                color: {color = Utility.getAppHexColor("lightBackground")}
+            }
+            property int buttons: 3
+            property int buttonWidth: 120
+
+            Repeater {
+                model: ["Float State", "Controls"]
+                TabButton {
+                    text: modelData
+                    onClicked:{
+                        stackLayout.currentIndex = index
+                    }
                 }
             }
-            
-            
-//            ParamList {
-//                id: params
-//                anchors.fill: parent
-//            }
         }
         
-//        RowLayout {
-//            Layout.fillWidth: true
-//            
-//            Button {
-//                text: "Read"
-//                Layout.fillWidth: true
-//                
-//                onClicked: {
-//                    mCommands.customConfigGet(0, false)
-//                }
-//            }
-//            
-//            Button {
-//                text: "Read Default"
-//                Layout.fillWidth: true
-//                
-//                onClicked: {
-//                    mCommands.customConfigGet(0, true)
-//                }
-//            }
-//            
-//            Button {
-//                text: "Write"
-//                Layout.fillWidth: true
-//                
-//                onClicked: {
-//                    mCommands.customConfigSet(0, mCustomConf)
-//                }
-//            }
-//        }
+        StackLayout {
+            id: stackLayout
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            // onCurrentIndexChanged: {tabBar.currentIndex = currentIndex
+
+            ColumnLayout { // RT Data Page
+                id: rtDataColumn
+                
+                ScrollView {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    clip: true
+                    
+                    ColumnLayout {
+                        Text {
+                            id: header0
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 0
+                            Layout.fillWidth: true
+                            text: "Float App State"
+                            font.underline: true
+                            font.weight: Font.Black
+                            font.pointSize: 14
+                        }
+                        Text {
+                            id: rt_state
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 5
+                            Layout.preferredWidth: parent.width/3
+                            text: "Waiting for RT Data"
+                        }
+                        Text {
+                            id: header1
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 0
+                            Layout.fillWidth: true
+                            text: "Float App RT Data"
+                            font.underline: true
+                            font.weight: Font.Black
+                            font.pointSize: 14
+                        }
+                        Text {
+                            id: rt_data
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 5
+                            Layout.preferredWidth: parent.width/3
+                            text: "-\n"
+                        }
+                        Text {
+                            id: header2
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 0
+                            Layout.fillWidth: true
+                            text: "Setpoints"
+                            font.underline: true
+                            font.weight: Font.Black
+                            font.pointSize: 14
+                        }
+                        Text {
+                            id: setpoints
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 5
+                            Layout.preferredWidth: parent.width/3
+                            text: "-\n"
+                        }
+                        Text {
+                            id: header3
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 0
+                            Layout.fillWidth: true
+                            text: "DEBUG"
+                            font.underline: true
+                            font.weight: Font.Black
+                        }
+                        Text {
+                            id: debug
+                            color: Utility.getAppHexColor("lightText")
+                            font.family: "DejaVu Sans Mono"
+                            Layout.margins: 0
+                            Layout.leftMargin: 5
+                            Layout.preferredWidth: parent.width/3
+                            text: "-"
+                        }
+                    }
+                }
+            }
+
+            ColumnLayout { // Controls Page
+                id: controlsColumn
+                Layout.fillWidth: true
+
+                // Movement controls
+                Text {
+                    id: movementControlsHeader
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    text: "Movement Controls"
+                    font.underline: true
+                    font.weight: Font.Black
+                    font.pointSize: 14
+                }
+                RowLayout {
+                    id: movementStrength
+                    Layout.fillWidth: true
+
+                    Text {
+                        id: movementStrengthLabel
+                        color: Utility.getAppHexColor("lightText")
+                        font.family: "DejaVu Sans Mono"
+                        text: "Strength:"
+                    }
+                    Slider {
+                        id: movementStrengthSlider
+                        from: 20
+                        value: 40
+                        to: 80
+                        stepSize: 1
+                    }
+                }
+                RowLayout {
+                    id: movementControls
+                    Layout.fillWidth: true
+                    Button {
+                        id: reverseButton
+                        text: "Reverse"
+                        Layout.fillWidth: true
+                    }
+                    Button {
+                        id: forwardButton
+                        text: "Forward"
+                        Layout.fillWidth: true
+                    }
+                }
+                
+                // Tilt controls
+                Text {
+                    id: tiltControlsHeader
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    text: "Tilt Controls"
+                    font.underline: true
+                    font.weight: Font.Black
+                    font.pointSize: 14
+                }
+                 CheckBox {
+                    id: tiltEnabled
+                    checked: false
+                    text: qsTr("Enabled (Overrides Remote)")
+                    onClicked: {
+                        if(tiltEnabled.checked && mCustomConf.getParamEnum("inputtilt_remote_type", 0) != 1){
+                            mCustomConf.updateParamEnum("inputtilt_remote_type", 1)
+                            mCommands.customConfigSet(0, mCustomConf)
+                        }
+                    }
+                }
+                Slider {
+                    id: tiltSlider
+                    from: -1
+                    value: 0
+                    to: 1
+                    Layout.fillWidth: true
+                }
+            }
+                
+        }
     }
+
 }
