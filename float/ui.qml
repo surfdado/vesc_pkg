@@ -42,6 +42,7 @@ Item {
 
     property var dialogParent: ApplicationWindow.overlay
     
+    // Timer 1, 10hz for ble comms
     Timer {
         running: true
         repeat: true
@@ -56,12 +57,46 @@ Item {
             dv.setUint8(ind, 0x1); ind += 1
             mCommands.sendCustomAppData(buffer)
             
-            // Update Tilt slider
+            // Process Controls
+            if(reverseButton.pressed){
+                var buffer = new ArrayBuffer(6)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                dv.setUint8(ind, 0); ind += 1; // Direction
+                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                dv.setUint8(ind, 1); ind += 1; // Time
+                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
+                mCommands.sendCustomAppData(buffer)
+            }
+            if(forwardButton.pressed){
+                var buffer = new ArrayBuffer(6)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                dv.setUint8(ind, 1); ind += 1; // Direction
+                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                dv.setUint8(ind, 1); ind += 1; // Time
+                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
+                mCommands.sendCustomAppData(buffer)
+            }
             if(tiltEnabled.checked){
                 mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
             }
+        }
+    }
+
+    // Timer 2, 100hz for for UI updates
+    Timer {
+        running: true
+        repeat: true
+        interval: 10
+        
+        onTriggered: {
             if(!tiltSlider.pressed){
-                var stepSize = 0.1
+                var stepSize = 0.05
                 if(tiltSlider.value > 0){
                     if(tiltSlider.value < stepSize){
                         tiltSlider.value = 0
@@ -396,7 +431,7 @@ Item {
                         id: movementStrengthSlider
                         from: 20
                         value: 40
-                        to: 250
+                        to: 80
                         stepSize: 1
                     }
                 }
@@ -407,35 +442,11 @@ Item {
                         id: reverseButton
                         text: "Reverse"
                         Layout.fillWidth: true
-                        onClicked: {
-                            var buffer = new ArrayBuffer(6)
-                            var dv = new DataView(buffer)
-                            var ind = 0
-                            dv.setUint8(ind, 101); ind += 1; // Float Package
-                            dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                            dv.setUint8(ind, 0); ind += 1; // Direction
-                            dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
-                            dv.setUint8(ind, 5); ind += 1; // Time
-                            dv.setUint8(ind, movementStrengthSlider.value + 5); ind += 1; // Sum = time + current
-                            mCommands.sendCustomAppData(buffer)
-                        }
                     }
                     Button {
                         id: forwardButton
                         text: "Forward"
                         Layout.fillWidth: true
-                        onClicked: {
-                            var buffer = new ArrayBuffer(6)
-                            var dv = new DataView(buffer)
-                            var ind = 0
-                            dv.setUint8(ind, 101); ind += 1; // Float Package
-                            dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                            dv.setUint8(ind, 1); ind += 1; // Direction
-                            dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
-                            dv.setUint8(ind, 5); ind += 1; // Time
-                            dv.setUint8(ind, movementStrengthSlider.value + 5); ind += 1; // Sum = time + current
-                            mCommands.sendCustomAppData(buffer)
-                        }
                     }
                 }
                 
