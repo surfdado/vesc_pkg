@@ -81,6 +81,8 @@ Item {
                 var pitch = dv.getFloat32(ind); ind += 4;
                 var roll = dv.getFloat32(ind); ind += 4;
                 var state = dv.getInt8(ind); ind += 1;
+                var setpointAdjustmentType = state >> 4;
+                state = state &0xF;
                 var switch_state = dv.getInt8(ind); ind += 1;
                 var adc1 = dv.getFloat32(ind); ind += 4;
                 var adc2 = dv.getFloat32(ind); ind += 4;
@@ -104,7 +106,7 @@ Item {
 
                 var stateString
                 if(state == 0){
-                    stateString = "STARTUP"
+                    stateString = "BOOT"	// we're in this state only for the first second or so then never again
                 }else if(state == 1){
                     stateString = "RUNNING"
                 }else if(state == 2){
@@ -134,6 +136,24 @@ Item {
                     stateString = "STOP_QUICKSTOP"
                 }else{
                     stateString = "UNKNOWN"
+                }
+
+                var suffix = ""
+                if (setpointAdjustmentType == 0) {
+                    suffix = "[CENTERING]";
+                } else if (setpointAdjustmentType == 1) {
+                    suffix = "[REVERSESTOP]";
+                } else if (setpointAdjustmentType == 2) {
+                    suffix = "[DUTY]";
+                } else if (setpointAdjustmentType == 3) {
+                    suffix = "[HV]";
+                } else if (setpointAdjustmentType == 4) {
+                    suffix = "[LV]";
+                } else if (setpointAdjustmentType == 5) {
+                    suffix = "[TEMP]";
+                }
+                if ((state > 0) && (state < 6)) {
+                    stateString += suffix;
                 }
 
                 var switchString

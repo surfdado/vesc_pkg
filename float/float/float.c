@@ -2031,7 +2031,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->roll_angle, &ind);
 
-	send_buffer[ind++] = d->state;
+	send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
 	send_buffer[ind++] = d->switch_state;
 	buffer_append_float32_auto(send_buffer, d->adc1, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc2, &ind);
