@@ -143,13 +143,13 @@ Item {
                     suffix = "[CENTERING]";
                 } else if (setpointAdjustmentType == 1) {
                     suffix = "[REVERSESTOP]";
-                } else if (setpointAdjustmentType == 2) {
-                    suffix = "[DUTY]";
                 } else if (setpointAdjustmentType == 3) {
-                    suffix = "[HV]";
+                    suffix = "[DUTY]";
                 } else if (setpointAdjustmentType == 4) {
-                    suffix = "[LV]";
+                    suffix = "[HV]";
                 } else if (setpointAdjustmentType == 5) {
+                    suffix = "[LV]";
+                } else if (setpointAdjustmentType == 6) {
                     suffix = "[TEMP]";
                 }
                 if ((state > 0) && (state < 6)) {

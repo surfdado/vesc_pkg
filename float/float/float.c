@@ -62,11 +62,11 @@ typedef enum {
 typedef enum {
 	CENTERING = 0,
 	REVERSESTOP,
+        TILTBACK_NONE,
 	TILTBACK_DUTY,
 	TILTBACK_HV,
 	TILTBACK_LV,
-	TILTBACK_TEMP,
-	TILTBACK_NONE
+	TILTBACK_TEMP
 } SetpointAdjustmentType;
 
 typedef enum {
