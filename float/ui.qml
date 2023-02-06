@@ -771,6 +771,8 @@ Item {
                         text: "Quicksave 1"
                         Layout.fillWidth: false
                         onClicked: {
+                            quickload1Button.enabled = true
+                            settingStorage.setValue("float_qs1_populated", "1")
                             settingStorage.setValue("float_qs1_float_version", mCustomConf.getParamDouble("float_version"))
                             settingStorage.setValue("float_qs1_kp", mCustomConf.getParamDouble("kp"))
                             settingStorage.setValue("float_qs1_ki", mCustomConf.getParamDouble("ki"))
@@ -859,6 +861,7 @@ Item {
                         id: quickload1Button
                         text: "Quickload 1"
                         Layout.fillWidth: true
+                        enabled: settingStorage.value("float_qs1_populated") == "1"
                         onClicked: {
                             mCustomConf.updateParamDouble("float_version", settingStorage.value("float_qs1_float_version", 0))
                             mCustomConf.updateParamDouble("kp", settingStorage.value("float_qs1_kp", 0))
@@ -954,6 +957,8 @@ Item {
                         text: "Quicksave 2"
                         Layout.fillWidth: false
                         onClicked: {
+                            quickload2Button.enabled = true
+                            settingStorage.setValue("float_qs2_populated", "1")
                             settingStorage.setValue("float_qs2_float_version", mCustomConf.getParamDouble("float_version"))
                             settingStorage.setValue("float_qs2_kp", mCustomConf.getParamDouble("kp"))
                             settingStorage.setValue("float_qs2_ki", mCustomConf.getParamDouble("ki"))
@@ -1043,6 +1048,7 @@ Item {
                         id: quickload2Button
                         text: "Quickload 2"
                         Layout.fillWidth: true
+                        enabled: settingStorage.value("float_qs2_populated") == "1"
                         onClicked: {
                             mCustomConf.updateParamDouble("float_version", settingStorage.value("float_qs2_float_version", 0))
                             mCustomConf.updateParamDouble("kp", settingStorage.value("float_qs2_kp", 0))
