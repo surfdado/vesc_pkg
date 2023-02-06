@@ -855,6 +855,7 @@ Item {
                             settingStorage.setValue("float_qs1_turntilt_erpm_boost_end", mCustomConf.getParamInt("turntilt_erpm_boost_end"))
                             settingStorage.setValue("float_qs1_turntilt_yaw_aggregate", mCustomConf.getParamInt("turntilt_yaw_aggregate"))
                             settingStorage.setValue("float_qs1_is_buzzer_enabled", mCustomConf.getParamBool("is_buzzer_enabled")?1:0)
+                            VescIf.emitStatusMessage("Quicksave 1 complete!", true)
                         }
                     }
                     Button {
@@ -1041,7 +1042,7 @@ Item {
                             settingStorage.setValue("float_qs2_turntilt_erpm_boost_end", mCustomConf.getParamInt("turntilt_erpm_boost_end"))
                             settingStorage.setValue("float_qs2_turntilt_yaw_aggregate", mCustomConf.getParamInt("turntilt_yaw_aggregate"))
                             settingStorage.setValue("float_qs2_is_buzzer_enabled", mCustomConf.getParamBool("is_buzzer_enabled")?1:0)
-                            settingStorage.sync()
+                            VescIf.emitStatusMessage("Quicksave 2 complete!", true)
                         }
                     }
                     Button {
