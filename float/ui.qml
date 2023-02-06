@@ -191,7 +191,7 @@ Item {
                     "BrakeTilt Setpoint  : " + float_braketilt.toFixed(2) + "°\n" +
                     "TorqueTilt Setpoint : " + float_torquetilt.toFixed(2) + "°\n" +
                     "TurnTilt Setpoint   : " + float_turntilt.toFixed(2) + "°\n" +
-                    "InputTilt Setpoint  : " + float_inputtilt.toFixed(2) + "°\n"
+                    "RemoteTilt Setpoint  : " + float_inputtilt.toFixed(2) + "°\n"
 
                 debug.text =
                     "True Pitch          : " + true_pitch.toFixed(2) + "°\n" +
