@@ -1849,6 +1849,19 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_IS_BUZZER_ENABLED</cDefine>
             <valInt>0</valInt>
         </is_buzzer_enabled>
+        <float_disable>
+            <longName>Disable Float Package</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;For Initial Setup Only!&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Use this option when you need to run the motor wizard or you want to troubleshoot your motor and run terminal commands. Riding won't be possible with this set to true.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_DISABLE</cDefine>
+            <valInt>0</valInt>
+        </float_disable>
         <float_version>
             <longName>Package Version</longName>
             <type>1</type>
@@ -1956,6 +1969,7 @@ p, li { white-space: pre-wrap; }
         <ser>braketilt_lingering</ser>
         <ser>dark_pitch_offset</ser>
         <ser>is_buzzer_enabled</ser>
+        <ser>float_disable</ser>
         <ser>float_version</ser>
     </SerOrder>
     <Grouping>
@@ -2100,6 +2114,7 @@ p, li { white-space: pre-wrap; }
                 <subgroupParams>
                     <param>::sep::Float Package Details</param>
                     <param>float_version</param>
+                    <param>float_disable</param>
                     <param>::sep::Balance Loop</param>
                     <param>hertz</param>
                     <param>::sep::Voltage Tiltbacks</param>

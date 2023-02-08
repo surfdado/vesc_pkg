@@ -174,6 +174,16 @@ Item {
                     switchString = "On"
                 }
 
+                if(state == 15){
+                    stateString = "DISABLED"
+                    switchString = "Enable in Float Cfg: Specs"
+                    rt_state.text = "Float Package is Disabled\n\n" +
+                                    "You can re-enable it in\nFloat Cfg: Specs\n\n"
+                    rt_data.text = "-- n/a --"
+                    setpoints.text = "-- n/a --"
+                    debug.text = "-- n/a --"
+                }
+                else {
                 rt_state.text =
                     "State               : " + stateString + "\n" +
                     "Switch              : " + switchString + "\n"
@@ -199,6 +209,7 @@ Item {
                     "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
                     "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
                     "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n"
+                }
             }
         }
     }

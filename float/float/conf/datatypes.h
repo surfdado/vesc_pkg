@@ -31,6 +31,7 @@ typedef enum {
 
 typedef struct {
 	float float_version;
+	float float_disable;
 	float kp;
 	float ki;
 	float kd;

@@ -56,7 +56,8 @@ typedef enum {
 	FAULT_DUTY = 10, 		// unused but kept for compatibility
 	FAULT_STARTUP = 11,
 	FAULT_REVERSE = 12,
-	FAULT_QUICKSTOP = 13
+	FAULT_QUICKSTOP = 13,
+	DISABLED = 15
 } FloatState;
 
 typedef enum {
@@ -460,7 +461,13 @@ static void configure(data *d) {
 	d->filtered_loop_overshoot = 0.0;
 
 	d->buzzer_enabled = d->float_conf.is_buzzer_enabled;
-	beep_alert(d, 1, false);
+	if (d->float_conf.float_disable) {
+		d->state = DISABLED;
+		beep_alert(d, 3, false);
+	}
+	else {
+		beep_alert(d, 1, false);
+	}
 }
 
 static void reset_vars(data *d) {
@@ -1901,6 +1908,8 @@ static void float_thd(void *arg) {
 			// Set RC current or maintain brake current (and keep WDT happy!)
 			do_rc_move(d);
 			break;
+		case (DISABLED):;
+			// no set_current, no brake_current
 		default:;
 		}
 

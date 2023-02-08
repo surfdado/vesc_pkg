@@ -418,6 +418,11 @@
 #define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
 #endif
 
+// Disable Float Package
+#ifndef APPCONF_FLOAT_DISABLE
+#define APPCONF_FLOAT_DISABLE 0
+#endif
+
 // Package Version
 #ifndef APPCONF_FLOAT_VERSION
 #define APPCONF_FLOAT_VERSION 0.9
