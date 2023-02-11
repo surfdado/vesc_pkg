@@ -1145,7 +1145,7 @@ static void apply_torquetilt(data *d) {
 
 	// CLASSIC TORQUE TILT /////////////////////////////////
 
-	float tt_strength = d->atr_filtered_current > 0 ? d->float_conf.torquetilt_strength : d->float_conf.torquetilt_strength_regen;
+	float tt_strength = d->braking ? d->float_conf.torquetilt_strength_regen : d->float_conf.torquetilt_strength;
 
 	// Do stock FW torque tilt: (comment from Mitch Lustig)
 	// Take abs motor current, subtract start offset, and take the max of that with 0 to get the current above our start threshold (absolute).
