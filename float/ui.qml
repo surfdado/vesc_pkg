@@ -20,6 +20,7 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.3
+import Qt.labs.platform 1.0
 import Qt.labs.settings 1.0
 
 import Vedder.vesc.utility 1.0
@@ -41,7 +42,7 @@ Item {
     property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
 
-    property var dialogParent: ApplicationWindow.overlay
+    // property var dialogParent: ApplicationWindow.overlay
     
     Settings {
         id: settingStorage
@@ -277,6 +278,27 @@ Item {
         displaySavedTunes()
     }
 
+    MessageDialog {
+        id: quicksavePopup
+        text: "Quicksave"
+        informativeText: "Do you want to overwrite this slot?"
+        buttons: (MessageDialog.Cancel | MessageDialog.Save)
+        onAccepted: {
+            settingStorage.setValue(saveName, saveValue)
+            VescIf.emitStatusMessage(saveName + " complete!", true)
+        }
+        onRejected: VescIf.emitStatusMessage(saveName + " cancelled", false)
+        property var saveName: "Temp Name"
+        property var saveValue: ""
+    }
+
+    MessageDialog {
+        id: quickloadErrorPopup
+        text: "Quicksave Empty"
+        informativeText: "Long press slot to save data to this slot."
+        buttons: MessageDialog.ok
+    }
+
     ColumnLayout {
         id: root
         anchors.fill: parent
@@ -500,184 +522,34 @@ Item {
                     Button {
                         id: quicksave1Button
                         text: "Quicksave 1"
-                        Layout.fillWidth: false
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 1")
+                        }
                         onClicked: {
-                            quickload1Button.enabled = true
-                            settingStorage.setValue("float_qs1_populated", "1")
-                            settingStorage.setValue("float_qs1_float_version", mCustomConf.getParamDouble("float_version"))
-                            settingStorage.setValue("float_qs1_kp", mCustomConf.getParamDouble("kp"))
-                            settingStorage.setValue("float_qs1_ki", mCustomConf.getParamDouble("ki"))
-                            settingStorage.setValue("float_qs1_kd", mCustomConf.getParamDouble("kd"))
-                            settingStorage.setValue("float_qs1_kp2", mCustomConf.getParamDouble("kp2"))
-                            settingStorage.setValue("float_qs1_mahony_kp", mCustomConf.getParamDouble("mahony_kp"))
-                            settingStorage.setValue("float_qs1_hertz", mCustomConf.getParamInt("hertz"))
-                            settingStorage.setValue("float_qs1_fault_pitch", mCustomConf.getParamDouble("fault_pitch"))
-                            settingStorage.setValue("float_qs1_fault_roll", mCustomConf.getParamDouble("fault_roll"))
-                            settingStorage.setValue("float_qs1_fault_adc1", mCustomConf.getParamDouble("fault_adc1"))
-                            settingStorage.setValue("float_qs1_fault_adc2", mCustomConf.getParamDouble("fault_adc2"))
-                            settingStorage.setValue("float_qs1_fault_delay_pitch", mCustomConf.getParamInt("fault_delay_pitch"))
-                            settingStorage.setValue("float_qs1_fault_delay_roll", mCustomConf.getParamInt("fault_delay_roll"))
-                            settingStorage.setValue("float_qs1_fault_delay_switch_half", mCustomConf.getParamInt("fault_delay_switch_half"))
-                            settingStorage.setValue("float_qs1_fault_delay_switch_full", mCustomConf.getParamInt("fault_delay_switch_full"))
-                            settingStorage.setValue("float_qs1_fault_adc_half_erpm", mCustomConf.getParamInt("fault_adc_half_erpm"))
-                            settingStorage.setValue("float_qs1_fault_is_dual_switch", mCustomConf.getParamBool("fault_is_dual_switch")?1:0)
-                            settingStorage.setValue("float_qs1_fault_moving_fault_disabled", mCustomConf.getParamBool("fault_moving_fault_disabled")?1:0)
-                            settingStorage.setValue("float_qs1_fault_darkride_enabled", mCustomConf.getParamBool("fault_darkride_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_fault_reversestop_enabled", mCustomConf.getParamBool("fault_reversestop_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_tiltback_duty_angle", mCustomConf.getParamDouble("tiltback_duty_angle"))
-                            settingStorage.setValue("float_qs1_tiltback_duty_speed", mCustomConf.getParamDouble("tiltback_duty_speed"))
-                            settingStorage.setValue("float_qs1_tiltback_duty", mCustomConf.getParamDouble("tiltback_duty"))
-                            settingStorage.setValue("float_qs1_tiltback_hv_angle", mCustomConf.getParamDouble("tiltback_hv_angle"))
-                            settingStorage.setValue("float_qs1_tiltback_hv_speed", mCustomConf.getParamDouble("tiltback_hv_speed"))
-                            settingStorage.setValue("float_qs1_tiltback_hv", mCustomConf.getParamDouble("tiltback_hv"))
-                            settingStorage.setValue("float_qs1_tiltback_lv_angle", mCustomConf.getParamDouble("tiltback_lv_angle"))
-                            settingStorage.setValue("float_qs1_tiltback_lv_speed", mCustomConf.getParamDouble("tiltback_lv_speed"))
-                            settingStorage.setValue("float_qs1_tiltback_lv", mCustomConf.getParamDouble("tiltback_lv"))
-                            settingStorage.setValue("float_qs1_tiltback_return_speed", mCustomConf.getParamDouble("tiltback_return_speed"))
-                            settingStorage.setValue("float_qs1_tiltback_constant", mCustomConf.getParamDouble("tiltback_constant"))
-                            settingStorage.setValue("float_qs1_tiltback_constant_erpm", mCustomConf.getParamInt("tiltback_constant_erpm"))
-                            settingStorage.setValue("float_qs1_tiltback_variable", mCustomConf.getParamDouble("tiltback_variable"))
-                            settingStorage.setValue("float_qs1_tiltback_variable_max", mCustomConf.getParamDouble("tiltback_variable_max"))
-                            settingStorage.setValue("float_qs1_inputtilt_remote_type", mCustomConf.getParamEnum("inputtilt_remote_type"))
-                            settingStorage.setValue("float_qs1_inputtilt_speed", mCustomConf.getParamDouble("inputtilt_speed"))
-                            settingStorage.setValue("float_qs1_inputtilt_angle_limit", mCustomConf.getParamDouble("inputtilt_angle_limit"))
-                            settingStorage.setValue("float_qs1_inputtilt_invert_throttle", mCustomConf.getParamBool("inputtilt_invert_throttle")?1:0)
-                            settingStorage.setValue("float_qs1_inputtilt_deadband", mCustomConf.getParamDouble("inputtilt_deadband"))
-                            settingStorage.setValue("float_qs1_noseangling_speed", mCustomConf.getParamDouble("noseangling_speed"))
-                            settingStorage.setValue("float_qs1_startup_pitch_tolerance", mCustomConf.getParamDouble("startup_pitch_tolerance"))
-                            settingStorage.setValue("float_qs1_startup_roll_tolerance", mCustomConf.getParamDouble("startup_roll_tolerance"))
-                            settingStorage.setValue("float_qs1_startup_speed", mCustomConf.getParamDouble("startup_speed"))
-                            settingStorage.setValue("float_qs1_startup_click_current", mCustomConf.getParamDouble("startup_click_current"))
-                            settingStorage.setValue("float_qs1_startup_softstart_enabled", mCustomConf.getParamBool("startup_softstart_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_startup_simplestart_enabled", mCustomConf.getParamBool("startup_simplestart_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_startup_pushstart_enabled", mCustomConf.getParamBool("startup_pushstart_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_startup_dirtylandings_enabled", mCustomConf.getParamBool("startup_dirtylandings_enabled")?1:0)
-                            settingStorage.setValue("float_qs1_brake_current", mCustomConf.getParamDouble("brake_current"))
-                            settingStorage.setValue("float_qs1_ki_limit", mCustomConf.getParamDouble("ki_limit"))
-                            settingStorage.setValue("float_qs1_booster_angle", mCustomConf.getParamDouble("booster_angle"))
-                            settingStorage.setValue("float_qs1_booster_ramp", mCustomConf.getParamDouble("booster_ramp"))
-                            settingStorage.setValue("float_qs1_booster_current", mCustomConf.getParamDouble("booster_current"))
-                            settingStorage.setValue("float_qs1_torquetilt_start_current", mCustomConf.getParamDouble("torquetilt_start_current"))
-                            settingStorage.setValue("float_qs1_torquetilt_angle_limit", mCustomConf.getParamDouble("torquetilt_angle_limit"))
-                            settingStorage.setValue("float_qs1_torquetilt_on_speed", mCustomConf.getParamDouble("torquetilt_on_speed"))
-                            settingStorage.setValue("float_qs1_torquetilt_off_speed", mCustomConf.getParamDouble("torquetilt_off_speed"))
-                            settingStorage.setValue("float_qs1_torquetilt_strength", mCustomConf.getParamDouble("torquetilt_strength"))
-                            settingStorage.setValue("float_qs1_torquetilt_strength_regen", mCustomConf.getParamDouble("torquetilt_strength_regen"))
-                            settingStorage.setValue("float_qs1_atr_strength_up", mCustomConf.getParamDouble("atr_strength_up"))
-                            settingStorage.setValue("float_qs1_atr_strength_down", mCustomConf.getParamDouble("atr_strength_down"))
-                            settingStorage.setValue("float_qs1_atr_torque_offset", mCustomConf.getParamDouble("atr_torque_offset"))
-                            settingStorage.setValue("float_qs1_atr_speed_boost", mCustomConf.getParamDouble("atr_speed_boost"))
-                            settingStorage.setValue("float_qs1_atr_angle_limit", mCustomConf.getParamDouble("atr_angle_limit"))
-                            settingStorage.setValue("float_qs1_atr_on_speed", mCustomConf.getParamDouble("atr_on_speed"))
-                            settingStorage.setValue("float_qs1_atr_off_speed", mCustomConf.getParamDouble("atr_off_speed"))
-                            settingStorage.setValue("float_qs1_atr_response_boost", mCustomConf.getParamDouble("atr_response_boost"))
-                            settingStorage.setValue("float_qs1_atr_transition_boost", mCustomConf.getParamDouble("atr_transition_boost"))
-                            settingStorage.setValue("float_qs1_atr_filter", mCustomConf.getParamDouble("atr_filter"))
-                            settingStorage.setValue("float_qs1_atr_amps_accel_ratio", mCustomConf.getParamDouble("atr_amps_accel_ratio"))
-                            settingStorage.setValue("float_qs1_atr_amps_decel_ratio", mCustomConf.getParamDouble("atr_amps_decel_ratio"))
-                            settingStorage.setValue("float_qs1_braketilt_strength", mCustomConf.getParamDouble("braketilt_strength"))
-                            settingStorage.setValue("float_qs1_braketilt_lingering", mCustomConf.getParamDouble("braketilt_lingering"))
-                            settingStorage.setValue("float_qs1_turntilt_strength", mCustomConf.getParamDouble("turntilt_strength"))
-                            settingStorage.setValue("float_qs1_turntilt_angle_limit", mCustomConf.getParamDouble("turntilt_angle_limit"))
-                            settingStorage.setValue("float_qs1_turntilt_start_angle", mCustomConf.getParamDouble("turntilt_start_angle"))
-                            settingStorage.setValue("float_qs1_turntilt_start_erpm", mCustomConf.getParamInt("turntilt_start_erpm"))
-                            settingStorage.setValue("float_qs1_turntilt_speed", mCustomConf.getParamDouble("turntilt_speed"))
-                            settingStorage.setValue("float_qs1_turntilt_erpm_boost", mCustomConf.getParamInt("turntilt_erpm_boost"))
-                            settingStorage.setValue("float_qs1_turntilt_erpm_boost_end", mCustomConf.getParamInt("turntilt_erpm_boost_end"))
-                            settingStorage.setValue("float_qs1_turntilt_yaw_aggregate", mCustomConf.getParamInt("turntilt_yaw_aggregate"))
-                            settingStorage.setValue("float_qs1_is_buzzer_enabled", mCustomConf.getParamBool("is_buzzer_enabled")?1:0)
-                            VescIf.emitStatusMessage("Quicksave 1 complete!", true)
+                            quickloadFloat("Float Quicksave 1")
                         }
                     }
                     Button {
-                        id: quickload1Button
-                        text: "Quickload 1"
+                        id: quicksave2Button
+                        text: "Quicksave 2"
                         Layout.fillWidth: true
-                        enabled: settingStorage.value("float_qs1_populated") == "1"
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 2")
+                        }
                         onClicked: {
-                            mCustomConf.updateParamDouble("float_version", settingStorage.value("float_qs1_float_version", 0))
-                            mCustomConf.updateParamDouble("kp", settingStorage.value("float_qs1_kp", 0))
-                            mCustomConf.updateParamDouble("ki", settingStorage.value("float_qs1_ki", 0))
-                            mCustomConf.updateParamDouble("kd", settingStorage.value("float_qs1_kd", 0))
-                            mCustomConf.updateParamDouble("kp2", settingStorage.value("float_qs1_kp2", 0))
-                            mCustomConf.updateParamDouble("mahony_kp", settingStorage.value("float_qs1_mahony_kp", 0))
-                            mCustomConf.updateParamInt("hertz", settingStorage.value("float_qs1_hertz", 0))
-                            mCustomConf.updateParamDouble("fault_pitch", settingStorage.value("float_qs1_fault_pitch", 0))
-                            mCustomConf.updateParamDouble("fault_roll", settingStorage.value("float_qs1_fault_roll", 0))
-                            mCustomConf.updateParamDouble("fault_adc1", settingStorage.value("float_qs1_fault_adc1", 0))
-                            mCustomConf.updateParamDouble("fault_adc2", settingStorage.value("float_qs1_fault_adc2", 0))
-                            mCustomConf.updateParamInt("fault_delay_pitch", settingStorage.value("float_qs1_fault_delay_pitch", 0))
-                            mCustomConf.updateParamInt("fault_delay_roll", settingStorage.value("float_qs1_fault_delay_roll", 0))
-                            mCustomConf.updateParamInt("fault_delay_switch_half", settingStorage.value("float_qs1_fault_delay_switch_half", 0))
-                            mCustomConf.updateParamInt("fault_delay_switch_full", settingStorage.value("float_qs1_fault_delay_switch_full", 0))
-                            mCustomConf.updateParamInt("fault_adc_half_erpm", settingStorage.value("float_qs1_fault_adc_half_erpm", 0))
-                            mCustomConf.updateParamBool("fault_is_dual_switch", parseInt(settingStorage.value("float_qs1_fault_is_dual_switch", 0)))
-                            mCustomConf.updateParamBool("fault_moving_fault_disabled", parseInt(settingStorage.value("float_qs1_fault_moving_fault_disabled", 0)))
-                            mCustomConf.updateParamBool("fault_darkride_enabled", parseInt(settingStorage.value("float_qs1_fault_darkride_enabled", 0)))
-                            mCustomConf.updateParamBool("fault_reversestop_enabled", parseInt(settingStorage.value("float_qs1_fault_reversestop_enabled", 0)))
-                            mCustomConf.updateParamDouble("tiltback_duty_angle", settingStorage.value("float_qs1_tiltback_duty_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_duty_speed", settingStorage.value("float_qs1_tiltback_duty_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_duty", settingStorage.value("float_qs1_tiltback_duty", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv_angle", settingStorage.value("float_qs1_tiltback_hv_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv_speed", settingStorage.value("float_qs1_tiltback_hv_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv", settingStorage.value("float_qs1_tiltback_hv", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv_angle", settingStorage.value("float_qs1_tiltback_lv_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv_speed", settingStorage.value("float_qs1_tiltback_lv_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv", settingStorage.value("float_qs1_tiltback_lv", 0))
-                            mCustomConf.updateParamDouble("tiltback_return_speed", settingStorage.value("float_qs1_tiltback_return_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_constant", settingStorage.value("float_qs1_tiltback_constant", 0))
-                            mCustomConf.updateParamInt("tiltback_constant_erpm", settingStorage.value("float_qs1_tiltback_constant_erpm", 0))
-                            mCustomConf.updateParamDouble("tiltback_variable", settingStorage.value("float_qs1_tiltback_variable", 0))
-                            mCustomConf.updateParamDouble("tiltback_variable_max", settingStorage.value("float_qs1_tiltback_variable_max", 0))
-                            mCustomConf.updateParamEnum("inputtilt_remote_type", settingStorage.value("float_qs1_inputtilt_remote_type", 0))
-                            mCustomConf.updateParamDouble("inputtilt_speed", settingStorage.value("float_qs1_inputtilt_speed", 0))
-                            mCustomConf.updateParamDouble("inputtilt_angle_limit", settingStorage.value("float_qs1_inputtilt_angle_limit", 0))
-                            mCustomConf.updateParamBool("inputtilt_invert_throttle", parseInt(settingStorage.value("float_qs1_inputtilt_invert_throttle", 0)))
-                            mCustomConf.updateParamDouble("inputtilt_deadband", settingStorage.value("float_qs1_inputtilt_deadband", 0))
-                            mCustomConf.updateParamDouble("noseangling_speed", settingStorage.value("float_qs1_noseangling_speed", 0))
-                            mCustomConf.updateParamDouble("startup_pitch_tolerance", settingStorage.value("float_qs1_startup_pitch_tolerance", 0))
-                            mCustomConf.updateParamDouble("startup_roll_tolerance", settingStorage.value("float_qs1_startup_roll_tolerance", 0))
-                            mCustomConf.updateParamDouble("startup_speed", settingStorage.value("float_qs1_startup_speed", 0))
-                            mCustomConf.updateParamDouble("startup_click_current", settingStorage.value("float_qs1_startup_click_current", 0))
-                            mCustomConf.updateParamBool("startup_softstart_enabled", parseInt(settingStorage.value("float_qs1_startup_softstart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_simplestart_enabled", parseInt(settingStorage.value("float_qs1_startup_simplestart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_pushstart_enabled", parseInt(settingStorage.value("float_qs1_startup_pushstart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_dirtylandings_enabled", parseInt(settingStorage.value("float_qs1_startup_dirtylandings_enabled", 0)))
-                            mCustomConf.updateParamDouble("brake_current", settingStorage.value("float_qs1_brake_current", 0))
-                            mCustomConf.updateParamDouble("ki_limit", settingStorage.value("float_qs1_ki_limit", 0))
-                            mCustomConf.updateParamDouble("booster_angle", settingStorage.value("float_qs1_booster_angle", 0))
-                            mCustomConf.updateParamDouble("booster_ramp", settingStorage.value("float_qs1_booster_ramp", 0))
-                            mCustomConf.updateParamDouble("booster_current", settingStorage.value("float_qs1_booster_current", 0))
-                            mCustomConf.updateParamDouble("torquetilt_start_current", settingStorage.value("float_qs1_torquetilt_start_current", 0))
-                            mCustomConf.updateParamDouble("torquetilt_angle_limit", settingStorage.value("float_qs1_torquetilt_angle_limit", 0))
-                            mCustomConf.updateParamDouble("torquetilt_on_speed", settingStorage.value("float_qs1_torquetilt_on_speed", 0))
-                            mCustomConf.updateParamDouble("torquetilt_off_speed", settingStorage.value("float_qs1_torquetilt_off_speed", 0))
-                            mCustomConf.updateParamDouble("torquetilt_strength", settingStorage.value("float_qs1_torquetilt_strength", 0))
-                            mCustomConf.updateParamDouble("torquetilt_strength_regen", settingStorage.value("float_qs1_torquetilt_strength_regen", 0))
-                            mCustomConf.updateParamDouble("atr_strength_up", settingStorage.value("float_qs1_atr_strength_up", 0))
-                            mCustomConf.updateParamDouble("atr_strength_down", settingStorage.value("float_qs1_atr_strength_down", 0))
-                            mCustomConf.updateParamDouble("atr_torque_offset", settingStorage.value("float_qs1_atr_torque_offset", 0))
-                            mCustomConf.updateParamDouble("atr_speed_boost", settingStorage.value("float_qs1_atr_speed_boost", 0))
-                            mCustomConf.updateParamDouble("atr_angle_limit", settingStorage.value("float_qs1_atr_angle_limit", 0))
-                            mCustomConf.updateParamDouble("atr_on_speed", settingStorage.value("float_qs1_atr_on_speed", 0))
-                            mCustomConf.updateParamDouble("atr_off_speed", settingStorage.value("float_qs1_atr_off_speed", 0))
-                            mCustomConf.updateParamDouble("atr_response_boost", settingStorage.value("float_qs1_atr_response_boost", 0))
-                            mCustomConf.updateParamDouble("atr_transition_boost", settingStorage.value("float_qs1_atr_transition_boost", 0))
-                            mCustomConf.updateParamDouble("atr_filter", settingStorage.value("float_qs1_atr_filter", 0))
-                            mCustomConf.updateParamDouble("atr_amps_accel_ratio", settingStorage.value("float_qs1_atr_amps_accel_ratio", 0))
-                            mCustomConf.updateParamDouble("atr_amps_decel_ratio", settingStorage.value("float_qs1_atr_amps_decel_ratio", 0))
-                            mCustomConf.updateParamDouble("braketilt_strength", settingStorage.value("float_qs1_braketilt_strength", 0))
-                            mCustomConf.updateParamDouble("braketilt_lingering", settingStorage.value("float_qs1_braketilt_lingering", 0))
-                            mCustomConf.updateParamDouble("turntilt_strength", settingStorage.value("float_qs1_turntilt_strength", 0))
-                            mCustomConf.updateParamDouble("turntilt_angle_limit", settingStorage.value("float_qs1_turntilt_angle_limit", 0))
-                            mCustomConf.updateParamDouble("turntilt_start_angle", settingStorage.value("float_qs1_turntilt_start_angle", 0))
-                            mCustomConf.updateParamInt("turntilt_start_erpm", settingStorage.value("float_qs1_turntilt_start_erpm", 0))
-                            mCustomConf.updateParamDouble("turntilt_speed", settingStorage.value("float_qs1_turntilt_speed", 0))
-                            mCustomConf.updateParamInt("turntilt_erpm_boost", settingStorage.value("float_qs1_turntilt_erpm_boost", 0))
-                            mCustomConf.updateParamInt("turntilt_erpm_boost_end", settingStorage.value("float_qs1_turntilt_erpm_boost_end", 0))
-                            mCustomConf.updateParamInt("turntilt_yaw_aggregate", settingStorage.value("float_qs1_turntilt_yaw_aggregate", 0))
-                            mCustomConf.updateParamBool("is_buzzer_enabled", parseInt(settingStorage.value("float_qs1_is_buzzer_enabled", 0)))
-                            mCommands.customConfigSet(0, mCustomConf)
+                            quickloadFloat("Float Quicksave 2")
+                        }
+                    }
+                    Button {
+                        id: quicksave3Button
+                        text: "Quicksave 3"
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 3")
+                        }
+                        onClicked: {
+                            quickloadFloat("Float Quicksave 3")
                         }
                     }
                 }
@@ -685,186 +557,36 @@ Item {
                 RowLayout {
                     Layout.fillWidth: true
                     Button {
-                        id: quicksave2Button
-                        text: "Quicksave 2"
-                        Layout.fillWidth: false
+                        id: quicksave4Button
+                        text: "Quicksave 4"
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 4")
+                        }
                         onClicked: {
-                            quickload2Button.enabled = true
-                            settingStorage.setValue("float_qs2_populated", "1")
-                            settingStorage.setValue("float_qs2_float_version", mCustomConf.getParamDouble("float_version"))
-                            settingStorage.setValue("float_qs2_kp", mCustomConf.getParamDouble("kp"))
-                            settingStorage.setValue("float_qs2_ki", mCustomConf.getParamDouble("ki"))
-                            settingStorage.setValue("float_qs2_kd", mCustomConf.getParamDouble("kd"))
-                            settingStorage.setValue("float_qs2_kp2", mCustomConf.getParamDouble("kp2"))
-                            settingStorage.setValue("float_qs2_mahony_kp", mCustomConf.getParamDouble("mahony_kp"))
-                            settingStorage.setValue("float_qs2_hertz", mCustomConf.getParamInt("hertz"))
-                            settingStorage.setValue("float_qs2_fault_pitch", mCustomConf.getParamDouble("fault_pitch"))
-                            settingStorage.setValue("float_qs2_fault_roll", mCustomConf.getParamDouble("fault_roll"))
-                            settingStorage.setValue("float_qs2_fault_adc1", mCustomConf.getParamDouble("fault_adc1"))
-                            settingStorage.setValue("float_qs2_fault_adc2", mCustomConf.getParamDouble("fault_adc2"))
-                            settingStorage.setValue("float_qs2_fault_delay_pitch", mCustomConf.getParamInt("fault_delay_pitch"))
-                            settingStorage.setValue("float_qs2_fault_delay_roll", mCustomConf.getParamInt("fault_delay_roll"))
-                            settingStorage.setValue("float_qs2_fault_delay_switch_half", mCustomConf.getParamInt("fault_delay_switch_half"))
-                            settingStorage.setValue("float_qs2_fault_delay_switch_full", mCustomConf.getParamInt("fault_delay_switch_full"))
-                            settingStorage.setValue("float_qs2_fault_adc_half_erpm", mCustomConf.getParamInt("fault_adc_half_erpm"))
-                            settingStorage.setValue("float_qs2_fault_is_dual_switch", mCustomConf.getParamBool("fault_is_dual_switch")?1:0)
-                            settingStorage.setValue("float_qs2_fault_moving_fault_disabled", mCustomConf.getParamBool("fault_moving_fault_disabled")?1:0)
-                            settingStorage.setValue("float_qs2_fault_darkride_enabled", mCustomConf.getParamBool("fault_darkride_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_fault_reversestop_enabled", mCustomConf.getParamBool("fault_reversestop_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_tiltback_duty_angle", mCustomConf.getParamDouble("tiltback_duty_angle"))
-                            settingStorage.setValue("float_qs2_tiltback_duty_speed", mCustomConf.getParamDouble("tiltback_duty_speed"))
-                            settingStorage.setValue("float_qs2_tiltback_duty", mCustomConf.getParamDouble("tiltback_duty"))
-                            settingStorage.setValue("float_qs2_tiltback_hv_angle", mCustomConf.getParamDouble("tiltback_hv_angle"))
-                            settingStorage.setValue("float_qs2_tiltback_hv_speed", mCustomConf.getParamDouble("tiltback_hv_speed"))
-                            settingStorage.setValue("float_qs2_tiltback_hv", mCustomConf.getParamDouble("tiltback_hv"))
-                            settingStorage.setValue("float_qs2_tiltback_lv_angle", mCustomConf.getParamDouble("tiltback_lv_angle"))
-                            settingStorage.setValue("float_qs2_tiltback_lv_speed", mCustomConf.getParamDouble("tiltback_lv_speed"))
-                            settingStorage.setValue("float_qs2_tiltback_lv", mCustomConf.getParamDouble("tiltback_lv"))
-                            settingStorage.setValue("float_qs2_tiltback_return_speed", mCustomConf.getParamDouble("tiltback_return_speed"))
-                            settingStorage.setValue("float_qs2_tiltback_constant", mCustomConf.getParamDouble("tiltback_constant"))
-                            settingStorage.setValue("float_qs2_tiltback_constant_erpm", mCustomConf.getParamInt("tiltback_constant_erpm"))
-                            settingStorage.setValue("float_qs2_tiltback_variable", mCustomConf.getParamDouble("tiltback_variable"))
-                            settingStorage.setValue("float_qs2_tiltback_variable_max", mCustomConf.getParamDouble("tiltback_variable_max"))
-                            settingStorage.setValue("float_qs2_inputtilt_remote_type", mCustomConf.getParamEnum("inputtilt_remote_type"))
-                            settingStorage.setValue("float_qs2_inputtilt_speed", mCustomConf.getParamDouble("inputtilt_speed"))
-                            settingStorage.setValue("float_qs2_inputtilt_angle_limit", mCustomConf.getParamDouble("inputtilt_angle_limit"))
-                            settingStorage.setValue("float_qs2_inputtilt_invert_throttle", mCustomConf.getParamBool("inputtilt_invert_throttle")?1:0)
-                            settingStorage.setValue("float_qs2_inputtilt_deadband", mCustomConf.getParamDouble("inputtilt_deadband"))
-                            settingStorage.setValue("float_qs2_noseangling_speed", mCustomConf.getParamDouble("noseangling_speed"))
-                            settingStorage.setValue("float_qs2_startup_pitch_tolerance", mCustomConf.getParamDouble("startup_pitch_tolerance"))
-                            settingStorage.setValue("float_qs2_startup_roll_tolerance", mCustomConf.getParamDouble("startup_roll_tolerance"))
-                            settingStorage.setValue("float_qs2_startup_speed", mCustomConf.getParamDouble("startup_speed"))
-                            settingStorage.setValue("float_qs2_startup_click_current", mCustomConf.getParamDouble("startup_click_current"))
-                            settingStorage.setValue("float_qs2_startup_softstart_enabled", mCustomConf.getParamBool("startup_softstart_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_startup_simplestart_enabled", mCustomConf.getParamBool("startup_simplestart_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_startup_pushstart_enabled", mCustomConf.getParamBool("startup_pushstart_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_startup_dirtylandings_enabled", mCustomConf.getParamBool("startup_dirtylandings_enabled")?1:0)
-                            settingStorage.setValue("float_qs2_brake_current", mCustomConf.getParamDouble("brake_current"))
-                            settingStorage.setValue("float_qs2_ki_limit", mCustomConf.getParamDouble("ki_limit"))
-                            settingStorage.setValue("float_qs2_booster_angle", mCustomConf.getParamDouble("booster_angle"))
-                            settingStorage.setValue("float_qs2_booster_ramp", mCustomConf.getParamDouble("booster_ramp"))
-                            settingStorage.setValue("float_qs2_booster_current", mCustomConf.getParamDouble("booster_current"))
-                            settingStorage.setValue("float_qs2_torquetilt_start_current", mCustomConf.getParamDouble("torquetilt_start_current"))
-                            settingStorage.setValue("float_qs2_torquetilt_angle_limit", mCustomConf.getParamDouble("torquetilt_angle_limit"))
-                            settingStorage.setValue("float_qs2_torquetilt_on_speed", mCustomConf.getParamDouble("torquetilt_on_speed"))
-                            settingStorage.setValue("float_qs2_torquetilt_off_speed", mCustomConf.getParamDouble("torquetilt_off_speed"))
-                            settingStorage.setValue("float_qs2_torquetilt_strength", mCustomConf.getParamDouble("torquetilt_strength"))
-                            settingStorage.setValue("float_qs2_torquetilt_strength_regen", mCustomConf.getParamDouble("torquetilt_strength_regen"))
-                            settingStorage.setValue("float_qs2_atr_strength_up", mCustomConf.getParamDouble("atr_strength_up"))
-                            settingStorage.setValue("float_qs2_atr_strength_down", mCustomConf.getParamDouble("atr_strength_down"))
-                            settingStorage.setValue("float_qs2_atr_torque_offset", mCustomConf.getParamDouble("atr_torque_offset"))
-                            settingStorage.setValue("float_qs2_atr_speed_boost", mCustomConf.getParamDouble("atr_speed_boost"))
-                            settingStorage.setValue("float_qs2_atr_angle_limit", mCustomConf.getParamDouble("atr_angle_limit"))
-                            settingStorage.setValue("float_qs2_atr_on_speed", mCustomConf.getParamDouble("atr_on_speed"))
-                            settingStorage.setValue("float_qs2_atr_off_speed", mCustomConf.getParamDouble("atr_off_speed"))
-                            settingStorage.setValue("float_qs2_atr_response_boost", mCustomConf.getParamDouble("atr_response_boost"))
-                            settingStorage.setValue("float_qs2_atr_transition_boost", mCustomConf.getParamDouble("atr_transition_boost"))
-                            settingStorage.setValue("float_qs2_atr_filter", mCustomConf.getParamDouble("atr_filter"))
-                            settingStorage.setValue("float_qs2_atr_amps_accel_ratio", mCustomConf.getParamDouble("atr_amps_accel_ratio"))
-                            settingStorage.setValue("float_qs2_atr_amps_decel_ratio", mCustomConf.getParamDouble("atr_amps_decel_ratio"))
-                            settingStorage.setValue("float_qs2_braketilt_strength", mCustomConf.getParamDouble("braketilt_strength"))
-                            settingStorage.setValue("float_qs2_braketilt_lingering", mCustomConf.getParamDouble("braketilt_lingering"))
-                            settingStorage.setValue("float_qs2_turntilt_strength", mCustomConf.getParamDouble("turntilt_strength"))
-                            settingStorage.setValue("float_qs2_turntilt_angle_limit", mCustomConf.getParamDouble("turntilt_angle_limit"))
-                            settingStorage.setValue("float_qs2_turntilt_start_angle", mCustomConf.getParamDouble("turntilt_start_angle"))
-                            settingStorage.setValue("float_qs2_turntilt_start_erpm", mCustomConf.getParamInt("turntilt_start_erpm"))
-                            settingStorage.setValue("float_qs2_turntilt_speed", mCustomConf.getParamDouble("turntilt_speed"))
-                            settingStorage.setValue("float_qs2_turntilt_erpm_boost", mCustomConf.getParamInt("turntilt_erpm_boost"))
-                            settingStorage.setValue("float_qs2_turntilt_erpm_boost_end", mCustomConf.getParamInt("turntilt_erpm_boost_end"))
-                            settingStorage.setValue("float_qs2_turntilt_yaw_aggregate", mCustomConf.getParamInt("turntilt_yaw_aggregate"))
-                            settingStorage.setValue("float_qs2_is_buzzer_enabled", mCustomConf.getParamBool("is_buzzer_enabled")?1:0)
-                            VescIf.emitStatusMessage("Quicksave 2 complete!", true)
+                            quickloadFloat("Float Quicksave 4")
                         }
                     }
                     Button {
-                        id: quickload2Button
-                        text: "Quickload 2"
+                        id: quicksave5Button
+                        text: "Quicksave 5"
                         Layout.fillWidth: true
-                        enabled: settingStorage.value("float_qs2_populated") == "1"
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 5")
+                        }
                         onClicked: {
-                            mCustomConf.updateParamDouble("float_version", settingStorage.value("float_qs2_float_version", 0))
-                            mCustomConf.updateParamDouble("kp", settingStorage.value("float_qs2_kp", 0))
-                            mCustomConf.updateParamDouble("ki", settingStorage.value("float_qs2_ki", 0))
-                            mCustomConf.updateParamDouble("kd", settingStorage.value("float_qs2_kd", 0))
-                            mCustomConf.updateParamDouble("kp2", settingStorage.value("float_qs2_kp2", 0))
-                            mCustomConf.updateParamDouble("mahony_kp", settingStorage.value("float_qs2_mahony_kp", 0))
-                            mCustomConf.updateParamInt("hertz", settingStorage.value("float_qs2_hertz", 0))
-                            mCustomConf.updateParamDouble("fault_pitch", settingStorage.value("float_qs2_fault_pitch", 0))
-                            mCustomConf.updateParamDouble("fault_roll", settingStorage.value("float_qs2_fault_roll", 0))
-                            mCustomConf.updateParamDouble("fault_adc1", settingStorage.value("float_qs2_fault_adc1", 0))
-                            mCustomConf.updateParamDouble("fault_adc2", settingStorage.value("float_qs2_fault_adc2", 0))
-                            mCustomConf.updateParamInt("fault_delay_pitch", settingStorage.value("float_qs2_fault_delay_pitch", 0))
-                            mCustomConf.updateParamInt("fault_delay_roll", settingStorage.value("float_qs2_fault_delay_roll", 0))
-                            mCustomConf.updateParamInt("fault_delay_switch_half", settingStorage.value("float_qs2_fault_delay_switch_half", 0))
-                            mCustomConf.updateParamInt("fault_delay_switch_full", settingStorage.value("float_qs2_fault_delay_switch_full", 0))
-                            mCustomConf.updateParamInt("fault_adc_half_erpm", settingStorage.value("float_qs2_fault_adc_half_erpm", 0))
-                            mCustomConf.updateParamBool("fault_is_dual_switch", parseInt(settingStorage.value("float_qs2_fault_is_dual_switch", 0)))
-                            mCustomConf.updateParamBool("fault_moving_fault_disabled", parseInt(settingStorage.value("float_qs2_fault_moving_fault_disabled", 0)))
-                            mCustomConf.updateParamBool("fault_darkride_enabled", parseInt(settingStorage.value("float_qs2_fault_darkride_enabled", 0)))
-                            mCustomConf.updateParamBool("fault_reversestop_enabled", parseInt(settingStorage.value("float_qs2_fault_reversestop_enabled", 0)))
-                            mCustomConf.updateParamDouble("tiltback_duty_angle", settingStorage.value("float_qs2_tiltback_duty_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_duty_speed", settingStorage.value("float_qs2_tiltback_duty_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_duty", settingStorage.value("float_qs2_tiltback_duty", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv_angle", settingStorage.value("float_qs2_tiltback_hv_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv_speed", settingStorage.value("float_qs2_tiltback_hv_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_hv", settingStorage.value("float_qs2_tiltback_hv", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv_angle", settingStorage.value("float_qs2_tiltback_lv_angle", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv_speed", settingStorage.value("float_qs2_tiltback_lv_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_lv", settingStorage.value("float_qs2_tiltback_lv", 0))
-                            mCustomConf.updateParamDouble("tiltback_return_speed", settingStorage.value("float_qs2_tiltback_return_speed", 0))
-                            mCustomConf.updateParamDouble("tiltback_constant", settingStorage.value("float_qs2_tiltback_constant", 0))
-                            mCustomConf.updateParamInt("tiltback_constant_erpm", settingStorage.value("float_qs2_tiltback_constant_erpm", 0))
-                            mCustomConf.updateParamDouble("tiltback_variable", settingStorage.value("float_qs2_tiltback_variable", 0))
-                            mCustomConf.updateParamDouble("tiltback_variable_max", settingStorage.value("float_qs2_tiltback_variable_max", 0))
-                            mCustomConf.updateParamEnum("inputtilt_remote_type", settingStorage.value("float_qs2_inputtilt_remote_type", 0))
-                            mCustomConf.updateParamDouble("inputtilt_speed", settingStorage.value("float_qs2_inputtilt_speed", 0))
-                            mCustomConf.updateParamDouble("inputtilt_angle_limit", settingStorage.value("float_qs2_inputtilt_angle_limit", 0))
-                            mCustomConf.updateParamBool("inputtilt_invert_throttle", parseInt(settingStorage.value("float_qs2_inputtilt_invert_throttle", 0)))
-                            mCustomConf.updateParamDouble("inputtilt_deadband", settingStorage.value("float_qs2_inputtilt_deadband", 0))
-                            mCustomConf.updateParamDouble("noseangling_speed", settingStorage.value("float_qs2_noseangling_speed", 0))
-                            mCustomConf.updateParamDouble("startup_pitch_tolerance", settingStorage.value("float_qs2_startup_pitch_tolerance", 0))
-                            mCustomConf.updateParamDouble("startup_roll_tolerance", settingStorage.value("float_qs2_startup_roll_tolerance", 0))
-                            mCustomConf.updateParamDouble("startup_speed", settingStorage.value("float_qs2_startup_speed", 0))
-                            mCustomConf.updateParamDouble("startup_click_current", settingStorage.value("float_qs2_startup_click_current", 0))
-                            mCustomConf.updateParamBool("startup_softstart_enabled", parseInt(settingStorage.value("float_qs2_startup_softstart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_simplestart_enabled", parseInt(settingStorage.value("float_qs2_startup_simplestart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_pushstart_enabled", parseInt(settingStorage.value("float_qs2_startup_pushstart_enabled", 0)))
-                            mCustomConf.updateParamBool("startup_dirtylandings_enabled", parseInt(settingStorage.value("float_qs2_startup_dirtylandings_enabled", 0)))
-                            mCustomConf.updateParamDouble("brake_current", settingStorage.value("float_qs2_brake_current", 0))
-                            mCustomConf.updateParamDouble("ki_limit", settingStorage.value("float_qs2_ki_limit", 0))
-                            mCustomConf.updateParamDouble("booster_angle", settingStorage.value("float_qs2_booster_angle", 0))
-                            mCustomConf.updateParamDouble("booster_ramp", settingStorage.value("float_qs2_booster_ramp", 0))
-                            mCustomConf.updateParamDouble("booster_current", settingStorage.value("float_qs2_booster_current", 0))
-                            mCustomConf.updateParamDouble("torquetilt_start_current", settingStorage.value("float_qs2_torquetilt_start_current", 0))
-                            mCustomConf.updateParamDouble("torquetilt_angle_limit", settingStorage.value("float_qs2_torquetilt_angle_limit", 0))
-                            mCustomConf.updateParamDouble("torquetilt_on_speed", settingStorage.value("float_qs2_torquetilt_on_speed", 0))
-                            mCustomConf.updateParamDouble("torquetilt_off_speed", settingStorage.value("float_qs2_torquetilt_off_speed", 0))
-                            mCustomConf.updateParamDouble("torquetilt_strength", settingStorage.value("float_qs2_torquetilt_strength", 0))
-                            mCustomConf.updateParamDouble("torquetilt_strength_regen", settingStorage.value("float_qs2_torquetilt_strength_regen", 0))
-                            mCustomConf.updateParamDouble("atr_strength_up", settingStorage.value("float_qs2_atr_strength_up", 0))
-                            mCustomConf.updateParamDouble("atr_strength_down", settingStorage.value("float_qs2_atr_strength_down", 0))
-                            mCustomConf.updateParamDouble("atr_torque_offset", settingStorage.value("float_qs2_atr_torque_offset", 0))
-                            mCustomConf.updateParamDouble("atr_speed_boost", settingStorage.value("float_qs2_atr_speed_boost", 0))
-                            mCustomConf.updateParamDouble("atr_angle_limit", settingStorage.value("float_qs2_atr_angle_limit", 0))
-                            mCustomConf.updateParamDouble("atr_on_speed", settingStorage.value("float_qs2_atr_on_speed", 0))
-                            mCustomConf.updateParamDouble("atr_off_speed", settingStorage.value("float_qs2_atr_off_speed", 0))
-                            mCustomConf.updateParamDouble("atr_response_boost", settingStorage.value("float_qs2_atr_response_boost", 0))
-                            mCustomConf.updateParamDouble("atr_transition_boost", settingStorage.value("float_qs2_atr_transition_boost", 0))
-                            mCustomConf.updateParamDouble("atr_filter", settingStorage.value("float_qs2_atr_filter", 0))
-                            mCustomConf.updateParamDouble("atr_amps_accel_ratio", settingStorage.value("float_qs2_atr_amps_accel_ratio", 0))
-                            mCustomConf.updateParamDouble("atr_amps_decel_ratio", settingStorage.value("float_qs2_atr_amps_decel_ratio", 0))
-                            mCustomConf.updateParamDouble("braketilt_strength", settingStorage.value("float_qs2_braketilt_strength", 0))
-                            mCustomConf.updateParamDouble("braketilt_lingering", settingStorage.value("float_qs2_braketilt_lingering", 0))
-                            mCustomConf.updateParamDouble("turntilt_strength", settingStorage.value("float_qs2_turntilt_strength", 0))
-                            mCustomConf.updateParamDouble("turntilt_angle_limit", settingStorage.value("float_qs2_turntilt_angle_limit", 0))
-                            mCustomConf.updateParamDouble("turntilt_start_angle", settingStorage.value("float_qs2_turntilt_start_angle", 0))
-                            mCustomConf.updateParamInt("turntilt_start_erpm", settingStorage.value("float_qs2_turntilt_start_erpm", 0))
-                            mCustomConf.updateParamDouble("turntilt_speed", settingStorage.value("float_qs2_turntilt_speed", 0))
-                            mCustomConf.updateParamInt("turntilt_erpm_boost", settingStorage.value("float_qs2_turntilt_erpm_boost", 0))
-                            mCustomConf.updateParamInt("turntilt_erpm_boost_end", settingStorage.value("float_qs2_turntilt_erpm_boost_end", 0))
-                            mCustomConf.updateParamInt("turntilt_yaw_aggregate", settingStorage.value("float_qs2_turntilt_yaw_aggregate", 0))
-                            mCustomConf.updateParamBool("is_buzzer_enabled", parseInt(settingStorage.value("float_qs2_is_buzzer_enabled", 0)))
-                            mCommands.customConfigSet(0, mCustomConf)
+                            quickloadFloat("Float Quicksave 5")
+                        }
+                    }
+                    Button {
+                        id: quicksave6Button
+                        text: "Quicksave 6"
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveFloat("Float Quicksave 6")
+                        }
+                        onClicked: {
+                            quickloadFloat("Float Quicksave 6")
                         }
                     }
                 }
@@ -918,6 +640,129 @@ Item {
 
             }
                 
+        }
+    }
+
+    function quicksaveFloat(saveName){
+        var params = [
+            {"name": "float_version", "type": "Double"},
+            {"name": "kp", "type": "Double"},
+            {"name": "ki", "type": "Double"},
+            {"name": "kd", "type": "Double"},
+            {"name": "kp2", "type": "Double"},
+            {"name": "mahony_kp", "type": "Double"},
+            {"name": "hertz", "type": "Int"},
+            {"name": "fault_pitch", "type": "Double"},
+            {"name": "fault_roll", "type": "Double"},
+            {"name": "fault_adc1", "type": "Double"},
+            {"name": "fault_adc2", "type": "Double"},
+            {"name": "fault_delay_pitch", "type": "Int"},
+            {"name": "fault_delay_roll", "type": "Int"},
+            {"name": "fault_delay_switch_half", "type": "Int"},
+            {"name": "fault_delay_switch_full", "type": "Int"},
+            {"name": "fault_adc_half_erpm", "type": "Int"},
+            {"name": "fault_is_dual_switch", "type": "Bool"},
+            {"name": "fault_moving_fault_disabled", "type": "Bool"},
+            {"name": "fault_darkride_enabled", "type": "Bool"},
+            {"name": "fault_reversestop_enabled", "type": "Bool"},
+            {"name": "tiltback_duty_angle", "type": "Double"},
+            {"name": "tiltback_duty_speed", "type": "Double"},
+            {"name": "tiltback_duty", "type": "Double"},
+            {"name": "tiltback_hv_angle", "type": "Double"},
+            {"name": "tiltback_hv_speed", "type": "Double"},
+            {"name": "tiltback_hv", "type": "Double"},
+            {"name": "tiltback_lv_angle", "type": "Double"},
+            {"name": "tiltback_lv_speed", "type": "Double"},
+            {"name": "tiltback_lv", "type": "Double"},
+            {"name": "tiltback_return_speed", "type": "Double"},
+            {"name": "tiltback_constant", "type": "Double"},
+            {"name": "tiltback_constant_erpm", "type": "Int"},
+            {"name": "tiltback_variable", "type": "Double"},
+            {"name": "tiltback_variable_max", "type": "Double"},
+            {"name": "inputtilt_remote_type", "type": "Enum"},
+            {"name": "inputtilt_speed", "type": "Double"},
+            {"name": "inputtilt_angle_limit", "type": "Double"},
+            {"name": "inputtilt_invert_throttle", "type": "Bool"},
+            {"name": "inputtilt_deadband", "type": "Double"},
+            {"name": "noseangling_speed", "type": "Double"},
+            {"name": "startup_pitch_tolerance", "type": "Double"},
+            {"name": "startup_roll_tolerance", "type": "Double"},
+            {"name": "startup_speed", "type": "Double"},
+            {"name": "startup_click_current", "type": "Double"},
+            {"name": "startup_softstart_enabled", "type": "Bool"},
+            {"name": "startup_simplestart_enabled", "type": "Bool"},
+            {"name": "startup_pushstart_enabled", "type": "Bool"},
+            {"name": "startup_dirtylandings_enabled", "type": "Bool"},
+            {"name": "brake_current", "type": "Double"},
+            {"name": "ki_limit", "type": "Double"},
+            {"name": "booster_angle", "type": "Double"},
+            {"name": "booster_ramp", "type": "Double"},
+            {"name": "booster_current", "type": "Double"},
+            {"name": "torquetilt_start_current", "type": "Double"},
+            {"name": "torquetilt_angle_limit", "type": "Double"},
+            {"name": "torquetilt_on_speed", "type": "Double"},
+            {"name": "torquetilt_off_speed", "type": "Double"},
+            {"name": "torquetilt_strength", "type": "Double"},
+            {"name": "torquetilt_strength_regen", "type": "Double"},
+            {"name": "atr_strength_up", "type": "Double"},
+            {"name": "atr_strength_down", "type": "Double"},
+            {"name": "atr_torque_offset", "type": "Double"},
+            {"name": "atr_speed_boost", "type": "Double"},
+            {"name": "atr_angle_limit", "type": "Double"},
+            {"name": "atr_on_speed", "type": "Double"},
+            {"name": "atr_off_speed", "type": "Double"},
+            {"name": "atr_response_boost", "type": "Double"},
+            {"name": "atr_transition_boost", "type": "Double"},
+            {"name": "atr_filter", "type": "Double"},
+            {"name": "atr_amps_accel_ratio", "type": "Double"},
+            {"name": "atr_amps_decel_ratio", "type": "Double"},
+            {"name": "braketilt_strength", "type": "Double"},
+            {"name": "braketilt_lingering", "type": "Double"},
+            {"name": "turntilt_strength", "type": "Double"},
+            {"name": "turntilt_angle_limit", "type": "Double"},
+            {"name": "turntilt_start_angle", "type": "Double"},
+            {"name": "turntilt_start_erpm", "type": "Int"},
+            {"name": "turntilt_speed", "type": "Double"},
+            {"name": "turntilt_erpm_boost", "type": "Int"},
+            {"name": "turntilt_erpm_boost_end", "type": "Int"},
+            {"name": "turntilt_yaw_aggregate", "type": "Int"},
+            {"name": "is_buzzer_enabled", "type": "Bool"}
+        ]
+        for(var i in params){
+            if(params[i].type == ("Double")){
+                params[i].value = mCustomConf.getParamDouble(params[i].name)
+            }else if(params[i].type == ("Int")){
+                params[i].value = mCustomConf.getParamInt(params[i].name)
+            }else if(params[i].type == ("Bool")){
+                params[i].value = mCustomConf.getParamBool(params[i].name)
+            }else if(params[i].type == ("Enum")){
+                params[i].value = mCustomConf.getParamEnum(params[i].name)
+            }
+        }
+
+        quicksavePopup.saveName = saveName
+        quicksavePopup.saveValue = JSON.stringify(params)
+        quicksavePopup.open()
+    }
+
+    function quickloadFloat(saveName){
+        var json = settingStorage.value(saveName, "")
+        if(!json){
+            quickloadErrorPopup.open()
+        }else{
+            var params = JSON.parse(json)
+            for(var i in params){
+                if(params[i].type == ("Double")){
+                    mCustomConf.updateParamDouble(params[i].name, params[i].value)
+                }else if(params[i].type == ("Int")){
+                    mCustomConf.updateParamInt(params[i].name, params[i].value)
+                }else if(params[i].type == ("Bool")){
+                    mCustomConf.updateParamBool(params[i].name, params[i].value)
+                }else if(params[i].type == ("Enum")){
+                    mCustomConf.updateParamEnum(params[i].name, params[i].value)
+                }
+            }
+            mCommands.customConfigSet(0, mCustomConf)
         }
     }
 
