@@ -86,6 +86,9 @@ typedef struct {
 	float booster_angle;
 	float booster_ramp;
 	float booster_current;
+	float brkbooster_angle;
+	float brkbooster_ramp;
+	float brkbooster_current;
 	float torquetilt_start_current;
 	float torquetilt_angle_limit;
 	float torquetilt_on_speed;

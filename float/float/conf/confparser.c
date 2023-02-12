@@ -63,6 +63,9 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->booster_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->booster_ramp, 100, &ind);
 	buffer_append_float16(buffer, conf->booster_current, 100, &ind);
+	buffer_append_float16(buffer, conf->brkbooster_angle, 100, &ind);
+	buffer_append_float16(buffer, conf->brkbooster_ramp, 100, &ind);
+	buffer_append_float16(buffer, conf->brkbooster_current, 100, &ind);
 	buffer_append_float16(buffer, conf->torquetilt_start_current, 100, &ind);
 	buffer_append_float16(buffer, conf->torquetilt_angle_limit, 100, &ind);
 	buffer_append_float16(buffer, conf->torquetilt_on_speed, 100, &ind);
@@ -160,6 +163,9 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->booster_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->booster_ramp = buffer_get_float16(buffer, 100, &ind);
 	conf->booster_current = buffer_get_float16(buffer, 100, &ind);
+	conf->brkbooster_angle = buffer_get_float16(buffer, 100, &ind);
+	conf->brkbooster_ramp = buffer_get_float16(buffer, 100, &ind);
+	conf->brkbooster_current = buffer_get_float16(buffer, 100, &ind);
 	conf->torquetilt_start_current = buffer_get_float16(buffer, 100, &ind);
 	conf->torquetilt_angle_limit = buffer_get_float16(buffer, 100, &ind);
 	conf->torquetilt_on_speed = buffer_get_float16(buffer, 100, &ind);
@@ -250,6 +256,9 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;
 	conf->booster_ramp = APPCONF_FLOAT_BOOSTER_RAMP;
 	conf->booster_current = APPCONF_FLOAT_BOOSTER_CURRENT;
+	conf->brkbooster_angle = APPCONF_FLOAT_BRKBOOSTER_ANGLE;
+	conf->brkbooster_ramp = APPCONF_FLOAT_BRKBOOSTER_RAMP;
+	conf->brkbooster_current = APPCONF_FLOAT_BRKBOOSTER_CURRENT;
 	conf->torquetilt_start_current = APPCONF_FLOAT_TORQUETILT_START_CURRENT;
 	conf->torquetilt_angle_limit = APPCONF_FLOAT_TORQUETILT_ANGLE_LIMIT;
 	conf->torquetilt_on_speed = APPCONF_FLOAT_TORQUETILT_ON_SPEED;

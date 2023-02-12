@@ -503,6 +503,7 @@ static void reset_vars(data *d) {
 	d->pid_value = 0;
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
+	d->applied_booster_current= 0;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -1749,29 +1750,48 @@ static void float_thd(void *arg) {
 				float true_proportional = d->setpoint - d->true_pitch_angle;
 				d->abs_proportional = fabsf(true_proportional);
 
-				d->applied_booster_current = d->float_conf.booster_current;
+				float booster_current, booster_angle, booster_ramp;
+				if (d->braking) {
+					booster_current = d->float_conf.brkbooster_current;
+					booster_angle = d->float_conf.brkbooster_angle;
+					booster_ramp = d->float_conf.brkbooster_ramp;
+				}
+				else {
+					booster_current = d->float_conf.booster_current;
+					booster_angle = d->float_conf.booster_angle;
+					booster_ramp = d->float_conf.booster_ramp;
+				}
 
-				/* SPEED STIFFNESS - Disabled for now; needs to be ramped in to avoid sudden jolts when applying/removing added booster current
 				// Make booster a bit stronger at higher speed (up to 2x stronger when braking)
-				const float boost_min_erpm = 3000;
+				const int boost_min_erpm = 3000;
 				if (d->abs_erpm > boost_min_erpm) {
 					float speedstiffness = fminf(1, (d->abs_erpm - boost_min_erpm) / 10000);
-					if (d->braking)
-						d->applied_booster_current += d->applied_booster_current * speedstiffness;
-					else
-						d->applied_booster_current += d->applied_booster_current * speedstiffness / 2;
-				}
-				*/
-
-				if (d->abs_proportional > d->float_conf.booster_angle) {
-					if (d->abs_proportional - d->float_conf.booster_angle < d->float_conf.booster_ramp) {
-						d->applied_booster_current *= SIGN(true_proportional) *
-								((d->abs_proportional - d->float_conf.booster_angle) / d->float_conf.booster_ramp);
-					} else {
-						d->applied_booster_current *= SIGN(true_proportional);
+					if (d->braking) {
+						// use higher current at speed when braking
+						booster_current += booster_current * speedstiffness;
+					}
+					else {
+						// when accelerating, we reduce the booster start angle as we get faster
+						// strength remains unchanged
+						float angledivider = 1 + speedstiffness;
+						booster_angle /= angledivider;
 					}
 				}
 
+				if (d->abs_proportional > booster_angle) {
+					if (d->abs_proportional - booster_angle < booster_ramp) {
+						booster_current *= SIGN(true_proportional) *
+								((d->abs_proportional - booster_angle) / booster_ramp);
+					} else {
+						booster_current *= SIGN(true_proportional);
+					}
+				}
+				else {
+					booster_current = 0;
+				}
+
+				// No harsh changes in booster current (effective delay = ~30ms)
+				d->applied_booster_current = 0.03 * booster_current + 0.97 * d->applied_booster_current;
 				pid_mod += d->applied_booster_current;
 
 				if (d->float_conf.startup_softstart_enabled && (d->softstart_pid_limit < d->mc_current_max)) {
@@ -2185,6 +2205,9 @@ static void cmd_tune_defaults(data *d){
 	d->float_conf.booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;
 	d->float_conf.booster_ramp = APPCONF_FLOAT_BOOSTER_RAMP;
 	d->float_conf.booster_current = APPCONF_FLOAT_BOOSTER_CURRENT;
+	d->float_conf.brkbooster_angle = APPCONF_FLOAT_BRKBOOSTER_ANGLE;
+	d->float_conf.brkbooster_ramp = APPCONF_FLOAT_BRKBOOSTER_RAMP;
+	d->float_conf.brkbooster_current = APPCONF_FLOAT_BRKBOOSTER_CURRENT;
 	d->float_conf.turntilt_strength = APPCONF_FLOAT_TURNTILT_STRENGTH;
 	d->float_conf.turntilt_angle_limit = APPCONF_FLOAT_TURNTILT_ANGLE_LIMIT;
 	d->float_conf.turntilt_start_angle = APPCONF_FLOAT_TURNTILT_START_ANGLE;
