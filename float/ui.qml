@@ -20,7 +20,6 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.3
-import Qt.labs.platform 1.0
 import Qt.labs.settings 1.0
 
 import Vedder.vesc.utility 1.0
@@ -278,11 +277,17 @@ Item {
         displaySavedTunes()
     }
 
-    MessageDialog {
+    Dialog {
         id: quicksavePopup
-        text: "Quicksave"
-        informativeText: "Do you want to overwrite this slot?"
-        buttons: (MessageDialog.Cancel | MessageDialog.Save)
+        title: "Quicksave"
+        standardButtons: Dialog.Save | Dialog.Cancel
+        modal: true
+        focus: true
+        width: parent.width - 20
+        closePolicy: Popup.CloseOnEscape
+        x: 10
+        y: 10 + parent.height / 2 - height / 2
+        parent: ApplicationWindow.overlay
         onAccepted: {
             settingStorage.setValue(saveName, saveValue)
             VescIf.emitStatusMessage(saveName + " complete!", true)
@@ -290,13 +295,43 @@ Item {
         onRejected: VescIf.emitStatusMessage(saveName + " cancelled", false)
         property var saveName: "Temp Name"
         property var saveValue: ""
+
+        Overlay.modal: Rectangle {
+            color: "#AA000000"
+        }
+        
+        Text {
+            color: Utility.getAppHexColor("lightText")
+            verticalAlignment: Text.AlignVCenter
+            anchors.fill: parent
+            wrapMode: Text.WordWrap
+            text: "Do you want to overwrite this slot?"
+        }
     }
 
-    MessageDialog {
+    Dialog {
         id: quickloadErrorPopup
-        text: "Quicksave Empty"
-        informativeText: "Long press slot to save data to this slot."
-        buttons: MessageDialog.ok
+        title: "Quicksave Empty"
+        standardButtons: Dialog.Ok
+        modal: true
+        focus: true
+        width: parent.width - 20
+        closePolicy: Popup.CloseOnEscape
+        x: 10
+        y: 10 + parent.height / 2 - height / 2
+        parent: ApplicationWindow.overlay
+        
+        Overlay.modal: Rectangle {
+            color: "#AA000000"
+        }
+        
+        Text {
+            color: Utility.getAppHexColor("lightText")
+            verticalAlignment: Text.AlignVCenter
+            anchors.fill: parent
+            wrapMode: Text.WordWrap
+            text: "Long press slot to save data to this slot."
+        }
     }
 
     ColumnLayout {
