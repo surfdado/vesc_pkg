@@ -2097,13 +2097,46 @@ enum {
 	FLOAT_COMMAND_CFG_SAVE = 4,		// save config to eeprom
 	FLOAT_COMMAND_CFG_RESTORE = 5,	// restore config from eeprom
 	FLOAT_COMMAND_TUNE_OTHER = 6,	// make runtime changes to startup/etc
-	FLOAT_COMMAND_RC_MOVE = 7		// move motor while board is idle
+	FLOAT_COMMAND_RC_MOVE = 7,		// move motor while board is idle
+	FLOAT_COMMAND_BOOSTER = 8,		// change booster settings
+	FLOAT_COMMAND_PRINT_INFO = 9,	// print verbose info
 } float_commands;
 
 static void split(unsigned char byte, int* h1, int* h2)
 {
 	*h1 = byte & 0xF;
 	*h2 = byte >> 4;
+}
+
+static void cmd_print_info(data *d)
+{
+	VESC_IF->printf("n/a\n");
+}
+
+static void cmd_booster(data *d, unsigned char *cfg)
+{
+	int h1, h2;
+	split(cfg[0], &h1, &h2);
+	d->float_conf.booster_angle = h1 + 5;
+	d->float_conf.booster_ramp = h2 + 2;
+
+	split(cfg[1], &h1, &h2);
+	if (h1 == 0)
+		d->float_conf.booster_current = 0;
+	else
+		d->float_conf.booster_current = 8 + h1 * 2;
+
+	split(cfg[2], &h1, &h2);
+	d->float_conf.brkbooster_angle = h1 + 5;
+	d->float_conf.brkbooster_ramp = h2 + 2;
+
+	split(cfg[3], &h1, &h2);
+	if (h1 == 0)
+		d->float_conf.brkbooster_current = 0;
+	else
+		d->float_conf.brkbooster_current = 8 + h1 * 2;
+
+	beep_alert(d, 1, false);
 }
 
 /**
@@ -2437,9 +2470,24 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			write_cfg_to_eeprom(d);
 			return;
 		}
+		case FLOAT_COMMAND_PRINT_INFO: {
+			cmd_print_info(d);
+			return;
+		}
+		case FLOAT_COMMAND_BOOSTER: {
+			if (len == 6) {
+				cmd_booster(d, &buffer[2]);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+				}
+			}
+			return;
+		}
 		default: {
 			if (!VESC_IF->app_is_output_disabled()) {
-				VESC_IF->printf("Float App: Unknown command received %d\n", command);
+				VESC_IF->printf("Float App: Unknown command received %d vs %d\n", command, FLOAT_COMMAND_PRINT_INFO);
 			}
 		}
 	}
