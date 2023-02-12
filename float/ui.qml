@@ -591,6 +591,32 @@ Item {
                     }
                 }
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    Button {
+                        id: quicksaveIMU1Button
+                        text: "IMU Quicksave 1"
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveIMU("IMU Quicksave 1")
+                        }
+                        onClicked: {
+                            quickloadIMU("IMU Quicksave 1")
+                        }
+                    }
+                    Button {
+                        id: quicksaveIMU2Button
+                        text: "IMU Quicksave 2"
+                        Layout.fillWidth: true
+                        onPressAndHold: {
+                            quicksaveIMU("IMU Quicksave 2")
+                        }
+                        onClicked: {
+                            quickloadIMU("IMU Quicksave 2")
+                        }
+                    }
+                }
+
                 Button {
                     id: downloadTunesButton
                     text: "Refresh Tune Archive"
@@ -763,6 +789,68 @@ Item {
                 }
             }
             mCommands.customConfigSet(0, mCustomConf)
+        }
+    }
+
+    function quicksaveIMU(saveName){
+        var params = [
+            {"name": "imu_conf.mode", "type": "Enum"},
+            {"name": "imu_conf.filter", "type": "Enum"},
+            {"name": "imu_conf.accel_lowpass_filter_x", "type": "Double"},
+            {"name": "imu_conf.accel_lowpass_filter_y", "type": "Double"},
+            {"name": "imu_conf.accel_lowpass_filter_z", "type": "Double"},
+            {"name": "imu_conf.gyro_lowpass_filter", "type": "Double"},
+            {"name": "imu_conf.sample_rate_hz", "type": "Int"},
+            {"name": "imu_conf.use_magnetometer", "type": "Bool"},
+            {"name": "imu_conf.accel_confidence_decay", "type": "Double"},
+            {"name": "imu_conf.mahony_kp", "type": "Double"},
+            {"name": "imu_conf.mahony_ki", "type": "Double"},
+            {"name": "imu_conf.madgwick_beta", "type": "Double"},
+            {"name": "imu_conf.rot_roll", "type": "Double"},
+            {"name": "imu_conf.rot_pitch", "type": "Double"},
+            {"name": "imu_conf.rot_yaw", "type": "Double"},
+            {"name": "imu_conf.accel_offsets__0", "type": "Double"},
+            {"name": "imu_conf.accel_offsets__1", "type": "Double"},
+            {"name": "imu_conf.accel_offsets__2", "type": "Double"},
+            {"name": "imu_conf.gyro_offsets__0", "type": "Double"},
+            {"name": "imu_conf.gyro_offsets__0", "type": "Double"},
+            {"name": "imu_conf.gyro_offsets__0", "type": "Double"}
+        ]
+        for(var i in params){
+            if(params[i].type == ("Double")){
+                params[i].value = mAppConf.getParamDouble(params[i].name)
+            }else if(params[i].type == ("Int")){
+                params[i].value = mAppConf.getParamInt(params[i].name)
+            }else if(params[i].type == ("Bool")){
+                params[i].value = mAppConf.getParamBool(params[i].name)
+            }else if(params[i].type == ("Enum")){
+                params[i].value = mAppConf.getParamEnum(params[i].name)
+            }
+        }
+
+        quicksavePopup.saveName = saveName
+        quicksavePopup.saveValue = JSON.stringify(params)
+        quicksavePopup.open()
+    }
+
+    function quickloadIMU(saveName){
+        var json = settingStorage.value(saveName, "")
+        if(!json){
+            quickloadErrorPopup.open()
+        }else{
+            var params = JSON.parse(json)
+            for(var i in params){
+                if(params[i].type == ("Double")){
+                    mAppConf.updateParamDouble(params[i].name, params[i].value)
+                }else if(params[i].type == ("Int")){
+                    mAppConf.updateParamInt(params[i].name, params[i].value)
+                }else if(params[i].type == ("Bool")){
+                    mAppConf.updateParamBool(params[i].name, params[i].value)
+                }else if(params[i].type == ("Enum")){
+                    mAppConf.updateParamEnum(params[i].name, params[i].value)
+                }
+            }
+            mCommands.setAppConf()
         }
     }
 
