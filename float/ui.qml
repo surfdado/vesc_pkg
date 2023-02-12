@@ -872,27 +872,27 @@ Item {
                 Button {
                     id: downloadTunesButton
                     text: "Refresh Tune Archive"
-                    anchors.horizontalCenter: parent.horizontalCenter
+                    Layout.alignment: Qt.AlignCenter
                     onClicked: {
                         downloadTunesButton.text = "Downloading Tunes..."
                         downloadedTunesModel.clear()
                         var http = new XMLHttpRequest()
-                        var url = "https://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv";
+                        // var url = "http://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv"
+                        var url = "http://us-central1-mimetic-union-377520.cloudfunctions.net/float_package_tunes_via_http"
                         http.open("GET", url, true);
-                        http.send()
                         http.onreadystatechange = function() {
-                            if (http.readyState == 4) {
+                            if (http.readyState == XMLHttpRequest.DONE) {
+                                downloadTunesButton.text = "Refresh Tune Archive"
                                 if (http.status == 200) {
                                     settingStorage.setValue("tunes_csv", http.responseText)
                                     displaySavedTunes()
-                                    downloadTunesButton.text = "Refresh Tune Archive"
                                     VescIf.emitStatusMessage("Tune Download Success", true)
                                 } else {
-                                    downloadTunesButton.text = "Refresh Tune Archive"
                                     VescIf.emitStatusMessage("Tune Download Failed: " + http.status, false)
                                 }
                             }
                         }
+                        http.send()
                     }
                 }
 
@@ -931,17 +931,19 @@ Item {
     function parseCSV(csv){
         var lines=csv.split("\r\n");
         var result = [];
-        var headers=lines[0].split(",");
+        var tuneCount = lines[0].split(",").length - 1;
 
-        for(var i=1;i<lines.length;i++){
-            var obj = {};
-            var currentline=lines[i].split(",");
-            for(var j=0;j<headers.length;j++){
-                if(currentline[j]){
-                    obj[headers[j]] = currentline[j];
+        for(var i=0; i < tuneCount; i++){
+            result.push({})
+        }
+
+        for(var i=0; i<lines.length; i++) {
+            var currentLine=lines[i].split(",")
+            for(var j=0; j < tuneCount; j++) {
+                if(currentLine[j+1]){
+                    result[j][currentLine[0]] = currentLine[j+1]
                 }
             }
-            result.push(obj);
         }
 
         return result; //JavaScript object
