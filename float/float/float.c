@@ -503,7 +503,6 @@ static void reset_vars(data *d) {
 	d->pid_value = 0;
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
-	d->applied_booster_current= 0;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -1749,9 +1748,10 @@ static void float_thd(void *arg) {
 				// Apply Booster (Now based on True Pitch)
 				float true_proportional = d->setpoint - d->true_pitch_angle;
 				d->abs_proportional = fabsf(true_proportional);
+				bool boostbraking = SIGN(d->proportional) != SIGN(d->erpm);
 
 				float booster_current, booster_angle, booster_ramp;
-				if (d->braking) {
+				if (boostbraking) {
 					booster_current = d->float_conf.brkbooster_current;
 					booster_angle = d->float_conf.brkbooster_angle;
 					booster_ramp = d->float_conf.brkbooster_ramp;
@@ -1766,7 +1766,7 @@ static void float_thd(void *arg) {
 				const int boost_min_erpm = 3000;
 				if (d->abs_erpm > boost_min_erpm) {
 					float speedstiffness = fminf(1, (d->abs_erpm - boost_min_erpm) / 10000);
-					if (d->braking) {
+					if (boostbraking) {
 						// use higher current at speed when braking
 						booster_current += booster_current * speedstiffness;
 					}
@@ -1790,8 +1790,8 @@ static void float_thd(void *arg) {
 					booster_current = 0;
 				}
 
-				// No harsh changes in booster current (effective delay = ~30ms)
-				d->applied_booster_current = 0.03 * booster_current + 0.97 * d->applied_booster_current;
+				// No harsh changes in booster current (effective delay <= 100ms)
+				d->applied_booster_current = 0.01 * booster_current + 0.99 * d->applied_booster_current;
 				pid_mod += d->applied_booster_current;
 
 				if (d->float_conf.startup_softstart_enabled && (d->softstart_pid_limit < d->mc_current_max)) {
