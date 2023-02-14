@@ -466,6 +466,7 @@ static void configure(data *d) {
 		beep_alert(d, 3, false);
 	}
 	else {
+		d->state = STARTUP;
 		beep_alert(d, 1, false);
 	}
 }
