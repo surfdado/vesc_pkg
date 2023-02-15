@@ -140,7 +140,6 @@ typedef struct {
 	int accelidx;
 	int direction_counter;
 	bool braking;
-	bool atr_enabled;
 
 	// Feature: Turntilt
 	float last_yaw_angle, yaw_angle, abs_yaw_change, last_yaw_change, yaw_change, yaw_aggregate;
@@ -421,7 +420,6 @@ static void configure(data *d) {
 	}
 
 	// Feature: ATR:
-	d->atr_enabled = ((d->float_conf.atr_strength_up + d->float_conf.atr_strength_down) > 0);
 	d->float_acc_diff = 0;
 
 	/* INSERT OG TT LOGIC? */
@@ -1165,179 +1163,163 @@ static void apply_torquetilt(data *d) {
 	
 	// ADAPTIVE TORQUE RESPONSE ////////////////////////////
 
-	if (d->atr_enabled) { // ATR Enabled
-		abs_torque = fabsf(d->atr_filtered_current);
-		torque_offset = d->float_conf.atr_torque_offset;
-		accel_factor = d->braking ? d->float_conf.atr_amps_decel_ratio : d->float_conf.atr_amps_accel_ratio;
-		accel_factor2 = accel_factor * 1.3;
+	abs_torque = fabsf(d->atr_filtered_current);
+	torque_offset = d->float_conf.atr_torque_offset;
+	accel_factor = d->braking ? d->float_conf.atr_amps_decel_ratio : d->float_conf.atr_amps_accel_ratio;
+	accel_factor2 = accel_factor * 1.3;
 
-		// compare measured acceleration to expected acceleration
-		float measured_acc = fmaxf(d->acceleration, -5);
-		measured_acc = fminf(d->acceleration, 5);
+	// compare measured acceleration to expected acceleration
+	float measured_acc = fmaxf(d->acceleration, -5);
+	measured_acc = fminf(d->acceleration, 5);
 
-		// expected acceleration is proportional to current (minus an offset, required to balance/maintain speed)
-		//XXXXXfloat expected_acc;
-		if (abs_torque < 25) {
-			expected_acc = (d->atr_filtered_current - SIGN(d->erpm) * torque_offset) / accel_factor;
-		}
-		else {
-			// primitive linear approximation of non-linear torque-accel relationship
-			expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / accel_factor;
-			expected_acc += torque_sign * (abs_torque - 25) / accel_factor2;
-		}
+	// expected acceleration is proportional to current (minus an offset, required to balance/maintain speed)
+	//XXXXXfloat expected_acc;
+	if (abs_torque < 25) {
+		expected_acc = (d->atr_filtered_current - SIGN(d->erpm) * torque_offset) / accel_factor;
+	}
+	else {
+		// primitive linear approximation of non-linear torque-accel relationship
+		expected_acc = (torque_sign * 25 - SIGN(d->erpm) * torque_offset) / accel_factor;
+		expected_acc += torque_sign * (abs_torque - 25) / accel_factor2;
+	}
 
-		bool forward = (d->erpm > 0);
-		if ((d->abs_erpm < 250) && (abs_torque > 30)) {
-			forward = (expected_acc > 0);
-		}
+	bool forward = (d->erpm > 0);
+	if ((d->abs_erpm < 250) && (abs_torque > 30)) {
+		forward = (expected_acc > 0);
+	}
 
-		float acc_diff = expected_acc - measured_acc;
-		d->float_expected_acc = expected_acc;
-		d->float_measured_acc = measured_acc;
-		d->float_acc_diff = acc_diff;
+	float acc_diff = expected_acc - measured_acc;
+	d->float_expected_acc = expected_acc;
+	d->float_measured_acc = measured_acc;
+	d->float_acc_diff = acc_diff;
 
-		if (d->abs_erpm > 2000)
-			d->accel_gap = 0.9 * d->accel_gap + 0.1 * acc_diff;
-		else if (d->abs_erpm > 1000)
-			d->accel_gap = 0.95 * d->accel_gap + 0.05 * acc_diff;
-		else if (d->abs_erpm > 250)
-			d->accel_gap = 0.98 * d->accel_gap + 0.02 * acc_diff;
-		else {
-			d->accel_gap = 0;
-		}
+	if (d->abs_erpm > 2000)
+		d->accel_gap = 0.9 * d->accel_gap + 0.1 * acc_diff;
+	else if (d->abs_erpm > 1000)
+		d->accel_gap = 0.95 * d->accel_gap + 0.05 * acc_diff;
+	else if (d->abs_erpm > 250)
+		d->accel_gap = 0.98 * d->accel_gap + 0.02 * acc_diff;
+	else {
+		d->accel_gap = 0;
+	}
 
-		float atr_strength = (d->accel_gap > 0) ? d->float_conf.atr_strength_up : d->float_conf.atr_strength_down;
-		// from 3000 to 6000 erpm gradually crank up the torque response
-		if ((d->abs_erpm > 3000) && (!d->braking)) {
-			float speedboost = (d->abs_erpm - 3000) / 3000;
-			speedboost = fminf(1, speedboost) * d->float_conf.atr_speed_boost;
-			atr_strength += atr_strength * speedboost;
-		}
+	float atr_strength = (d->accel_gap > 0) ? d->float_conf.atr_strength_up : d->float_conf.atr_strength_down;
+	// from 3000 to 6000 erpm gradually crank up the torque response
+	if ((d->abs_erpm > 3000) && (!d->braking)) {
+		float speedboost = (d->abs_erpm - 3000) / 3000;
+		speedboost = fminf(1, speedboost) * d->float_conf.atr_speed_boost;
+		atr_strength += atr_strength * speedboost;
+	}
 
-		// now torquetilt target is purely based on gap between expected and actual acceleration
-		float new_atr_target = atr_strength * d->accel_gap;
+	// now ATR target is purely based on gap between expected and actual acceleration
+	float new_atr_target = atr_strength * d->accel_gap;
 
-		/* OG TT LOGIC
-		if (!braking && (abs_erpm > 250))  {
-			float og_tt_angle_limit = 3;
-			float og_tt_start_current = 15;
-			og_tt_target = (abs_torque - og_tt_start_current) * og_tt_strength;
-			og_tt_target = fminf(fmaxf(og_tt_target, 0), og_tt_angle_limit);
-			if (og_tt_target > fabsf(new_atr_target)) {
-				new_atr_target = og_tt_target * torque_sign;
-			}
-		} else if (abs_erpm <= 250) {
-			// TODO: fall back to og_tt!
-		}
-		*/
+	d->atr_target = d->atr_target * 0.95 + 0.05 * new_atr_target;
+	d->atr_target = fminf(d->atr_target, d->float_conf.atr_angle_limit);
+	d->atr_target = fmaxf(d->atr_target, -d->float_conf.atr_angle_limit);
 
-		d->atr_target = d->atr_target * 0.95 + 0.05 * new_atr_target;
-		d->atr_target = fminf(d->atr_target, d->float_conf.atr_angle_limit);
-		d->atr_target = fmaxf(d->atr_target, -d->float_conf.atr_angle_limit);
+	float response_boost = 1;
+	if (d->abs_erpm > 2500) {
+		response_boost = d->float_conf.atr_response_boost;
+	}
+	if (d->abs_erpm > 6000) {
+		response_boost *= d->float_conf.atr_response_boost;
+	}
 
-		float response_boost = 1;
-		if (d->abs_erpm > 2500) {
-			response_boost = d->float_conf.atr_response_boost;
-		}
-		if (d->abs_erpm > 6000) {
-			response_boost *= d->float_conf.atr_response_boost;
-		}
-
-		// Key to keeping the board level and consistent is to determine the appropriate step size!
-		// We want to react quickly to changes, but we don't want to overreact to glitches in acceleration data
-		// or trigger oscillations...
-		const float TT_BOOST_MARGIN = 2;
-		if (forward) {
-			if (d->atr_interpolated < 0) {
-				// downhill
-				if (d->atr_interpolated < d->atr_target) {
-					// to avoid oscillations we go down slower than we go up
-					atr_step_size = d->atr_off_step_size;
-					if ((d->atr_target > 0)
-						&& ((d->atr_target - d->atr_interpolated) > TT_BOOST_MARGIN)
-						&& (d->abs_erpm > 2000))
-					{
-						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
-					}
-				}
-				else {
-					// torquetilt is increasing
-					atr_step_size = d->atr_on_step_size * response_boost;
+	// Key to keeping the board level and consistent is to determine the appropriate step size!
+	// We want to react quickly to changes, but we don't want to overreact to glitches in acceleration data
+	// or trigger oscillations...
+	const float TT_BOOST_MARGIN = 2;
+	if (forward) {
+		if (d->atr_interpolated < 0) {
+			// downhill
+			if (d->atr_interpolated < d->atr_target) {
+				// to avoid oscillations we go down slower than we go up
+				atr_step_size = d->atr_off_step_size;
+				if ((d->atr_target > 0)
+					&& ((d->atr_target - d->atr_interpolated) > TT_BOOST_MARGIN)
+					&& (d->abs_erpm > 2000))
+				{
+					// boost the speed if tilt target has reversed (and if there's a significant margin)
+					atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
 				}
 			}
 			else {
-				// uphill or other heavy resistance (grass, mud, etc)
-				if ((d->atr_target > -3) && (d->atr_interpolated > d->atr_target)) {
-					// torquetilt winding down (current torquetilt is bigger than the target)
-					// normal wind down case: to avoid oscillations we go down slower than we go up
-					atr_step_size = d->atr_off_step_size;
-				}else{
-					// standard case of increasing torquetilt
-					atr_step_size = d->atr_on_step_size * response_boost;
-				}
+				// ATR is increasing
+				atr_step_size = d->atr_on_step_size * response_boost;
 			}
 		}
 		else {
-			if (d->atr_interpolated > 0) {
-				// downhill
-				if (d->atr_interpolated > d->atr_target) {
-					// to avoid oscillations we go down slower than we go up
-					atr_step_size = d->atr_off_step_size;
-					if ((d->atr_target < 0)
-						&& ((d->atr_interpolated - d->atr_target) > TT_BOOST_MARGIN)
-						&& (d->abs_erpm > 2000)) {
-						// boost the speed if tilt target has reversed (and if there's a significant margin)
-						atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
-					}
-				}
-				else {
-					// torquetilt is increasing
-					atr_step_size = d->atr_on_step_size * response_boost;
+			// uphill or other heavy resistance (grass, mud, etc)
+			if ((d->atr_target > -3) && (d->atr_interpolated > d->atr_target)) {
+				// ATR winding down (current ATR is bigger than the target)
+				// normal wind down case: to avoid oscillations we go down slower than we go up
+				atr_step_size = d->atr_off_step_size;
+			}else{
+				// standard case of increasing ATR
+				atr_step_size = d->atr_on_step_size * response_boost;
+			}
+		}
+	}
+	else {
+		if (d->atr_interpolated > 0) {
+			// downhill
+			if (d->atr_interpolated > d->atr_target) {
+				// to avoid oscillations we go down slower than we go up
+				atr_step_size = d->atr_off_step_size;
+				if ((d->atr_target < 0)
+					&& ((d->atr_interpolated - d->atr_target) > TT_BOOST_MARGIN)
+					&& (d->abs_erpm > 2000)) {
+					// boost the speed if tilt target has reversed (and if there's a significant margin)
+					atr_step_size = d->atr_off_step_size * d->float_conf.atr_transition_boost;
 				}
 			}
 			else {
-				// uphill or other heavy resistance (grass, mud, etc)
-				if ((d->atr_target < 3) && (d->atr_interpolated < d->atr_target)) {
-					// normal wind down case: to avoid oscillations we go down slower than we go up
-					atr_step_size = d->atr_off_step_size;
-				}else{
-					// standard case of increasing torquetilt
-					atr_step_size = d->atr_on_step_size * response_boost;
-				}
-			}
-		}
-
-		// Feature: Brake Tiltback
-
-		// braking also should cause setpoint change lift, causing a delayed lingering nose lift
-		if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 2000)) {
-			// negative currents alone don't necessarily consitute active braking, look at proportional:
-			if (SIGN(d->proportional) != SIGN(d->erpm)) {
-				float downhill_damper = 1;
-				// if we're braking on a downhill we don't want braking to lift the setpoint quite as much
-				if (((d->erpm > 1000) && (d->accel_gap < -1)) ||
-					((d->erpm < -1000) && (d->accel_gap > 1))) {
-					downhill_damper += fabsf(d->accel_gap) / 2;
-				}
-				d->braketilt_target = d->proportional / d->braketilt_factor / downhill_damper;
-				if (downhill_damper > 2) {
-					// steep downhills, we don't enable this feature at all!
-					d->braketilt_target = 0;
-				}
+				// ATR is increasing
+				atr_step_size = d->atr_on_step_size * response_boost;
 			}
 		}
 		else {
-			d->braketilt_target = 0;
+			// uphill or other heavy resistance (grass, mud, etc)
+			if ((d->atr_target < 3) && (d->atr_interpolated < d->atr_target)) {
+				// normal wind down case: to avoid oscillations we go down slower than we go up
+				atr_step_size = d->atr_off_step_size;
+			}else{
+				// standard case of increasing torquetilt
+				atr_step_size = d->atr_on_step_size * response_boost;
+			}
 		}
+	}
 
-		braketilt_step_size = d->atr_off_step_size / d->float_conf.braketilt_lingering;
-		if(fabsf(d->braketilt_target) > fabsf(d->braketilt_interpolated)) {
-			braketilt_step_size = d->atr_on_step_size * 1.5;
+	// Feature: Brake Tiltback
+
+	// braking also should cause setpoint change lift, causing a delayed lingering nose lift
+	if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 2000)) {
+		// negative currents alone don't necessarily consitute active braking, look at proportional:
+		if (SIGN(d->proportional) != SIGN(d->erpm)) {
+			float downhill_damper = 1;
+			// if we're braking on a downhill we don't want braking to lift the setpoint quite as much
+			if (((d->erpm > 1000) && (d->accel_gap < -1)) ||
+				((d->erpm < -1000) && (d->accel_gap > 1))) {
+				downhill_damper += fabsf(d->accel_gap) / 2;
+			}
+			d->braketilt_target = d->proportional / d->braketilt_factor / downhill_damper;
+			if (downhill_damper > 2) {
+				// steep downhills, we don't enable this feature at all!
+				d->braketilt_target = 0;
+			}
 		}
-		else if (d->abs_erpm < 800) {
-			braketilt_step_size = d->atr_on_step_size;
-		}
+	}
+	else {
+		d->braketilt_target = 0;
+	}
+
+	braketilt_step_size = d->atr_off_step_size / d->float_conf.braketilt_lingering;
+	if(fabsf(d->braketilt_target) > fabsf(d->braketilt_interpolated)) {
+		braketilt_step_size = d->atr_on_step_size * 1.5;
+	}
+	else if (d->abs_erpm < 800) {
+		braketilt_step_size = d->atr_on_step_size;
 	}
 
 	// when slow then erpm data is especially choppy, causing fake spikes in acceleration
@@ -2218,7 +2200,6 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg)
 	d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
 	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
 	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
-	d->atr_enabled = ((d->float_conf.atr_strength_up + d->float_conf.atr_strength_down) > 0);
 
 	// Feature: Braketilt
 	d->braketilt_factor = d->float_conf.braketilt_strength;
@@ -2283,7 +2264,6 @@ static void cmd_tune_defaults(data *d){
 	// Update values normally done in configure()
 	d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
 	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
-	d->atr_enabled = ((d->float_conf.atr_strength_up + d->float_conf.atr_strength_down) > 0);
 	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
 
 	d->startup_step_size = d->float_conf.startup_speed / d->float_conf.hertz;
