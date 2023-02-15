@@ -1904,8 +1904,12 @@ static void float_thd(void *arg) {
 			}
 			// Push-start aka dirty landing Part II
 			if(d->float_conf.startup_pushstart_enabled && (d->abs_erpm > 1000) && (d->switch_state == ON)) {
-				reset_vars(d);
-				break;
+				if ((fabsf(d->pitch_angle) < 45) && (fabsf(d->roll_angle) < 45)) {
+					// 45 to prevent board engaging when upright or laying sideways
+					// 45 degree tolerance is more than plenty for tricks / extreme mounts
+					reset_vars(d);
+					break;
+				}
 			}
 
 			// Set RC current or maintain brake current (and keep WDT happy!)
