@@ -20,7 +20,6 @@
 import QtQuick 2.12
 import QtQuick.Controls 2.12
 import QtQuick.Layouts 1.3
-import Qt.labs.settings 1.0
 
 import Vedder.vesc.utility 1.0
 import Vedder.vesc.commands 1.0
@@ -43,11 +42,6 @@ Item {
 
     property var dialogParent: ApplicationWindow.overlay
     
-    Settings {
-        id: settingStorage
-    }
-    
-    // Timer 1, 10hz for ble comms
     Timer {
         running: true
         repeat: true
@@ -62,46 +56,12 @@ Item {
             dv.setUint8(ind, 0x1); ind += 1
             mCommands.sendCustomAppData(buffer)
             
-            // Process Controls
-            if(reverseButton.pressed){
-                var buffer = new ArrayBuffer(6)
-                var dv = new DataView(buffer)
-                var ind = 0
-                dv.setUint8(ind, 101); ind += 1; // Float Package
-                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                dv.setUint8(ind, 0); ind += 1; // Direction
-                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
-                dv.setUint8(ind, 1); ind += 1; // Time
-                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
-                mCommands.sendCustomAppData(buffer)
-            }
-            if(forwardButton.pressed){
-                var buffer = new ArrayBuffer(6)
-                var dv = new DataView(buffer)
-                var ind = 0
-                dv.setUint8(ind, 101); ind += 1; // Float Package
-                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                dv.setUint8(ind, 1); ind += 1; // Direction
-                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
-                dv.setUint8(ind, 1); ind += 1; // Time
-                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
-                mCommands.sendCustomAppData(buffer)
-            }
+            // Update Tilt slider
             if(tiltEnabled.checked){
                 mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
             }
-        }
-    }
-
-    // Timer 2, 100hz for for UI updates
-    Timer {
-        running: true
-        repeat: true
-        interval: 10
-        
-        onTriggered: {
             if(!tiltSlider.pressed){
-                var stepSize = 0.05
+                var stepSize = 0.1
                 if(tiltSlider.value > 0){
                     if(tiltSlider.value < stepSize){
                         tiltSlider.value = 0
@@ -293,7 +253,7 @@ Item {
             property int buttonWidth: 120
 
             Repeater {
-                model: ["Float State", "Controls"]
+                model: ["RT Data", "Controls", "Profiles"]
                 TabButton {
                     text: modelData
                     onClicked:{
@@ -436,7 +396,7 @@ Item {
                         id: movementStrengthSlider
                         from: 20
                         value: 40
-                        to: 80
+                        to: 250
                         stepSize: 1
                     }
                 }
@@ -447,11 +407,35 @@ Item {
                         id: reverseButton
                         text: "Reverse"
                         Layout.fillWidth: true
+                        onClicked: {
+                            var buffer = new ArrayBuffer(6)
+                            var dv = new DataView(buffer)
+                            var ind = 0
+                            dv.setUint8(ind, 101); ind += 1; // Float Package
+                            dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                            dv.setUint8(ind, 0); ind += 1; // Direction
+                            dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                            dv.setUint8(ind, 5); ind += 1; // Time
+                            dv.setUint8(ind, movementStrengthSlider.value + 5); ind += 1; // Sum = time + current
+                            mCommands.sendCustomAppData(buffer)
+                        }
                     }
                     Button {
                         id: forwardButton
                         text: "Forward"
                         Layout.fillWidth: true
+                        onClicked: {
+                            var buffer = new ArrayBuffer(6)
+                            var dv = new DataView(buffer)
+                            var ind = 0
+                            dv.setUint8(ind, 101); ind += 1; // Float Package
+                            dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
+                            dv.setUint8(ind, 1); ind += 1; // Direction
+                            dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                            dv.setUint8(ind, 5); ind += 1; // Time
+                            dv.setUint8(ind, movementStrengthSlider.value + 5); ind += 1; // Sum = time + current
+                            mCommands.sendCustomAppData(buffer)
+                        }
                     }
                 }
                 
@@ -472,12 +456,6 @@ Item {
                     id: tiltEnabled
                     checked: false
                     text: qsTr("Enabled (Overrides Remote)")
-                    onClicked: {
-                        if(tiltEnabled.checked && mCustomConf.getParamEnum("inputtilt_remote_type", 0) != 1){
-                            mCustomConf.updateParamEnum("inputtilt_remote_type", 1)
-                            mCommands.customConfigSet(0, mCustomConf)
-                        }
-                    }
                 }
                 Slider {
                     id: tiltSlider
@@ -487,7 +465,106 @@ Item {
                     Layout.fillWidth: true
                 }
             }
+
+            ColumnLayout { // Profiles Page
+                id: profilesColumn
                 
+                Button {
+                    id: tuneButtonMitch
+                    text: "Apply Mitch's Tune"
+                    Layout.fillWidth: true
+                    onClicked: {
+                        // mAppConf.updateParamDouble("imu_conf.accel_confidence_decay", 0.02)
+                        // mAppConf.updateParamDouble("imu_conf.mahony_kp", 2.3)
+                        // mCommands.setAppConfNoStore()
+
+                        // mCustomConf.updateParamFloat("float_version", 0)
+                        mCustomConf.updateParamDouble("kp", 10)
+                        mCustomConf.updateParamDouble("ki", 0)
+                        mCustomConf.updateParamDouble("kd", 0)
+                        mCustomConf.updateParamDouble("kp2", 1.0)
+                        mCustomConf.updateParamDouble("mahony_kp", 2.3)
+                        // mCustomConf.updateParamInt("hertz", 400)
+                        // mCustomConf.updateParamDouble("fault_pitch", 0)
+                        // mCustomConf.updateParamDouble("fault_roll", 0)
+                        // mCustomConf.updateParamDouble("fault_adc1", 0)
+                        // mCustomConf.updateParamDouble("fault_adc2", 0)
+                        // mCustomConf.updateParamInt("fault_delay_pitch", 0)
+                        // mCustomConf.updateParamInt("fault_delay_roll", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_half", 0)
+                        // mCustomConf.updateParamInt("fault_delay_switch_full", 0)
+                        // mCustomConf.updateParamInt("fault_adc_half_erpm", 0)
+                        // mCustomConf.updateParamBool("fault_is_dual_switch", 0)
+                        // mCustomConf.updateParamBool("fault_moving_fault_disabled", 0)
+                        // mCustomConf.updateParamBool("fault_darkride_enabled", 0)
+                        // mCustomConf.updateParamBool("fault_reversestop_enabled", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_duty", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_hv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_angle", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv_speed", 0)
+                        // mCustomConf.updateParamDouble("tiltback_lv", 0)
+                        // mCustomConf.updateParamDouble("tiltback_return_speed", 0)
+                        mCustomConf.updateParamDouble("tiltback_constant", 0)
+                        // mCustomConf.updateParamInt("tiltback_constant_erpm", 0)
+                        mCustomConf.updateParamDouble("tiltback_variable", 0)
+                        // mCustomConf.updateParamDouble("tiltback_variable_max", 0)
+                        // mCustomConf.updateParamEnum("inputtilt_remote_type", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_speed", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_angle_limit", 0)
+                        // mCustomConf.updateParamBool("inputtilt_invert_throttle", 0)
+                        // mCustomConf.updateParamDouble("inputtilt_deadband", 0)
+                        // mCustomConf.updateParamDouble("noseangling_speed", 0)
+                        // mCustomConf.updateParamDouble("startup_pitch_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_roll_tolerance", 0)
+                        // mCustomConf.updateParamDouble("startup_speed", 0)
+                        // mCustomConf.updateParamDouble("startup_click_current", 0)
+                        mCustomConf.updateParamBool("startup_softstart_enabled", false)
+                        // mCustomConf.updateParamBool("startup_simplestart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_pushstart_enabled", 0)
+                        // mCustomConf.updateParamBool("startup_dirtylandings_enabled", 0)
+                        // mCustomConf.updateParamDouble("brake_current", 0)
+                        // mCustomConf.updateParamDouble("ki_limit", 0)
+                        // mCustomConf.updateParamDouble("booster_angle", 0)
+                        // mCustomConf.updateParamDouble("booster_ramp", 0)
+                        mCustomConf.updateParamDouble("booster_current", 0)
+                        mCustomConf.updateParamDouble("torquetilt_start_current", 5)
+                        mCustomConf.updateParamDouble("torquetilt_angle_limit", 8)
+                        mCustomConf.updateParamDouble("torquetilt_on_speed", 5)
+                        mCustomConf.updateParamDouble("torquetilt_off_speed", 3)
+                        mCustomConf.updateParamDouble("torquetilt_strength", 0.15)
+                        mCustomConf.updateParamDouble("torquetilt_strength_regen", 0.15)
+                        mCustomConf.updateParamDouble("atr_strength_up", 0)
+                        mCustomConf.updateParamDouble("atr_strength_down", 0)
+                        mCustomConf.updateParamDouble("atr_torque_offset", 0)
+                        mCustomConf.updateParamDouble("atr_speed_boost", 0)
+                        mCustomConf.updateParamDouble("atr_angle_limit", 0)
+                        mCustomConf.updateParamDouble("atr_on_speed", 0)
+                        mCustomConf.updateParamDouble("atr_off_speed", 0)
+                        mCustomConf.updateParamDouble("atr_response_boost", 0)
+                        mCustomConf.updateParamDouble("atr_transition_boost", 0)
+                        mCustomConf.updateParamDouble("atr_filter", 0)
+                        mCustomConf.updateParamDouble("atr_amps_accel_ratio", 0)
+                        mCustomConf.updateParamDouble("atr_amps_decel_ratio", 0)
+                        mCustomConf.updateParamDouble("braketilt_strength", 0)
+                        // mCustomConf.updateParamDouble("braketilt_lingering", 0)
+                        mCustomConf.updateParamDouble("turntilt_strength", 0)
+                        // mCustomConf.updateParamDouble("turntilt_angle_limit", 0)
+                        // mCustomConf.updateParamDouble("turntilt_start_angle", 0)
+                        // mCustomConf.updateParamInt("turntilt_start_erpm", 0)
+                        // mCustomConf.updateParamDouble("turntilt_speed", 0)
+                        // mCustomConf.updateParamInt("turntilt_erpm_boost", 0)
+                        // mCustomConf.updateParamInt("turntilt_erpm_boost_end", 0)
+                        // mCustomConf.updateParamInt("turntilt_yaw_aggregate", 0)
+                        // mCustomConf.updateParamBool("is_buzzer_enabled", 0)
+                        mCommands.customConfigSet(0, mCustomConf)
+                    }
+                }
+                
+            }
         }
     }
 
