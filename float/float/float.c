@@ -115,6 +115,8 @@ typedef struct {
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_step_size;
 	float mc_max_temp_fet, mc_max_temp_mot;
 	float mc_current_max, mc_current_min, max_continuous_current;
+	float surge_angle, surge_adder, surge_damper;
+	bool surge_enable;
 	bool current_beeping;
 	bool duty_beeping;
 
@@ -125,7 +127,7 @@ typedef struct {
 	float pitch_angle, last_pitch_angle, roll_angle, abs_roll_angle, abs_roll_angle_sin, last_gyro_y;
  	float true_pitch_angle;
 	float gyro[3];
-	float duty_cycle, abs_duty_cycle;
+	float duty_cycle, abs_duty_cycle, duty_smooth;
 	float erpm, abs_erpm, avg_erpm;
 	float motor_current;
 	float adc1, adc2;
@@ -349,6 +351,15 @@ static void configure(data *d) {
 	d->noseangling_step_size = d->float_conf.noseangling_speed / d->float_conf.hertz;
 	d->inputtilt_step_size = d->float_conf.inputtilt_speed / d->float_conf.hertz;
 
+	d->surge_angle = 0;
+	d->surge_damper = 0;
+	if ((d->float_conf.tiltback_duty < 0.82) || (d->float_conf.tiltback_duty > 0.94)) {
+		// For now surge only gets enabled if duty tilt starts below 82% (or when it's effectively disabled)
+		// to not let tiltback and surge overlap too much
+		d->surge_enable = true;
+		d->surge_angle = 0.5;
+	}
+
 	// Feature: Stealthy start vs normal start (noticeable click when engaging) - 0-20A
 	d->start_counter_clicks_max = 3;
 	// Feature: Soft Start
@@ -507,6 +518,7 @@ static void reset_vars(data *d) {
 	d->pid_integral = 0;
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
+	d->surge_adder = 0;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -992,6 +1004,47 @@ static void calculate_setpoint_interpolated(data *d) {
 			d->setpoint_target_interpolated += get_setpoint_adjustment_step_size(d);
 		} else {
 			d->setpoint_target_interpolated -= get_setpoint_adjustment_step_size(d);
+		}
+	}
+}
+
+static void add_surge(data *d) {
+	float abs_duty_smooth = fabsf(d->duty_smooth);
+	float surge_now = 0;
+	if (d->surge_enable && (d->state != RUNNING_WHEELSLIP)) {
+		if (abs_duty_smooth > 0.92) {
+			beep_alert(d, 3, 1);
+		}
+		else if (abs_duty_smooth > 0.90) {
+			beep_alert(d, 2, 1);
+		}
+		else if (abs_duty_smooth > 0.88) {
+			beep_alert(d, 1, 1);
+		}
+		if (abs_duty_smooth > 0.88) {
+			surge_now += d->surge_angle;
+		}
+		if (abs_duty_smooth > 0.90) {
+			surge_now += d->surge_angle;
+		}
+		if (abs_duty_smooth > 0.92) {
+			surge_now += d->surge_angle;
+		}
+		if (surge_now >= d->surge_adder) {
+			// kick in instantly
+			d->surge_adder = surge_now;
+		}
+		else {
+			// release less harshly
+			d->surge_adder = d->surge_adder * 0.95 + surge_now * 0.05;
+		}
+
+		// Add surge angle to setpoint
+		if (d->erpm > 0) {
+			d->setpoint += d->surge_adder;
+		}
+		else {
+			d->setpoint -= d->surge_adder;
 		}
 	}
 }
@@ -1564,7 +1617,7 @@ static void float_thd(void *arg) {
 		d->last_gyro_y = d->gyro[1];
 		VESC_IF->imu_get_gyro(d->gyro);
 
-		// Get the values we want
+		// Get the motor values we want
 		d->duty_cycle = VESC_IF->mc_get_duty_cycle_now();
 		d->abs_duty_cycle = fabsf(d->duty_cycle);
 		d->erpm = VESC_IF->mc_get_rpm();
@@ -1574,6 +1627,7 @@ static void float_thd(void *arg) {
 		if (d->adc2 < 0.0) {
 			d->adc2 = 0.0;
 		}
+		d->duty_smooth = d->duty_smooth * 0.9 + d->duty_cycle * 0.1;
 
 		// UART/PPM Remote Throttle ///////////////////////
 		bool remote_connected = false;
@@ -1712,6 +1766,7 @@ static void float_thd(void *arg) {
 			calculate_setpoint_target(d);
 			calculate_setpoint_interpolated(d);
 			d->setpoint = d->setpoint_target_interpolated;
+			add_surge(d);
 			apply_inputtilt(d); // Allow Input Tilt for Darkride
 			if (!d->is_upside_down) {
 				apply_noseangling(d);
