@@ -2059,12 +2059,27 @@ static float app_float_get_debug(int index) {
 	}
 }
 
+enum {
+	FLOAT_COMMAND_GET_INFO = 0,		// get version / package info
+	FLOAT_COMMAND_GET_RTDATA = 1,	// get rt data
+	FLOAT_COMMAND_RT_TUNE = 2,		// runtime tuning (don't write to eeprom)
+	FLOAT_COMMAND_TUNE_DEFAULTS = 3,// set tune to defaults (no eeprom)
+	FLOAT_COMMAND_CFG_SAVE = 4,		// save config to eeprom
+	FLOAT_COMMAND_CFG_RESTORE = 5,	// restore config from eeprom
+	FLOAT_COMMAND_TUNE_OTHER = 6,	// make runtime changes to startup/etc
+	FLOAT_COMMAND_RC_MOVE = 7,		// move motor while board is idle
+	FLOAT_COMMAND_BOOSTER = 8,		// change booster settings
+	FLOAT_COMMAND_PRINT_INFO = 9,	// print verbose info
+	FLOAT_COMMAND_GET_ALLDATA = 10,	// send all data, compact
+	FLOAT_COMMAND_EXPERIMENT = 11,  // generic cmd for sending data, used for testing/tuning new features
+} float_commands;
+
 static void send_realtime_data(data *d){
 	#define BUFSIZE 72
 	uint8_t send_buffer[BUFSIZE];
 	int32_t ind = 0;
 	send_buffer[ind++] = 101;//Magic Number
-	send_buffer[ind++] = 1;	 //FLOATCOMM_RTSTATS
+	send_buffer[ind++] = FLOAT_COMMAND_GET_RTDATA;
 
 	// RT Data
 	buffer_append_float32_auto(send_buffer, d->pid_value, &ind);
@@ -2083,7 +2098,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_torquetilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_turntilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
-	
+
 	// DEBUG
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
@@ -2098,18 +2113,58 @@ static void send_realtime_data(data *d){
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 
-enum {
-	FLOAT_COMMAND_GET_INFO = 0,		// get version / package info
-	FLOAT_COMMAND_GET_RTDATA = 1,	// get rt data
-	FLOAT_COMMAND_RT_TUNE = 2,		// runtime tuning (don't write to eeprom)
-	FLOAT_COMMAND_TUNE_DEFAULTS = 3,// set tune to defaults (no eeprom)
-	FLOAT_COMMAND_CFG_SAVE = 4,		// save config to eeprom
-	FLOAT_COMMAND_CFG_RESTORE = 5,	// restore config from eeprom
-	FLOAT_COMMAND_TUNE_OTHER = 6,	// make runtime changes to startup/etc
-	FLOAT_COMMAND_RC_MOVE = 7,		// move motor while board is idle
-	FLOAT_COMMAND_BOOSTER = 8,		// change booster settings
-	FLOAT_COMMAND_PRINT_INFO = 9,	// print verbose info
-} float_commands;
+static void cmd_send_all_data(data *d, unsigned char mode){
+	#define BUFSIZE 72
+	uint8_t send_buffer[BUFSIZE];
+	int32_t ind = 0;
+	send_buffer[ind++] = 101;//Magic Number
+	send_buffer[ind++] = FLOAT_COMMAND_GET_ALLDATA;
+	send_buffer[ind++] = mode;
+
+	// RT Data
+	buffer_append_float16(send_buffer, d->pid_value, 10, &ind);
+	buffer_append_float16(send_buffer, d->pitch_angle, 100, &ind);
+	buffer_append_float16(send_buffer, d->roll_angle, 100, &ind);
+
+	send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
+	send_buffer[ind++] = d->switch_state;
+	send_buffer[ind++] = d->adc1 * 50;
+	send_buffer[ind++] = d->adc2 * 50;
+
+	// Setpoints (can be positive or negative)
+	send_buffer[ind++] = d->float_setpoint * 5 + 128;
+	send_buffer[ind++] = d->float_atr * 5 + 128;
+	send_buffer[ind++] = d->float_braketilt * 5 + 128;
+	send_buffer[ind++] = d->float_torquetilt * 5 + 128;
+	send_buffer[ind++] = d->float_turntilt * 5 + 128;
+	send_buffer[ind++] = d->float_inputtilt * 5 + 128;
+	
+	buffer_append_float16(send_buffer, d->true_pitch_angle, 2, &ind);
+	send_buffer[ind++] = d->applied_booster_current + 128;
+
+	// Now send motor stuff:
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_input_voltage_filtered(), 10, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_rpm(), 1, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_speed(), 10, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current(), 10, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current_in(), 10, &ind);
+	send_buffer[ind++] = VESC_IF->mc_get_duty_cycle_now() * 100 + 128;
+	//send_buffer[ind++] = VESC_IF->mc_
+	/*
+	
+	bms_temp_max_cell;
+	bms_volt_max_cell;
+	bms_volt_min_cell;
+
+	set_erpmlimit;
+		
+		
+	*/
+	if (ind > BUFSIZE) {
+		VESC_IF->printf("BUFSIZE too small...\n");
+	}
+	VESC_IF->send_app_data(send_buffer, ind);
+}
 
 static void split(unsigned char byte, int* h1, int* h2)
 {
@@ -2120,6 +2175,14 @@ static void split(unsigned char byte, int* h1, int* h2)
 static void cmd_print_info(data *d)
 {
 	VESC_IF->printf("n/a\n");
+}
+
+static void cmd_experiment(data *d, unsigned char *cfg)
+{
+	d->surge_angle = cfg[0];
+	d->surge_angle /= 10;
+	if (d->surge_angle > 1)
+		d->surge_angle = 1;
 }
 
 static void cmd_booster(data *d, unsigned char *cfg)
@@ -2418,8 +2481,8 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 	if(len < 2){
 		if (!VESC_IF->app_is_output_disabled()) {
 			VESC_IF->printf("Float App: Missing Args\n");
-			return;
 		}
+		return;
 	}
 	if (magicnr != 101) {
 		if (!VESC_IF->app_is_output_disabled()) {
@@ -2484,6 +2547,16 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_PRINT_INFO: {
 			cmd_print_info(d);
+			return;
+		}
+		case FLOAT_COMMAND_GET_ALLDATA: {
+			if (len == 3) {
+				cmd_send_all_data(d, buffer[2]);
+			}
+			return;
+		}
+		case FLOAT_COMMAND_EXPERIMENT: {
+			cmd_experiment(d, &buffer[2]);
 			return;
 		}
 		case FLOAT_COMMAND_BOOSTER: {
