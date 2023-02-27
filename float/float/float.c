@@ -128,7 +128,6 @@ typedef struct {
 	float duty_cycle, abs_duty_cycle;
 	float erpm, abs_erpm, avg_erpm;
 	float motor_current;
-	float motor_position;
 	float adc1, adc2;
 	float throttle_val;
 	float max_duty_with_margin;
@@ -150,7 +149,8 @@ typedef struct {
 
 	// Rumtime state values
 	FloatState state;
-	float proportional, integral, proportional2, integral2, pid_rate;
+	float proportional, integral;
+	float pid_prop, pid_integral, pid_rate, pid_mod;
 	float last_proportional, abs_proportional;
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
@@ -476,7 +476,6 @@ static void reset_vars(data *d) {
 	// Clear accumulated values.
 	d->integral = 0;
 	d->last_proportional = 0;
-	d->integral2 = 0;
 	// Set values for startup
 	d->setpoint = d->pitch_angle;
 	d->setpoint_target_interpolated = d->pitch_angle;
@@ -503,6 +502,9 @@ static void reset_vars(data *d) {
 	d->brake_timeout = 0;
 	d->traction_control = false;
 	d->pid_value = 0;
+	d->pid_mod = 0;
+	d->pid_prop = 0;
+	d->pid_integral = 0;
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
 
@@ -1528,7 +1530,6 @@ static void float_thd(void *arg) {
 
 		// Read values for GUI
 		d->motor_current = VESC_IF->mc_get_tot_current_directional_filtered();
-		d->motor_position = VESC_IF->mc_get_pid_pos_now();
 
 		// Get the IMU Values
 		d->roll_angle = RAD2DEG_f(VESC_IF->ahrs_get_roll(&d->m_att_ref));
@@ -1733,7 +1734,9 @@ static void float_thd(void *arg) {
 				d->integral = d->float_conf.ki_limit / d->float_conf.ki * SIGN(d->integral);
 			}
 
-			new_pid_value = (d->float_conf.kp * d->proportional) + (d->float_conf.ki * d->integral);
+			d->pid_prop = d->float_conf.kp * d->proportional;
+			d->pid_integral = d->float_conf.ki * d->integral;
+			new_pid_value = d->pid_prop + d->pid_integral;
 
 			d->last_proportional = d->proportional;
 
@@ -1741,9 +1744,8 @@ static void float_thd(void *arg) {
 			// this keeps the start smooth and predictable
 			if (d->start_counter_clicks == 0) {
 				// Rate P (Angle + Rate, rather than Angle-Rate Cascading)
-				d->proportional2 = -d->gyro[1];
-				float pid_mod = (d->float_conf.kp2 * d->proportional2);
-
+				float rate_prop = -d->gyro[1];
+				d->pid_mod = d->float_conf.kp2 * rate_prop;
 
 				// Apply Booster (Now based on True Pitch)
 				float true_proportional = d->setpoint - d->true_pitch_angle;
@@ -1792,16 +1794,19 @@ static void float_thd(void *arg) {
 
 				// No harsh changes in booster current (effective delay <= 100ms)
 				d->applied_booster_current = 0.01 * booster_current + 0.99 * d->applied_booster_current;
-				pid_mod += d->applied_booster_current;
+				d->pid_mod += d->applied_booster_current;
 
 				if (d->float_conf.startup_softstart_enabled && (d->softstart_pid_limit < d->mc_current_max)) {
-					pid_mod = fminf(pid_mod, d->softstart_pid_limit);
+					d->pid_mod = fminf(d->pid_mod, d->softstart_pid_limit);
 					d->softstart_pid_limit += d->softstart_ramp_step_size;
 				}
 
-				new_pid_value += pid_mod;
+				new_pid_value += d->pid_mod;
 			}
-			
+			else {
+				d->pid_mod = 0;
+			}
+
 			// Current Limiting!
 			float current_limit;
 			if (d->braking) {
@@ -2046,7 +2051,7 @@ static float app_float_get_debug(int index) {
 		case(15):
 			return d->integral * d->float_conf.ki;
 		case(16):
-			return d->integral2;
+			return 0;
 		case(17):
 			return 0;
 		default:
