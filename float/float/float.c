@@ -1371,11 +1371,17 @@ static void apply_turntilt(data *d) {
 		return;
 	}
 
-	float abs_yaw_scaled = d->abs_yaw_change * 100;
-	float turn_angle = abs_yaw_scaled; 
+	float abs_yaw_aggregate = fabsf(d->yaw_aggregate);
+	
+	// incremental turn increment since the last iteration
+	float turn_increment = d->abs_yaw_change;
 
-	// Apply cutzone
-	if ((turn_angle < d->float_conf.turntilt_start_angle) || (d->state != RUNNING)) {
+	// Minimum threshold based on
+	// a) minimum degrees per second (yaw/turn increment)
+	// b) minimum yaw aggregate (to filter out wiggling on uneven road)
+	if ((abs_yaw_aggregate < d->float_conf.turntilt_start_angle) ||
+		(turn_increment < 0.04) ||
+		(d->state != RUNNING)) {
 		d->turntilt_target = 0;
 	}
 	else {
@@ -1397,7 +1403,7 @@ static void apply_turntilt(data *d) {
 		if (d->abs_erpm < 2000) {
 			aggregate_damper = 0.5;
 		}
-		boost = 1 + aggregate_damper * fabsf(d->yaw_aggregate) / d->yaw_aggregate_target;
+		boost = 1 + aggregate_damper * abs_yaw_aggregate / d->yaw_aggregate_target;
 		boost = fminf(boost, 2);
 		d->turntilt_target *= boost;
 
