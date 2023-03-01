@@ -96,6 +96,9 @@ typedef struct {
 
 	float_config float_conf;
 
+	// Firmware version, passed in from Lisp
+	int fw_version_major, fw_version_minor, fw_version_beta;
+
 	// Buzzer
 	int beep_num_left;
 	int beep_duration;
@@ -2487,6 +2490,18 @@ static lbm_value ext_bal_dbg(lbm_value *args, lbm_uint argn) {
 	return VESC_IF->lbm_enc_float(app_float_get_debug(VESC_IF->lbm_dec_as_i32(args[0])));
 }
 
+// Called from Lisp on init to pass in the version info of the firmware
+static lbm_value ext_set_fw_version(lbm_value *args, lbm_uint argn) {
+	data *d = (data*)ARG;
+	if (argn > 2) {
+		d->fw_version_major = VESC_IF->lbm_dec_as_i32(args[0]);
+		d->fw_version_minor = VESC_IF->lbm_dec_as_i32(args[1]);
+		d->fw_version_beta = VESC_IF->lbm_dec_as_i32(args[2]);
+	}
+	//VESC_IF->printf("Version is set: %d.%d [%d]\n", d->fw_version_major, d->fw_version_minor, d->fw_version_beta);
+	return VESC_IF->lbm_enc_sym_true;
+}
+
 // These functions are used to send the config page to VESC Tool
 // and to make persistent read and write work
 static int get_cfg(uint8_t *buffer, bool is_default) {
@@ -2578,6 +2593,7 @@ INIT_FUN(lib_info *info) {
 
 	VESC_IF->set_app_data_handler(on_command_received);
 	VESC_IF->lbm_add_extension("ext-float-dbg", ext_bal_dbg);
+	VESC_IF->lbm_add_extension("ext-set-fw-version", ext_set_fw_version);
 
 	return true;
 }
