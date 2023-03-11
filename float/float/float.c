@@ -728,7 +728,7 @@ static bool check_faults(data *d){
 				}
 			}
 			
-			if ((d->abs_erpm < d->quickstop_erpm) && (fabsf(d->true_pitch_angle) > 14) && (SIGN(d->true_pitch_angle) == SIGN(d->erpm))) {
+			if ((d->abs_erpm < d->quickstop_erpm) && (fabsf(d->true_pitch_angle) > 14) && (fabsf(d->inputtilt_interpolated) < 30) && (SIGN(d->true_pitch_angle) == SIGN(d->erpm))) {
 				// QUICK STOP
 				d->state = FAULT_QUICKSTOP;
 				return true;
@@ -798,7 +798,7 @@ static bool check_faults(data *d){
 	}
 
 	// Check pitch angle
-	if (fabsf(d->true_pitch_angle) > d->float_conf.fault_pitch) {
+	if ((fabsf(d->true_pitch_angle) > d->float_conf.fault_pitch) && (fabsf(d->inputtilt_interpolated) < 30)) {
 		if ((1000.0 * (d->current_time - d->fault_angle_pitch_timer)) > d->float_conf.fault_delay_pitch) {
 			d->state = FAULT_ANGLE_PITCH;
 			return true;
