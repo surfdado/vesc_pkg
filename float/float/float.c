@@ -1794,7 +1794,7 @@ static void float_thd(void *arg) {
 				d->pid_mod = d->float_conf.kp2 * rate_prop;
 
 				// Apply Booster (Now based on True Pitch)
-				float true_proportional = d->setpoint - d->true_pitch_angle;
+				float true_proportional = (d->setpoint - d->braketilt_interpolated) - d->true_pitch_angle; // Braketilt excluded to allow for soft brakes that strengthen when near tail-drag
 				d->abs_proportional = fabsf(true_proportional);
 				bool boostbraking = SIGN(d->proportional) != SIGN(d->erpm);
 
