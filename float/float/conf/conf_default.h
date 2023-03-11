@@ -185,7 +185,7 @@
 
 // Tiltback Speed
 #ifndef APPCONF_FLOAT_INPUTTILT_SPEED
-#define APPCONF_FLOAT_INPUTTILT_SPEED 20
+#define APPCONF_FLOAT_INPUTTILT_SPEED 30
 #endif
 
 // Tiltback Smoothing Factor
@@ -231,11 +231,6 @@
 // Startup Click Current
 #ifndef APPCONF_FLOAT_STARTUP_CLICK_CURRENT
 #define APPCONF_FLOAT_STARTUP_CLICK_CURRENT 0
-#endif
-
-// Enable Soft Start
-#ifndef APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED
-#define APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED 1
 #endif
 
 // Enable Simple Start

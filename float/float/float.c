@@ -1867,7 +1867,7 @@ static void float_thd(void *arg) {
 				d->applied_booster_current = 0.01 * booster_current + 0.99 * d->applied_booster_current;
 				d->pid_mod += d->applied_booster_current;
 
-				if (d->float_conf.startup_softstart_enabled && (d->softstart_pid_limit < d->mc_current_max)) {
+				if (d->softstart_pid_limit < d->mc_current_max) {
 					d->pid_mod = fminf(fabs(d->pid_mod), d->softstart_pid_limit) * SIGN(d->pid_mod);
 					d->softstart_pid_limit += d->softstart_ramp_step_size;
 				}

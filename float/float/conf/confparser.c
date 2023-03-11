@@ -56,7 +56,6 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->startup_roll_tolerance, 100, &ind);
 	buffer_append_float16(buffer, conf->startup_speed, 100, &ind);
 	buffer[ind++] = (uint8_t)conf->startup_click_current;
-	buffer[ind++] = conf->startup_softstart_enabled;
 	buffer[ind++] = conf->startup_simplestart_enabled;
 	buffer[ind++] = conf->startup_pushstart_enabled;
 	buffer[ind++] = conf->startup_dirtylandings_enabled;
@@ -158,7 +157,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->startup_roll_tolerance = buffer_get_float16(buffer, 100, &ind);
 	conf->startup_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->startup_click_current = buffer[ind++];
-	conf->startup_softstart_enabled = buffer[ind++];
 	conf->startup_simplestart_enabled = buffer[ind++];
 	conf->startup_pushstart_enabled = buffer[ind++];
 	conf->startup_dirtylandings_enabled = buffer[ind++];
@@ -257,7 +255,6 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->startup_roll_tolerance = APPCONF_FLOAT_STARTUP_ROLL_TOLERANCE;
 	conf->startup_speed = APPCONF_FLOAT_STARTUP_SPEED;
 	conf->startup_click_current = APPCONF_FLOAT_STARTUP_CLICK_CURRENT;
-	conf->startup_softstart_enabled = APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED;
 	conf->startup_simplestart_enabled = APPCONF_SIMPLESTART_ENABLED;
 	conf->startup_pushstart_enabled = APPCONF_PUSHSTART_ENABLED;
 	conf->startup_dirtylandings_enabled = APPCONF_DIRTYLANDINGS_ENABLED;

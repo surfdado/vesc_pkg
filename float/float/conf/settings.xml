@@ -1046,20 +1046,6 @@ p, li { white-space: pre-wrap; }
             <suffix> A</suffix>
             <vTx>1</vTx>
         </startup_click_current>
-        <startup_softstart_enabled>
-            <longName>Enable Soft Start</longName>
-            <type>5</type>
-            <transmittable>1</transmittable>
-            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Smoothens startup by ramping in Rate P and Booster, rather than enabling their full effect immediately. This eliminates the initial jerk and momentary nose high riding that could be triggered when mounting quickly. &lt;/p&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;If you would like some response/feedback for when the board engages while still having a smooth startup, consider using Startup Click Current in addition to Soft Start.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
-            <cDefine>APPCONF_FLOAT_STARTUP_SOFTSTART_ENABLED</cDefine>
-            <valInt>1</valInt>
-        </startup_softstart_enabled>
         <startup_simplestart_enabled>
             <longName>Enable Simple Start</longName>
             <type>5</type>
@@ -2051,7 +2037,6 @@ p, li { white-space: pre-wrap; }
         <ser>startup_roll_tolerance</ser>
         <ser>startup_speed</ser>
         <ser>startup_click_current</ser>
-        <ser>startup_softstart_enabled</ser>
         <ser>startup_simplestart_enabled</ser>
         <ser>startup_pushstart_enabled</ser>
         <ser>startup_dirtylandings_enabled</ser>
@@ -2180,7 +2165,6 @@ p, li { white-space: pre-wrap; }
                     <param>startup_speed</param>
                     <param>::sep::Start Options</param>
                     <param>startup_click_current</param>
-                    <param>startup_softstart_enabled</param>
                     <param>startup_simplestart_enabled</param>
                     <param>startup_pushstart_enabled</param>
                     <param>startup_dirtylandings_enabled</param>
