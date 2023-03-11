@@ -112,7 +112,7 @@ typedef struct {
 	float startup_step_size;
 	float tiltback_duty_step_size, tiltback_hv_step_size, tiltback_lv_step_size, tiltback_return_step_size;
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
-	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_step_size;
+	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_ramped_step_size, inputtilt_step_size;
 	float mc_max_temp_fet, mc_max_temp_mot;
 	float mc_current_max, mc_current_min, max_continuous_current;
 	float surge_angle, surge_angle2, surge_angle3, surge_adder;
@@ -449,6 +449,9 @@ static void configure(data *d) {
 	d->enable_upside_down = false;
 	d->is_upside_down = false;
 	d->darkride_setpoint_correction = d->float_conf.dark_pitch_offset;
+
+	// Allows smoothing of Remote Tilt
+	d->inputtilt_ramped_step_size = 0;
 
 	// Speed above which to warn users about an impending full switch fault
 	d->switch_warn_buzz_erpm = d->float_conf.is_dutybuzz_enabled ? 2000 : 100000;
@@ -1111,12 +1114,33 @@ static void apply_inputtilt(data *d){ // Input Tiltback
 	// 	}
 	// }
 
-	if (fabsf(input_tiltback_target - d->inputtilt_interpolated) < d->inputtilt_step_size){
+	float input_tiltback_target_diff = input_tiltback_target - d->inputtilt_interpolated;
+
+	if (d->float_conf.inputtilt_smoothing_factor > 0) { // Smoothen changes in tilt angle by ramping the step size
+		float smoothing_factor = 0.02;
+		for (int i = 1; i < d->float_conf.inputtilt_smoothing_factor; i++) {
+			smoothing_factor /= 2;
+		}
+
+		float smooth_center_window = 1.5 + (0.5 * d->float_conf.inputtilt_smoothing_factor); // Sets the angle away from Target that step size begins ramping down
+		if (fabsf(input_tiltback_target_diff) < smooth_center_window) { // Within X degrees of Target Angle, start ramping down step size
+			d->inputtilt_ramped_step_size = (smoothing_factor * d->inputtilt_step_size * (input_tiltback_target_diff / 2)) + ((1 - smoothing_factor) * d->inputtilt_ramped_step_size); // Target step size is reduced the closer to center you are (needed for smoothly transitioning away from center)
+			float centering_step_size = fminf(fabsf(d->inputtilt_ramped_step_size), fabsf(input_tiltback_target_diff / 2) * d->inputtilt_step_size) * SIGN(input_tiltback_target_diff); // Linearly ramped down step size is provided as minimum to prevent overshoot
+			if (fabsf(input_tiltback_target_diff) < fabsf(centering_step_size)) {
+				d->inputtilt_interpolated = input_tiltback_target;
+			} else {
+				d->inputtilt_interpolated += centering_step_size;
+			}
+		} else { // Ramp up step size until the configured tilt speed is reached
+			d->inputtilt_ramped_step_size = (smoothing_factor * d->inputtilt_step_size * SIGN(input_tiltback_target_diff)) + ((1 - smoothing_factor) * d->inputtilt_ramped_step_size);
+			d->inputtilt_interpolated += d->inputtilt_ramped_step_size;
+		}
+	} else { // Constant step size; no smoothing
+		if (fabsf(input_tiltback_target_diff) < d->inputtilt_step_size){
 		d->inputtilt_interpolated = input_tiltback_target;
-	} else if (input_tiltback_target - d->inputtilt_interpolated > 0){
-		d->inputtilt_interpolated += d->inputtilt_step_size;
 	} else {
-		d->inputtilt_interpolated -= d->inputtilt_step_size;
+		d->inputtilt_interpolated += d->inputtilt_step_size * SIGN(input_tiltback_target_diff);
+	}
 	}
 
 	d->setpoint += d->inputtilt_interpolated;

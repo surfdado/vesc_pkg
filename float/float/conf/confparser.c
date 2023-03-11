@@ -47,6 +47,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer[ind++] = conf->inputtilt_remote_type;
 	buffer_append_float16(buffer, conf->inputtilt_angle_limit, 100, &ind);
 	buffer_append_float16(buffer, conf->inputtilt_speed, 100, &ind);
+	buffer[ind++] = (uint8_t)conf->inputtilt_smoothing_factor;
 	buffer[ind++] = conf->inputtilt_invert_throttle;
 	buffer_append_float16(buffer, conf->inputtilt_deadband, 10000, &ind);
 	buffer_append_float16(buffer, conf->remote_throttle_current_max, 10, &ind);
@@ -148,6 +149,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->inputtilt_remote_type = buffer[ind++];
 	conf->inputtilt_angle_limit = buffer_get_float16(buffer, 100, &ind);
 	conf->inputtilt_speed = buffer_get_float16(buffer, 100, &ind);
+	conf->inputtilt_smoothing_factor = buffer[ind++];
 	conf->inputtilt_invert_throttle = buffer[ind++];
 	conf->inputtilt_deadband = buffer_get_float16(buffer, 10000, &ind);
 	conf->remote_throttle_current_max = buffer_get_float16(buffer, 10, &ind);
@@ -246,6 +248,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->inputtilt_remote_type = APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE;
 	conf->inputtilt_angle_limit = APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT;
 	conf->inputtilt_speed = APPCONF_FLOAT_INPUTTILT_SPEED;
+	conf->inputtilt_smoothing_factor = APPCONF_FLOAT_INPUTTILT_SMOOTHING_FACTOR;
 	conf->inputtilt_invert_throttle = APPCONF_FLOAT_INPUTTILT_INVERT_THROTTLE;
 	conf->inputtilt_deadband = APPCONF_FLOAT_INPUTTILT_DEADBAND;
 	conf->remote_throttle_current_max = APPCONF_FLOAT_REMOTE_THROTTLE_CURRENT_MAX;

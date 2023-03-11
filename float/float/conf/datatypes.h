@@ -69,6 +69,7 @@ typedef struct {
 	FLOAT_INPUTTILT_REMOTE_TYPE inputtilt_remote_type;
 	float inputtilt_speed;
 	float inputtilt_angle_limit;
+	uint16_t inputtilt_smoothing_factor;
 	bool inputtilt_invert_throttle;
 	float inputtilt_deadband;
 	float remote_throttle_current_max;
