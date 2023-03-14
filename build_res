@@ -11,16 +11,6 @@ set -e
 # passed. When using 4 flags a package-file must exist beforehand (e.g. by
 # creating it from the editor in VESC tool).
 
-# Balance
-cd balance/balance/
-make clean
-make
-cd ../
-$VT --buildPkg 'balance.vescpkg:balance.lisp:ui.qml:0:README.md:Balance'
-cd balance
-make clean
-cd ../../
-
 # Float
 # Get version number out of settings.xml - assumes that valDouble is exactly 8 lines after the parameter name:
 LINENUMBER=$(grep -n APPCONF_FLOAT_VERSION float/float/conf/settings.xml | tr -dc '0-9')
@@ -34,7 +24,6 @@ make
 # commented out for now since it would wipe any uncommitted changes...
 # but for upstream/public version this needs to remain in place:
 #git checkout float/ui.qml
-
 cd ../
 cp README.md READMEx.md
 echo "- Version: v" >> READMEx.md
@@ -52,40 +41,5 @@ git rev-parse --short HEAD >> READMEx.md
 $VT --buildPkg 'float.vescpkg:float.lisp:ui.qml:0:READMEx.md:Float'
 rm READMEx.md
 cd float
-make clean
+#make clean
 cd ../../
-
-# logui
-cd logui/
-$VT --buildPkg 'logui.vescpkg:logger.lisp:ui.qml:0:README.md:LogUI'
-cd ../
-
-## Libraries
-
-# WS2812
-cd lib_ws2812/ws2812/
-make clean
-make
-cd ../
-$VT --buildPkg 'ws2812.vescpkg:ws2812.lisp::0'
-cd ws2812
-make clean
-cd ../../
-
-# NAU7802
-cd lib_nau7802/
-$VT --buildPkg 'nau7802.vescpkg:nau7802.lisp::0'
-cd ../
-
-# Interpolation
-cd lib_interpolation/interpolation/
-make clean
-make
-cd ../
-$VT --buildPkg 'interpolation.vescpkg:interpolation.lisp::0:README.md:Interpolation'
-cd interpolation
-make clean
-cd ../../
-
-rcc -binary res_all.qrc -o vesc_pkg_all.rcc
-
