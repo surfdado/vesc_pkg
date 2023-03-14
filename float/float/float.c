@@ -49,6 +49,7 @@ typedef enum {
 	RUNNING_TILTBACK = 2,
 	RUNNING_WHEELSLIP = 3,
 	RUNNING_UPSIDEDOWN = 4,
+	RUNNING_FLYWHEEL = 5,
 	FAULT_ANGLE_PITCH = 6,	// skipped 5 for compatibility
 	FAULT_ANGLE_ROLL = 7,
 	FAULT_SWITCH_HALF = 8,
@@ -63,7 +64,7 @@ typedef enum {
 typedef enum {
 	CENTERING = 0,
 	REVERSESTOP,
-        TILTBACK_NONE,
+	TILTBACK_NONE,
 	TILTBACK_DUTY,
 	TILTBACK_HV,
 	TILTBACK_LV,
@@ -190,6 +191,8 @@ typedef struct {
 	bool enable_upside_down;		// dark ride mode is enabled (10 seconds after fault)
 	float delay_upside_down_fault;
 	float darkride_setpoint_correction;
+	bool is_flywheel_mode, flywheel_abort, flywheel_allow_abort;
+	float flywheel_pitch_offset, flywheel_roll_offset;
 
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
@@ -224,6 +227,7 @@ typedef struct {
 
 static void brake(data *d);
 static void set_current(data *d, float current);
+static void flywheel_stop(data *d);
 
 /**
  * BUZZER / BEEPER on Servo Pin
@@ -454,6 +458,9 @@ static void configure(data *d) {
 	d->enable_upside_down = false;
 	d->is_upside_down = false;
 	d->darkride_setpoint_correction = d->float_conf.dark_pitch_offset;
+	d->is_flywheel_mode = false;
+	d->flywheel_abort = false;
+	d->flywheel_allow_abort = false;
 
 	// Allows smoothing of Remote Tilt
 	d->inputtilt_ramped_step_size = 0;
@@ -809,6 +816,16 @@ static bool check_faults(data *d){
 				}
 			}
 		}
+
+		if(d->is_flywheel_mode && d->flywheel_allow_abort) {
+			//if(d->adc1 > (d->float_conf.fault_adc1 * 0.8) || d->adc2 > (d->float_conf.fault_adc2 * 0.8)) {
+			if(d->adc1 > 1 || d->adc2 > 1) {
+				// this is a hand-press, accept 80% of normal ADC threshold to turn it off board
+				d->state = FAULT_SWITCH_HALF;
+				d->flywheel_abort = true;
+				return true;
+			}
+		}
 	}
 
 	// Check pitch angle
@@ -992,15 +1009,17 @@ static void calculate_setpoint_target(data *d) {
 		}
 	}
 
-	if (d->setpointAdjustmentType == TILTBACK_DUTY) {
-		if (d->float_conf.is_dutybuzz_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
-			beep_on(d, true);
-			d->duty_beeping = true;
+	if (d->is_flywheel_mode == false) {
+		if (d->setpointAdjustmentType == TILTBACK_DUTY) {
+			if (d->float_conf.is_dutybuzz_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
+				beep_on(d, true);
+				d->duty_beeping = true;
+			}
 		}
-	}
-	else {
-		if (d->duty_beeping) {
-			beep_off(d, false);
+		else {
+			if (d->duty_beeping) {
+				beep_off(d, false);
+			}
 		}
 	}
 }
@@ -1638,11 +1657,23 @@ static void float_thd(void *arg) {
 		// True pitch is derived from the secondary IMU filter running with kp=0.2
 		d->true_pitch_angle = RAD2DEG_f(VESC_IF->ahrs_get_pitch(&d->m_att_ref));
 		d->pitch_angle = RAD2DEG_f(VESC_IF->imu_get_pitch());
-		if (d->is_upside_down) {
+		if (d->is_flywheel_mode) {
+			// flip sign and use offsets
+			d->true_pitch_angle = d->flywheel_pitch_offset - d->true_pitch_angle;
+			d->pitch_angle = d->true_pitch_angle;
+			d->roll_angle -= d->flywheel_roll_offset;
+			if (d->roll_angle < -200) {
+				d->roll_angle += 360;
+			}
+			else if (d->roll_angle > 200) {
+				d->roll_angle -= 360;
+			}
+		}
+		else if (d->is_upside_down) {
 			d->pitch_angle = -d->pitch_angle - d->darkride_setpoint_correction;;
 			d->true_pitch_angle = -d->true_pitch_angle - d->darkride_setpoint_correction;
 		}
-		
+
 		d->last_gyro_y = d->gyro[1];
 		VESC_IF->imu_get_gyro(d->gyro);
 
@@ -1777,6 +1808,7 @@ static void float_thd(void *arg) {
 		case (RUNNING_TILTBACK):
 		case (RUNNING_WHEELSLIP):
 		case (RUNNING_UPSIDEDOWN):
+		case (RUNNING_FLYWHEEL):
 			// Check for faults
 			if (check_faults(d)) {
 				if ((d->state == FAULT_SWITCH_FULL) && !d->is_upside_down) {
@@ -1997,6 +2029,11 @@ static void float_thd(void *arg) {
 		case (FAULT_SWITCH_HALF):
 		case (FAULT_SWITCH_FULL):
 		case (FAULT_STARTUP):
+			if (d->is_flywheel_mode && d->flywheel_abort) {
+				flywheel_stop(d);
+				break;
+			}
+
 			if (d->current_time - d->disengage_timer > 10) {
 				// 10 seconds of grace period between flipping the board over and allowing darkride mode...
 				if (d->is_upside_down) {
@@ -2194,6 +2231,7 @@ enum {
 	FLOAT_COMMAND_PRINT_INFO = 9,	// print verbose info
 	FLOAT_COMMAND_GET_ALLDATA = 10,	// send all data, compact
 	FLOAT_COMMAND_EXPERIMENT = 11,  // generic cmd for sending data, used for testing/tuning new features
+	FLOAT_COMMAND_FLYWHEEL = 22,
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -2256,7 +2294,11 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 		buffer_append_float16(send_buffer, d->pitch_angle, 10, &ind);
 		buffer_append_float16(send_buffer, d->roll_angle, 10, &ind);
 
-		send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
+		uint8_t state = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
+		if ((d->is_flywheel_mode) && (d->state > 0) && (d->state < 6)) {
+			state = RUNNING_FLYWHEEL;
+		}
+		send_buffer[ind++] = state;
 		send_buffer[ind++] = d->switch_state;
 		send_buffer[ind++] = d->adc1 * 50;
 		send_buffer[ind++] = d->adc2 * 50;
@@ -2653,6 +2695,106 @@ void cmd_rc_move(data *d, unsigned char *cfg)//int amps, int time)
 	}
 }
 
+void cmd_flywheel_toggle(data *d, unsigned char *cfg)
+{
+	if ((cfg[0] & 0x80) == 0)
+		return;
+
+	if ((d->state >= RUNNING) && (d->state <= RUNNING_FLYWHEEL))
+		return;
+
+	int command = cfg[0] & 0x7F;
+	d->is_flywheel_mode = (command == 0) ? false : true;
+
+	if (d->is_flywheel_mode) {
+		if ((d->flywheel_pitch_offset == 0) || (command == 2)) {
+			// accidental button press?? board isn't evn close to being upright
+			if (fabsf(d->true_pitch_angle) < 70)
+				return;
+
+			d->flywheel_pitch_offset = d->true_pitch_angle;
+			d->flywheel_roll_offset = d->roll_angle;
+			beep_alert(d, 1, 1);
+		}
+		else {
+			beep_alert(d, 3, 0);
+		}
+		d->flywheel_abort = false;
+
+		// Tighter startup/fault tolerances
+		d->startup_pitch_tolerance = 0.2;
+		d->float_conf.startup_pitch_tolerance = 0.2;
+		d->float_conf.startup_roll_tolerance = 15;
+		d->float_conf.fault_pitch = 6;
+		d->float_conf.fault_roll = 30;	// roll can fluctuate significantly in the upright position
+		d->float_conf.fault_delay_pitch = 0;
+		d->float_conf.fault_delay_roll = 0;
+		d->float_conf.fault_adc1 = 0;
+		d->float_conf.fault_adc2 = 0;
+		d->surge_enable = false;
+
+		// Aggressive P with some D (aka Rate-P) for Mahony kp=0.3
+		d->float_conf.kp = 8.0;
+		d->float_conf.kp2 = 0.3;
+
+		if (cfg[1] > 0) {
+			d->float_conf.kp = cfg[1];
+			d->float_conf.kp /= 10;
+		}
+		if (cfg[2] > 0) {
+			d->float_conf.kp2 = cfg[2];
+			d->float_conf.kp2 /= 100;
+		}
+
+		d->float_conf.tiltback_duty_angle = 2;
+		d->float_conf.tiltback_duty = 0.1;
+
+		if (cfg[3] > 0) {
+			d->float_conf.tiltback_duty_angle = cfg[3];
+			d->float_conf.tiltback_duty_angle /= 10;
+		}
+		if (cfg[4] > 0) {
+			d->float_conf.tiltback_duty = cfg[4];
+			d->float_conf.tiltback_duty /= 100;
+		}
+
+		// Limit speed of wheel and limit amps
+		//backup_erpm = mc_interface_get_configuration()->l_max_erpm;
+		VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -6000);
+		VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 6000);
+		d->mc_current_max = d->mc_current_min = 40;
+
+		d->flywheel_allow_abort = cfg[5];
+
+		// Disable I-term and all tune modifiers and tilts
+		d->float_conf.ki = 0;
+		d->float_conf.brkbooster_angle = 100;
+		d->float_conf.booster_angle = 100;
+		d->float_conf.torquetilt_strength = 0;
+		d->float_conf.torquetilt_strength_regen = 0;
+		d->float_conf.atr_strength_up = 0;
+		d->float_conf.atr_strength_down = 0;
+		d->float_conf.turntilt_strength = 0;
+		d->float_conf.tiltback_constant = 0;
+		d->float_conf.tiltback_variable = 0;
+		d->float_conf.brake_current = 0;
+		d->float_conf.fault_darkride_enabled = false;
+	} else {
+		flywheel_stop(d);
+	}
+}
+
+void flywheel_stop(data *d)
+{
+	// Just entirely restore the app settings
+	beep_on(d, 1);
+	d->is_flywheel_mode = false;
+	VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -30000);
+	VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 30000);
+	read_cfg_from_eeprom(d);
+	configure(d);
+}
+
 // Handler for incoming app commands
 static void on_command_received(unsigned char *buffer, unsigned int len) {
 	data *d = (data*)ARG;
@@ -2756,6 +2898,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
 				}
 			}
+			return;
+		}
+		case FLOAT_COMMAND_FLYWHEEL: {
+			cmd_flywheel_toggle(d, &buffer[2]);
 			return;
 		}
 		default: {

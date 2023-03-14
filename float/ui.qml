@@ -188,6 +188,8 @@ Item {
                     stateString = "RUNNING_WHEELSLIP"
                 }else if(state == 4){
                     stateString = "RUNNING_UPSIDEDOWN"
+                }else if(state == 5){
+                    stateString = "RUNNING_FLYWHEEL"
                 }else if(state == 6){
                     stateString = "STOP_ANGLE_PITCH"
                 }else if(state == 7){
