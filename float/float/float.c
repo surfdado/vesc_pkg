@@ -831,10 +831,10 @@ static void calculate_setpoint_target(data *d) {
 				}
 			}
 		}
-	} else if ((fabs(d->acceleration) > 10) &&					// this isn't normal, either wheelslip or wheel getting stuck
+	} else if ((fabs(d->acceleration) > 15) &&					// this isn't normal, either wheelslip or wheel getting stuck
 			  (SIGN(d->acceleration) == SIGN(d->erpm)) &&		// we only act on wheelslip, not when the wheel gets stuck
 			  (d->abs_duty_cycle > 0.3) &&
-			  (d->abs_erpm > 1500))								// acceleration can jump a lot at very low speeds
+			  (d->abs_erpm > 2000))								// acceleration can jump a lot at very low speeds
 	{
 		d->state = RUNNING_WHEELSLIP;
 		d->setpointAdjustmentType = TILTBACK_NONE;
