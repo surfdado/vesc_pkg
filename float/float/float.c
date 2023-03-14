@@ -1192,6 +1192,7 @@ static void apply_torquetilt(data *d) {
 		return;
 	}
 	else {
+		/*
 		if ((d->current_time - d->wheelslip_end_timer) * 1000 < 100) {
 			// for 100ms after wheelslip we still don't do ATR to allow the wheel to decelerate
 			d->torquetilt_interpolated *= 0.998;
@@ -1214,7 +1215,7 @@ static void apply_torquetilt(data *d) {
 			calculate_torqueresponse_interpolated(d);
 			d->setpoint += d->torqueresponse_interpolated;
 			return;
-		}
+			}*/
 	}
 
 	// CLASSIC TORQUE TILT /////////////////////////////////
