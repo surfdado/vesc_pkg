@@ -147,7 +147,6 @@ typedef struct {
 	// Feature: Turntilt
 	float last_yaw_angle, yaw_angle, abs_yaw_change, last_yaw_change, yaw_change, yaw_aggregate;
 	float turntilt_boost_per_erpm, yaw_aggregate_target;
-	float turntilt_strength;
 
 	// Rumtime state values
 	FloatState state;
@@ -438,7 +437,6 @@ static void configure(data *d) {
 	// Feature: Turntilt
 	d->yaw_aggregate_target = fmaxf(50, d->float_conf.turntilt_yaw_aggregate);
 	d->turntilt_boost_per_erpm = (float)d->float_conf.turntilt_erpm_boost / 100.0 / (float)d->float_conf.turntilt_erpm_boost_end;
-	d->turntilt_strength = d->float_conf.turntilt_strength;
 
 	// Feature: Darkride
 	d->enable_upside_down = false;
@@ -1083,6 +1081,7 @@ static void apply_torquetilt(data *d) {
 	float braketilt_step_size = 0;
 	int torque_sign;
 	float abs_torque;
+	float atr_threshold;
 	float torque_offset;
 	float accel_factor;
 	float accel_factor2;
@@ -1169,7 +1168,8 @@ static void apply_torquetilt(data *d) {
 	// ADAPTIVE TORQUE RESPONSE ////////////////////////////
 
 	abs_torque = fabsf(d->atr_filtered_current);
-	torque_offset = d->float_conf.atr_torque_offset;
+	torque_offset = 8;// hard-code to 8A for now (shouldn't really be changed much anyways)
+	atr_threshold = d->braking ? d->float_conf.atr_threshold_down : d->float_conf.atr_threshold_up;
 	accel_factor = d->braking ? d->float_conf.atr_amps_decel_ratio : d->float_conf.atr_amps_accel_ratio;
 	accel_factor2 = accel_factor * 1.3;
 
@@ -1218,6 +1218,12 @@ static void apply_torquetilt(data *d) {
 
 	// now ATR target is purely based on gap between expected and actual acceleration
 	float new_atr_target = atr_strength * d->accel_gap;
+	if (fabsf(new_atr_target) < atr_threshold) {
+		new_atr_target = 0;
+	}
+	else {
+		new_atr_target -= SIGN(new_atr_target) * atr_threshold;
+	}
 
 	d->atr_target = d->atr_target * 0.95 + 0.05 * new_atr_target;
 	d->atr_target = fminf(d->atr_target, d->float_conf.atr_angle_limit);
@@ -1367,7 +1373,7 @@ static void apply_torquetilt(data *d) {
 }
 
 static void apply_turntilt(data *d) {
-	if (d->turntilt_strength == 0) {
+	if (d->float_conf.turntilt_strength == 0) {
 		return;
 	}
 
@@ -1387,7 +1393,7 @@ static void apply_turntilt(data *d) {
 	else {
 		// Calculate desired angle
 		float turn_change = d->abs_yaw_change;
-		d->turntilt_target = turn_change * d->turntilt_strength;
+		d->turntilt_target = turn_change * d->float_conf.turntilt_strength;
 
 		// Apply speed scaling
 		float boost;

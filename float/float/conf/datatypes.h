@@ -97,6 +97,8 @@ typedef struct {
 	float torquetilt_strength_regen;
 	float atr_strength_up;
 	float atr_strength_down;
+	float atr_threshold_up;
+	float atr_threshold_down;
 	float atr_torque_offset;
 	float atr_speed_boost;
 	float atr_angle_limit;
