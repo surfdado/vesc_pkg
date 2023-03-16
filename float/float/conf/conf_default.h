@@ -453,6 +453,21 @@
 #define APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED 1
 #endif
 
+// Enable Surge Buzzer
+#ifndef APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED 1
+#endif
+
+// Surge Angle
+#ifndef APPCONF_FLOAT_SURGE_ANGLE
+#define APPCONF_FLOAT_SURGE_ANGLE 0
+#endif
+
+// Surge Start Duty Cycle
+#ifndef APPCONF_FLOAT_SURGE_DUTY_START
+#define APPCONF_FLOAT_SURGE_DUTY_START 0.88
+#endif
+
 // Disable Float Package
 #ifndef APPCONF_FLOAT_DISABLE
 #define APPCONF_FLOAT_DISABLE 0

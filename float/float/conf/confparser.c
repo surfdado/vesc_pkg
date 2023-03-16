@@ -294,9 +294,12 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
+	conf->surge_angle = APPCONF_FLOAT_SURGE_ANGLE;
+	conf->surge_duty_start = APPCONF_FLOAT_SURGE_DUTY_START;
 	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
 	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
 	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
+	conf->is_surgebuzz_enabled = APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED;
 	conf->float_disable = APPCONF_FLOAT_DISABLE;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }

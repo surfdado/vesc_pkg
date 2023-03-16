@@ -123,6 +123,9 @@ typedef struct {
 	bool is_buzzer_enabled;
 	bool is_dutybuzz_enabled;
 	bool is_footbuzz_enabled;
+	bool is_surgebuzz_enabled;
+	float surge_duty_start;
+	float surge_angle;
 } float_config;
 
 // DATATYPES_H_

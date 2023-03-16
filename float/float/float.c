@@ -115,7 +115,7 @@ typedef struct {
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_step_size;
 	float mc_max_temp_fet, mc_max_temp_mot;
 	float mc_current_max, mc_current_min, max_continuous_current;
-	float surge_angle, surge_adder, surge_damper;
+	float surge_angle, surge_angle2, surge_angle3, surge_adder;
 	bool surge_enable;
 	bool current_beeping;
 	bool duty_beeping;
@@ -351,14 +351,10 @@ static void configure(data *d) {
 	d->noseangling_step_size = d->float_conf.noseangling_speed / d->float_conf.hertz;
 	d->inputtilt_step_size = d->float_conf.inputtilt_speed / d->float_conf.hertz;
 
-	d->surge_angle = 0;
-	d->surge_damper = 0;
-	if ((d->float_conf.tiltback_duty < 0.82) || (d->float_conf.tiltback_duty > 0.94)) {
-		// For now surge only gets enabled if duty tilt starts below 82% (or when it's effectively disabled)
-		// to not let tiltback and surge overlap too much
-		d->surge_enable = true;
-		d->surge_angle = 0.5;
-	}
+	d->surge_angle = d->float_conf.surge_angle;
+	d->surge_angle2 = d->float_conf.surge_angle * 2;
+	d->surge_angle3 = d->float_conf.surge_angle * 3;
+	d->surge_enable = d->surge_angle > 0;
 
 	// Feature: Stealthy start vs normal start (noticeable click when engaging) - 0-20A
 	d->start_counter_clicks_max = 3;
@@ -1009,26 +1005,21 @@ static void calculate_setpoint_interpolated(data *d) {
 }
 
 static void add_surge(data *d) {
-	float abs_duty_smooth = fabsf(d->duty_smooth);
-	float surge_now = 0;
-	if (d->surge_enable && (d->state != RUNNING_WHEELSLIP)) {
-		if (abs_duty_smooth > 0.92) {
+	if (d->surge_enable) {
+		float abs_duty_smooth = fabsf(d->duty_smooth);
+		float surge_now = 0;
+
+		if (abs_duty_smooth > d->float_conf.surge_duty_start + 0.04) {
+			surge_now = d->surge_angle3;
 			beep_alert(d, 3, 1);
 		}
-		else if (abs_duty_smooth > 0.90) {
+		else if (abs_duty_smooth > d->float_conf.surge_duty_start + 0.02) {
+			surge_now = d->surge_angle2;
 			beep_alert(d, 2, 1);
 		}
-		else if (abs_duty_smooth > 0.88) {
+		else if (abs_duty_smooth > d->float_conf.surge_duty_start) {
+			surge_now = d->surge_angle;
 			beep_alert(d, 1, 1);
-		}
-		if (abs_duty_smooth > 0.88) {
-			surge_now += d->surge_angle;
-		}
-		if (abs_duty_smooth > 0.90) {
-			surge_now += d->surge_angle;
-		}
-		if (abs_duty_smooth > 0.92) {
-			surge_now += d->surge_angle;
 		}
 		if (surge_now >= d->surge_adder) {
 			// kick in instantly
@@ -1036,7 +1027,7 @@ static void add_surge(data *d) {
 		}
 		else {
 			// release less harshly
-			d->surge_adder = d->surge_adder * 0.95 + surge_now * 0.05;
+			d->surge_adder = d->surge_adder * 0.98 + surge_now * 0.02;
 		}
 
 		// Add surge angle to setpoint
@@ -2229,15 +2220,29 @@ static void split(unsigned char byte, int* h1, int* h2)
 
 static void cmd_print_info(data *d)
 {
-	VESC_IF->printf("n/a\n");
+	//VESC_IF->printf("A:%.1f, D:%.2f\n", d->surge_angle, d->float_conf.surge_duty_start);
 }
 
 static void cmd_experiment(data *d, unsigned char *cfg)
 {
 	d->surge_angle = cfg[0];
 	d->surge_angle /= 10;
-	if (d->surge_angle > 1)
-		d->surge_angle = 1;
+	d->float_conf.surge_duty_start = cfg[1];
+	d->float_conf.surge_duty_start /= 100;
+	if ((d->surge_angle > 1) || (d->float_conf.surge_duty_start < 0.85)) {
+		d->float_conf.surge_duty_start = 0.85;
+		d->surge_angle = 0.6;
+	}
+	else {
+		d->surge_enable = true;
+		beep_alert(d, 2, 0);
+	}
+	d->surge_angle2 = d->surge_angle * 2;
+	d->surge_angle3 = d->surge_angle * 3;
+
+	if (d->surge_angle == 0) {
+		d->surge_enable = false;
+	}
 }
 
 static void cmd_booster(data *d, unsigned char *cfg)
@@ -2723,7 +2728,7 @@ static void stop(void *arg) {
 INIT_FUN(lib_info *info) {
 	INIT_START
 	if (!VESC_IF->app_is_output_disabled()) {
-		VESC_IF->printf("Init Float v%.1f\n", (double)APPCONF_FLOAT_VERSION);
+		VESC_IF->printf("Init Float v%.1f - Surge3\n", (double)APPCONF_FLOAT_VERSION);
 	}
 
 	data *d = VESC_IF->malloc(sizeof(data));
