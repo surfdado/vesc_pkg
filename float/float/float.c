@@ -2151,90 +2151,102 @@ static void cmd_booster(data *d, unsigned char *cfg)
 /**
  * cmd_runtime_tune		Extract tune info from 20byte message but don't write to EEPROM!
  */
-static void cmd_runtime_tune(data *d, unsigned char *cfg)
+static void cmd_runtime_tune(data *d, unsigned char *cfg, int len)
 {
 	int h1, h2;
-	split(cfg[0], &h1, &h2);
-	d->float_conf.kp = h1 + 15;
-	d->float_conf.kp2 = ((float)h2) / 10;
+	if (len >= 12) {
+		split(cfg[0], &h1, &h2);
+		d->float_conf.kp = h1 + 15;
+		d->float_conf.kp2 = ((float)h2) / 10;
 
-	split(cfg[1], &h1, &h2);
-	d->float_conf.ki = h1;
-	if (h1 == 1)
-		d->float_conf.ki = 0.005;
-	else if (h1 > 1)
-		d->float_conf.ki = ((float)(h1 - 1)) / 100;
-	d->float_conf.ki_limit = h2 + 19;
-	if (h2 == 0)
-        d->float_conf.ki_limit = 0;
+		split(cfg[1], &h1, &h2);
+		d->float_conf.ki = h1;
+		if (h1 == 1)
+			d->float_conf.ki = 0.005;
+		else if (h1 > 1)
+			d->float_conf.ki = ((float)(h1 - 1)) / 100;
+		d->float_conf.ki_limit = h2 + 19;
+		if (h2 == 0)
+			d->float_conf.ki_limit = 0;
 
-	split(cfg[2], &h1, &h2);
-	d->float_conf.booster_angle = h1 + 5;
-	d->float_conf.booster_ramp = h2 + 2;
+		split(cfg[2], &h1, &h2);
+		d->float_conf.booster_angle = h1 + 5;
+		d->float_conf.booster_ramp = h2 + 2;
 
-	split(cfg[3], &h1, &h2);
-	if (h1 == 0)
-		d->float_conf.booster_current = 0;
-	else
-		d->float_conf.booster_current = 8 + h1 * 2;
-	d->float_conf.turntilt_strength = h2;
+		split(cfg[3], &h1, &h2);
+		if (h1 == 0)
+			d->float_conf.booster_current = 0;
+		else
+			d->float_conf.booster_current = 8 + h1 * 2;
+		d->float_conf.turntilt_strength = h2;
 
-	split(cfg[4], &h1, &h2);
-	d->float_conf.turntilt_angle_limit = (h1 & 0x3) + 2;
-	d->float_conf.turntilt_start_erpm = (float)(h1 >> 2) * 500 + 1000;
-	d->float_conf.mahony_kp = ((float)h2) / 10 + 1.5;
-	VESC_IF->set_cfg_float(CFG_PARAM_IMU_mahony_kp + 100, d->float_conf.mahony_kp);
+		split(cfg[4], &h1, &h2);
+		d->float_conf.turntilt_angle_limit = (h1 & 0x3) + 2;
+		d->float_conf.turntilt_start_erpm = (float)(h1 >> 2) * 500 + 1000;
+		d->float_conf.mahony_kp = ((float)h2) / 10 + 1.5;
+		VESC_IF->set_cfg_float(CFG_PARAM_IMU_mahony_kp + 100, d->float_conf.mahony_kp);
 
-	split(cfg[5], &h1, &h2);
-	if (h1 == 0)
-		d->float_conf.atr_strength_up = 0;
-	else
-		d->float_conf.atr_strength_up = ((float)h1) / 10.0 + 0.5;
-	if (h2 == 0)
-		d->float_conf.atr_strength_down = 0;
-	else
-		d->float_conf.atr_strength_down = ((float)h2) / 10.0 + 0.5;
+		split(cfg[5], &h1, &h2);
+		if (h1 == 0)
+			d->float_conf.atr_strength_up = 0;
+		else
+			d->float_conf.atr_strength_up = ((float)h1) / 10.0 + 0.5;
+		if (h2 == 0)
+			d->float_conf.atr_strength_down = 0;
+		else
+			d->float_conf.atr_strength_down = ((float)h2) / 10.0 + 0.5;
 
-	split(cfg[6], &h1, &h2);
-	d->float_conf.atr_torque_offset = h1 + 5;
-	d->float_conf.atr_speed_boost = ((float)(h2 * 5)) / 100;
+		split(cfg[6], &h1, &h2);
+		d->float_conf.atr_torque_offset = h1 + 5;
+		d->float_conf.atr_speed_boost = ((float)(h2 * 5)) / 100;
 
-	split(cfg[7], &h1, &h2);
-	d->float_conf.atr_angle_limit = h1 + 5;
-	d->float_conf.atr_on_speed = (h2 & 0x3) + 3;
-	d->float_conf.atr_off_speed = (h2 >> 2) + 2;
+		split(cfg[7], &h1, &h2);
+		d->float_conf.atr_angle_limit = h1 + 5;
+		d->float_conf.atr_on_speed = (h2 & 0x3) + 3;
+		d->float_conf.atr_off_speed = (h2 >> 2) + 2;
 
-	split(cfg[8], &h1, &h2);
-	d->float_conf.atr_response_boost = ((float)h1) / 10 + 1;
-	d->float_conf.atr_transition_boost = ((float)h2) / 5 + 1;
+		split(cfg[8], &h1, &h2);
+		d->float_conf.atr_response_boost = ((float)h1) / 10 + 1;
+		d->float_conf.atr_transition_boost = ((float)h2) / 5 + 1;
 
-	split(cfg[9], &h1, &h2);
-	d->float_conf.atr_amps_accel_ratio = h1 + 5;
-	d->float_conf.atr_amps_decel_ratio = h2 + 5;
+		split(cfg[9], &h1, &h2);
+		d->float_conf.atr_amps_accel_ratio = h1 + 5;
+		d->float_conf.atr_amps_decel_ratio = h2 + 5;
 
-	split(cfg[10], &h1, &h2);
-	d->float_conf.braketilt_strength = h1;
-	d->float_conf.braketilt_lingering = h2;
+		split(cfg[10], &h1, &h2);
+		d->float_conf.braketilt_strength = h1;
+		d->float_conf.braketilt_lingering = h2;
 
-	split(cfg[11], &h1, &h2);
-	d->mc_current_max = h1 * 5 + 55;
-	d->mc_current_min = h2 * 5 + 55;
-	if (h1 == 0) d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
-	if (h2 == 0) d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
+		split(cfg[11], &h1, &h2);
+		d->mc_current_max = h1 * 5 + 55;
+		d->mc_current_min = h2 * 5 + 55;
+		if (h1 == 0) d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
+		if (h2 == 0) d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
 
-	// Update values normally done in configure()
-	d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
-	d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
-	d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
+		// Update values normally done in configure()
+		d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
+		d->atr_off_step_size = d->float_conf.atr_off_speed / d->float_conf.hertz;
+		d->turntilt_step_size = d->float_conf.turntilt_speed / d->float_conf.hertz;
 
-	// Feature: Braketilt
-	d->braketilt_factor = d->float_conf.braketilt_strength;
-	d->braketilt_factor = 20 - d->braketilt_factor;
-	// incorporate negative sign into braketilt factor instead of adding it each balance loop
-	d->braketilt_factor = -(0.5 + d->braketilt_factor / 5.0);
+		// Feature: Braketilt
+		d->braketilt_factor = d->float_conf.braketilt_strength;
+		d->braketilt_factor = 20 - d->braketilt_factor;
+		// incorporate negative sign into braketilt factor instead of adding it each balance loop
+		d->braketilt_factor = -(0.5 + d->braketilt_factor / 5.0);
+	}
+	if (len >= 14) {
+		split(cfg[12], &h1, &h2);
+		d->float_conf.brkbooster_angle = h1 + 5;
+		d->float_conf.brkbooster_ramp = h2 + 2;
 
-	// Feature: Turntilt
-	d->turntilt_strength = d->float_conf.turntilt_strength;
+		split(cfg[13], &h1, &h2);
+		if (h1 == 0)
+			d->float_conf.brkbooster_current = 0;
+		else
+			d->float_conf.brkbooster_current = 8 + h1 * 2;
+		VESC_IF->printf("DONSKI!\n");
+		//d->float_conf.turntilt_strength = h2;
+	}
 }
 
 static void cmd_tune_defaults(data *d){
@@ -2431,14 +2443,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_RT_TUNE: {
-			if (len == 14) {
-				cmd_runtime_tune(d, &buffer[2]);
-			}
-			else {
-				if (!VESC_IF->app_is_output_disabled()) {
-					VESC_IF->printf("Float App: Command too short (%d)\n", len);
-				}
-			}
+			cmd_runtime_tune(d, &buffer[2], len - 2);
 			return;
 		}
 		case FLOAT_COMMAND_TUNE_OTHER: {
