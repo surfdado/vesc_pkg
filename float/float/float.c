@@ -2297,18 +2297,31 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg, int len)
 		// incorporate negative sign into braketilt factor instead of adding it each balance loop
 		d->braketilt_factor = -(0.5 + d->braketilt_factor / 5.0);
 	}
-	if (len >= 14) {
+	if (len >= 16) {
 		split(cfg[12], &h1, &h2);
-		d->float_conf.brkbooster_angle = h1 + 5;
-		d->float_conf.brkbooster_ramp = h2 + 2;
+		float thup = h1;
+		float thdown = h2;
+		d->float_conf.atr_threshold_up = thup / 2;
+		d->float_conf.atr_threshold_down = thdown / 2;
 
 		split(cfg[13], &h1, &h2);
-		if (h1 == 0)
-			d->float_conf.brkbooster_current = 0;
-		else
-			d->float_conf.brkbooster_current = 8 + h1 * 2;
-		VESC_IF->printf("DONSKI!\n");
-		//d->float_conf.turntilt_strength = h2;
+		float ttup = h1;
+		float ttdn = h2;
+		d->float_conf.torquetilt_strength = ttup / 10 * 0.3;
+		d->float_conf.torquetilt_strength_regen = ttdn / 10 * 0.3;
+
+		split(cfg[14], &h1, &h2);
+		float maxangle = h1;
+		d->float_conf.torquetilt_start_current = h2 + 15;
+		d->float_conf.torquetilt_angle_limit = maxangle / 2;
+
+		split(cfg[15], &h1, &h2);
+		float onspd = h1;
+		float offspd = h2;
+		d->float_conf.torquetilt_on_speed = onspd / 2;
+		d->float_conf.torquetilt_off_speed = offspd + 3;
+		d->torquetilt_on_step_size = d->float_conf.torquetilt_on_speed / d->float_conf.hertz;
+		d->torquetilt_off_step_size = d->float_conf.torquetilt_off_speed / d->float_conf.hertz;
 	}
 }
 
