@@ -252,6 +252,18 @@ p, li { white-space: pre-wrap; }
             <suffix> V</suffix>
             <vTx>7</vTx>
         </fault_adc2>
+        <is_footbuzz_enabled>
+            <longName>Beep on Sensor Fault</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Beep when both sensors turn off above 2000erpm (beeps for as long as the sensor remains off)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED</cDefine>
+            <valInt>1</valInt>
+        </is_footbuzz_enabled>
         <fault_delay_pitch>
             <longName>Pitch Fault Delay</longName>
             <type>2</type>
@@ -482,6 +494,88 @@ p, li { white-space: pre-wrap; }
             <suffix></suffix>
             <vTx>7</vTx>
         </tiltback_duty>
+        <is_dutybuzz_enabled>
+            <longName>Beep on Duty Tiltback</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Beep during duty cycle tiltback. It is recommended to disable this beep when enabling the surge beep or else it will be impossible to recognize the surge beep.&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p align=&quot;justify&quot; style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Warning: buzzer may not be easily audible at high speeds!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED</cDefine>
+            <valInt>0</valInt>
+        </is_dutybuzz_enabled>
+        <surge_angle>
+            <longName>Surge Angle Increment</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Angle to be used for producing the surge effect. Small angles suffice because the setpoint change is instant, producing a fairly noticeable albeit small jolt in the nose.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Surge happens in 3 stages. Each stage adds one increment of the surge angle to the setpoint.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;It takes lots of practice to recognize surge, this feature is &lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;NOT FOR BEGINNERS!&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Warning: use at your own risk - riding near the duty cycle limit is very dangerous!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_SURGE_ANGLE</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>1.5</maxDouble>
+            <minDouble>0</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>0.1</stepDouble>
+            <valDouble>0</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °</suffix>
+            <vTx>7</vTx>
+        </surge_angle>
+        <surge_duty_start>
+            <longName>Surge Duty Cycle Start</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Duty Cycle threshold to trigger a safety tiltback (Tiltback raises the nose of the board, informing you to slow down).&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;*Note: Can be disabled by setting to 100%&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;DISCLAIMER&lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;: Max Duty Cycle on a VESC is &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;95%&lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;, &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;NOT 100%! &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;Reaching 95% Duty Cycle and pushing beyond &lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;WILL &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;result in a nosedive. Use this knowledge to leave yourself the headroom you desire.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_SURGE_DUTY_START</cDefine>
+            <editorDecimalsDouble>2</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>1</editAsPercentage>
+            <maxDouble>0.96</maxDouble>
+            <minDouble>0.8</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>0.01</stepDouble>
+            <valDouble>0.88</valDouble>
+            <vTxDoubleScale>1000</vTxDoubleScale>
+            <suffix></suffix>
+            <vTx>7</vTx>
+        </surge_duty_start>
+        <is_surgebuzz_enabled>
+            <longName>Beep when Surging</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Beep whenever surge is triggered. Issues 1-3 beeps depending on whether the 1st, 2nd or 3rd stage surge got triggered.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Helpful when practicing to recognize surge, but shouldn't be relied on as the buzzer &lt;span style=&quot; font-weight:600;&quot;&gt;may not be easily audible at high speeds!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED</cDefine>
+            <valInt>1</valInt>
+        </is_surgebuzz_enabled>
         <tiltback_hv_angle>
             <longName>Angle</longName>
             <type>1</type>
@@ -1462,28 +1556,58 @@ p, li { white-space: pre-wrap; }
             <suffix></suffix>
             <vTx>7</vTx>
         </atr_strength_down>
-        <atr_torque_offset>
-            <longName>Torque Offset</longName>
+        <atr_threshold_up>
+            <longName>Threshold Angle Up</longName>
             <type>1</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Amps used for pure balancing / constant speed on flat ground, not contributing to acceleration (somewhat rider weight dependent). Used for calculation of Expected Acceleration.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
-            <cDefine>APPCONF_FLOAT_ATR_TORQUE_OFFSET</cDefine>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Threshold angle for acceleration/uphills below which no setpoint change is triggered. This means that if the computed ATR angle is below this threshold the setpoint will not be changed, producing a more predictable behavior in mellow terrain.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Once the ATR target angle exceeds the threshold, setpoint changes will be produced. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Example: If the threshold is 2 and the computed ATR angle is 3 then a 1 degree setpoint adjustment will be performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_ATR_THRESHOLD_UP</cDefine>
             <editorDecimalsDouble>1</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
-            <maxDouble>100</maxDouble>
+            <maxDouble>5</maxDouble>
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
-            <stepDouble>1</stepDouble>
-            <valDouble>7</valDouble>
+            <stepDouble>0.5</stepDouble>
+            <valDouble>0.5</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
-            <suffix> A</suffix>
+            <suffix> °</suffix>
             <vTx>7</vTx>
-        </atr_torque_offset>
+        </atr_threshold_up>
+        <atr_threshold_down>
+            <longName>Threshold Angle Down</longName>
+            <type>1</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Threshold angle for braking/downhills below which no setpoint change is triggered. This means that if the computed ATR angle is below this threshold the setpoint will not be changed, producing a more predictable behavior in mellow terrain.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Once the ATR target angle exceeds the threshold, setpoint changes will be produced. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Example: If the threshold is 2 and the computed ATR angle is 3 then a 1 degree setpoint adjustment will be performed.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_ATR_THRESHOLD_DOWN</cDefine>
+            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxDouble>5</maxDouble>
+            <minDouble>0</minDouble>
+            <showDisplay>0</showDisplay>
+            <stepDouble>0.5</stepDouble>
+            <valDouble>0.5</valDouble>
+            <vTxDoubleScale>100</vTxDoubleScale>
+            <suffix> °</suffix>
+            <vTx>7</vTx>
+        </atr_threshold_down>
         <atr_speed_boost>
             <longName>Speed Boost</longName>
             <type>1</type>
@@ -2000,6 +2124,7 @@ p, li { white-space: pre-wrap; }
         <ser>fault_roll</ser>
         <ser>fault_adc1</ser>
         <ser>fault_adc2</ser>
+        <ser>is_footbuzz_enabled</ser>
         <ser>fault_delay_pitch</ser>
         <ser>fault_delay_roll</ser>
         <ser>fault_delay_switch_half</ser>
@@ -2012,6 +2137,10 @@ p, li { white-space: pre-wrap; }
         <ser>tiltback_duty_angle</ser>
         <ser>tiltback_duty_speed</ser>
         <ser>tiltback_duty</ser>
+        <ser>is_dutybuzz_enabled</ser>
+        <ser>surge_angle</ser>
+        <ser>surge_duty_start</ser>
+        <ser>is_surgebuzz_enabled</ser>
         <ser>tiltback_hv_angle</ser>
         <ser>tiltback_hv_speed</ser>
         <ser>tiltback_hv</ser>
@@ -2064,7 +2193,8 @@ p, li { white-space: pre-wrap; }
         <ser>turntilt_yaw_aggregate</ser>
         <ser>atr_strength_up</ser>
         <ser>atr_strength_down</ser>
-        <ser>atr_torque_offset</ser>
+        <ser>atr_threshold_up</ser>
+        <ser>atr_threshold_down</ser>
         <ser>atr_speed_boost</ser>
         <ser>atr_angle_limit</ser>
         <ser>atr_on_speed</ser>
@@ -2138,7 +2268,8 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Adaptive Torque Response</param>
                     <param>atr_strength_up</param>
                     <param>atr_strength_down</param>
-                    <param>atr_torque_offset</param>
+                    <param>atr_threshold_up</param>
+                    <param>atr_threshold_down</param>
                     <param>atr_speed_boost</param>
                     <param>::sep::Nose Angling</param>
                     <param>atr_angle_limit</param>
@@ -2200,6 +2331,11 @@ p, li { white-space: pre-wrap; }
                     <param>tiltback_duty</param>
                     <param>tiltback_duty_angle</param>
                     <param>tiltback_duty_speed</param>
+                    <param>is_dutybuzz_enabled</param>
+                    <param>::sep::Duty Surge</param>
+                    <param>surge_duty_start</param>
+                    <param>surge_angle</param>
+                    <param>is_surgebuzz_enabled</param>
                     <param>::sep::High Voltage Tiltback</param>
                     <param>tiltback_hv_angle</param>
                     <param>tiltback_hv_speed</param>
@@ -2237,6 +2373,7 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Foot Sensors</param>
                     <param>fault_adc1</param>
                     <param>fault_adc2</param>
+                    <param>is_footbuzz_enabled</param>
                     <param>::sep::Miscellaneous</param>
                     <param>dark_pitch_offset</param>
                     <param>is_buzzer_enabled</param>

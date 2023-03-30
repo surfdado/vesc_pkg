@@ -2432,7 +2432,8 @@ static void cmd_tune_defaults(data *d){
 	d->float_conf.turntilt_yaw_aggregate = APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE;
 	d->float_conf.atr_strength_up = APPCONF_FLOAT_ATR_UPHILL_STRENGTH;
 	d->float_conf.atr_strength_down = APPCONF_FLOAT_ATR_DOWNHILL_STRENGTH;
-	d->float_conf.atr_torque_offset = APPCONF_FLOAT_ATR_TORQUE_OFFSET;
+	d->float_conf.atr_threshold_up = APPCONF_FLOAT_ATR_THRESHOLD_UP;
+	d->float_conf.atr_threshold_down = APPCONF_FLOAT_ATR_THRESHOLD_DOWN;
 	d->float_conf.atr_speed_boost = APPCONF_FLOAT_ATR_SPEED_BOOST;
 	d->float_conf.atr_angle_limit = APPCONF_FLOAT_ATR_ANGLE_LIMIT;
 	d->float_conf.atr_on_speed = APPCONF_FLOAT_ATR_ON_SPEED;

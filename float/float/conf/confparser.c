@@ -19,6 +19,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->fault_roll, 10, &ind);
 	buffer_append_float16(buffer, conf->fault_adc1, 1000, &ind);
 	buffer_append_float16(buffer, conf->fault_adc2, 1000, &ind);
+	buffer[ind++] = conf->is_footbuzz_enabled;
 	buffer_append_uint16(buffer, conf->fault_delay_pitch, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_roll, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_switch_half, &ind);
@@ -31,6 +32,10 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->tiltback_duty_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_duty_speed, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_duty, 1000, &ind);
+	buffer[ind++] = conf->is_dutybuzz_enabled;
+	buffer_append_float16(buffer, conf->surge_angle, 100, &ind);
+	buffer_append_float16(buffer, conf->surge_duty_start, 1000, &ind);
+	buffer[ind++] = conf->is_surgebuzz_enabled;
 	buffer_append_float16(buffer, conf->tiltback_hv_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_hv_speed, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_hv, 10, &ind);
@@ -83,7 +88,8 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer[ind++] = (uint8_t)conf->turntilt_yaw_aggregate;
 	buffer_append_float16(buffer, conf->atr_strength_up, 1000, &ind);
 	buffer_append_float16(buffer, conf->atr_strength_down, 1000, &ind);
-	buffer_append_float16(buffer, conf->atr_torque_offset, 100, &ind);
+	buffer_append_float16(buffer, conf->atr_threshold_up, 100, &ind);
+	buffer_append_float16(buffer, conf->atr_threshold_down, 100, &ind);
 	buffer_append_float16(buffer, conf->atr_speed_boost, 10000, &ind);
 	buffer_append_float16(buffer, conf->atr_angle_limit, 100, &ind);
 	buffer_append_float16(buffer, conf->atr_on_speed, 100, &ind);
@@ -120,6 +126,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->fault_roll = buffer_get_float16(buffer, 10, &ind);
 	conf->fault_adc1 = buffer_get_float16(buffer, 1000, &ind);
 	conf->fault_adc2 = buffer_get_float16(buffer, 1000, &ind);
+	conf->is_footbuzz_enabled = buffer[ind++];
 	conf->fault_delay_pitch = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_roll = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_switch_half = buffer_get_uint16(buffer, &ind);
@@ -132,6 +139,10 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->tiltback_duty_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_duty_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_duty = buffer_get_float16(buffer, 1000, &ind);
+	conf->is_dutybuzz_enabled = buffer[ind++];
+	conf->surge_angle = buffer_get_float16(buffer, 100, &ind);
+	conf->surge_duty_start = buffer_get_float16(buffer, 1000, &ind);
+	conf->is_surgebuzz_enabled = buffer[ind++];
 	conf->tiltback_hv_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_hv_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_hv = buffer_get_float16(buffer, 10, &ind);
@@ -184,7 +195,8 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->turntilt_yaw_aggregate = buffer[ind++];
 	conf->atr_strength_up = buffer_get_float16(buffer, 1000, &ind);
 	conf->atr_strength_down = buffer_get_float16(buffer, 1000, &ind);
-	conf->atr_torque_offset = buffer_get_float16(buffer, 100, &ind);
+	conf->atr_threshold_up = buffer_get_float16(buffer, 100, &ind);
+	conf->atr_threshold_down = buffer_get_float16(buffer, 100, &ind);
 	conf->atr_speed_boost = buffer_get_float16(buffer, 10000, &ind);
 	conf->atr_angle_limit = buffer_get_float16(buffer, 100, &ind);
 	conf->atr_on_speed = buffer_get_float16(buffer, 100, &ind);
@@ -200,10 +212,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->is_buzzer_enabled = buffer[ind++];
 	conf->float_disable = buffer[ind++];
 	conf->float_version = buffer_get_float16(buffer, 1000, &ind);
-	conf->atr_threshold_up = APPCONF_FLOAT_ATR_THRESHOLD_UP;
-	conf->atr_threshold_down = APPCONF_FLOAT_ATR_THRESHOLD_DOWN;
-	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
-	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
 
 	return true;
 }
@@ -218,6 +226,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->fault_roll = APPCONF_FLOAT_FAULT_ROLL;
 	conf->fault_adc1 = APPCONF_FLOAT_FAULT_ADC1;
 	conf->fault_adc2 = APPCONF_FLOAT_FAULT_ADC2;
+	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
 	conf->fault_delay_pitch = APPCONF_FLOAT_FAULT_DELAY_PITCH;
 	conf->fault_delay_roll = APPCONF_FLOAT_FAULT_DELAY_ROLL;
 	conf->fault_delay_switch_half = APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF;
@@ -230,6 +239,10 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->tiltback_duty_angle = APPCONF_FLOAT_TILTBACK_DUTY_ANGLE;
 	conf->tiltback_duty_speed = APPCONF_FLOAT_TILTBACK_DUTY_SPEED;
 	conf->tiltback_duty = APPCONF_FLOAT_TILTBACK_DUTY;
+	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
+	conf->surge_angle = APPCONF_FLOAT_SURGE_ANGLE;
+	conf->surge_duty_start = APPCONF_FLOAT_SURGE_DUTY_START;
+	conf->is_surgebuzz_enabled = APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED;
 	conf->tiltback_hv_angle = APPCONF_FLOAT_TILTBACK_HV_ANGLE;
 	conf->tiltback_hv_speed = APPCONF_FLOAT_TILTBACK_HV_SPEED;
 	conf->tiltback_hv = APPCONF_FLOAT_TILTBACK_HV;
@@ -284,7 +297,6 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_strength_down = APPCONF_FLOAT_ATR_DOWNHILL_STRENGTH;
 	conf->atr_threshold_up = APPCONF_FLOAT_ATR_THRESHOLD_UP;
 	conf->atr_threshold_down = APPCONF_FLOAT_ATR_THRESHOLD_DOWN;
-	conf->atr_torque_offset = APPCONF_FLOAT_ATR_TORQUE_OFFSET;
 	conf->atr_speed_boost = APPCONF_FLOAT_ATR_SPEED_BOOST;
 	conf->atr_angle_limit = APPCONF_FLOAT_ATR_ANGLE_LIMIT;
 	conf->atr_on_speed = APPCONF_FLOAT_ATR_ON_SPEED;
@@ -297,12 +309,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
-	conf->surge_angle = APPCONF_FLOAT_SURGE_ANGLE;
-	conf->surge_duty_start = APPCONF_FLOAT_SURGE_DUTY_START;
 	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
-	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
-	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
-	conf->is_surgebuzz_enabled = APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED;
 	conf->float_disable = APPCONF_FLOAT_DISABLE;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }

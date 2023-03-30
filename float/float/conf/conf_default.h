@@ -48,6 +48,11 @@
 #define APPCONF_FLOAT_FAULT_ADC2 3
 #endif
 
+// Beep on Sensor Fault
+#ifndef APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED 1
+#endif
+
 // Pitch Fault Delay
 #ifndef APPCONF_FLOAT_FAULT_DELAY_PITCH
 #define APPCONF_FLOAT_FAULT_DELAY_PITCH 1000
@@ -106,6 +111,26 @@
 // Duty Cycle
 #ifndef APPCONF_FLOAT_TILTBACK_DUTY
 #define APPCONF_FLOAT_TILTBACK_DUTY 0.8
+#endif
+
+// Beep on Duty Tiltback
+#ifndef APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED 0
+#endif
+
+// Surge Angle Increment
+#ifndef APPCONF_FLOAT_SURGE_ANGLE
+#define APPCONF_FLOAT_SURGE_ANGLE 0
+#endif
+
+// Surge Duty Cycle Start
+#ifndef APPCONF_FLOAT_SURGE_DUTY_START
+#define APPCONF_FLOAT_SURGE_DUTY_START 0.88
+#endif
+
+// Beep when Surging
+#ifndef APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED 1
 #endif
 
 // Angle
@@ -368,19 +393,14 @@
 #define APPCONF_FLOAT_ATR_DOWNHILL_STRENGTH 1
 #endif
 
-// ATR Threshold Up
+// Threshold Angle Up
 #ifndef APPCONF_FLOAT_ATR_THRESHOLD_UP
 #define APPCONF_FLOAT_ATR_THRESHOLD_UP 0.5
 #endif
 
-// ATR Threshold Down
+// Threshold Angle Down
 #ifndef APPCONF_FLOAT_ATR_THRESHOLD_DOWN
 #define APPCONF_FLOAT_ATR_THRESHOLD_DOWN 0.5
-#endif
-
-// Torque Offset
-#ifndef APPCONF_FLOAT_ATR_TORQUE_OFFSET
-#define APPCONF_FLOAT_ATR_TORQUE_OFFSET 7
 #endif
 
 // Speed Boost
@@ -446,31 +466,6 @@
 // Enable Buzzer on Servo/PPM
 #ifndef APPCONF_FLOAT_IS_BUZZER_ENABLED
 #define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
-#endif
-
-// Enable Duty Buzzer
-#ifndef APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED 0
-#endif
-
-// Enable Footsensor Buzzer
-#ifndef APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED 1
-#endif
-
-// Enable Surge Buzzer
-#ifndef APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED 1
-#endif
-
-// Surge Angle
-#ifndef APPCONF_FLOAT_SURGE_ANGLE
-#define APPCONF_FLOAT_SURGE_ANGLE 0
-#endif
-
-// Surge Start Duty Cycle
-#ifndef APPCONF_FLOAT_SURGE_DUTY_START
-#define APPCONF_FLOAT_SURGE_DUTY_START 0.88
 #endif
 
 // Disable Float Package
