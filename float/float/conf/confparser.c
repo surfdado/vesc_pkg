@@ -200,6 +200,8 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->float_version = buffer_get_float16(buffer, 1000, &ind);
 	conf->atr_threshold_up = APPCONF_FLOAT_ATR_THRESHOLD_UP;
 	conf->atr_threshold_down = APPCONF_FLOAT_ATR_THRESHOLD_DOWN;
+	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
+	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
 
 	return true;
 }
@@ -293,6 +295,8 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
 	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
+	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
+	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
 	conf->float_disable = APPCONF_FLOAT_DISABLE;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }

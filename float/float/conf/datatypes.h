@@ -121,6 +121,8 @@ typedef struct {
 	int turntilt_yaw_aggregate;
 	float dark_pitch_offset;
 	bool is_buzzer_enabled;
+	bool is_dutybuzz_enabled;
+	bool is_footbuzz_enabled;
 } float_config;
 
 // DATATYPES_H_

@@ -443,6 +443,16 @@
 #define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
 #endif
 
+// Enable Duty Buzzer
+#ifndef APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED 0
+#endif
+
+// Enable Footsensor Buzzer
+#ifndef APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED
+#define APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED 1
+#endif
+
 // Disable Float Package
 #ifndef APPCONF_FLOAT_DISABLE
 #define APPCONF_FLOAT_DISABLE 0

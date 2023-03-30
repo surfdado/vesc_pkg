@@ -443,8 +443,8 @@ static void configure(data *d) {
 	d->is_upside_down = false;
 	d->darkride_setpoint_correction = d->float_conf.dark_pitch_offset;
 
-	// Speed at which to warn users about an impending full switch fault
-	d->switch_warn_buzz_erpm = 2000;
+	// Speed above which to warn users about an impending full switch fault
+	d->switch_warn_buzz_erpm = d->float_conf.is_dutybuzz_enabled ? 2000 : 100000;
 
 	// Speed below which we check for quickstop conditions
 	d->quickstop_erpm = 200;
@@ -971,7 +971,7 @@ static void calculate_setpoint_target(data *d) {
 	}
 
 	if (d->setpointAdjustmentType == TILTBACK_DUTY) {
-		if (d->float_conf.tiltback_duty_angle == 0) {
+		if (d->float_conf.is_dutybuzz_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
 			beep_on(d, true);
 			d->duty_beeping = true;
 		}
