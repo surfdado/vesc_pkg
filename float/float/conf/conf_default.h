@@ -475,7 +475,7 @@
 
 // Package Version
 #ifndef APPCONF_FLOAT_VERSION
-#define APPCONF_FLOAT_VERSION 0.9
+#define APPCONF_FLOAT_VERSION 1
 #endif
 
 // CONF_DEFAULT_H_
