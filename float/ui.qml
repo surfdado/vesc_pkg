@@ -700,8 +700,8 @@ Item {
 
     function quicksaveFloat(saveName){
         var params = [
-            {"name": "float_version", "type": "Double"},
-            {"name": "float_disable", "type": "Double"},
+            // {"name": "float_version", "type": "Double"},
+            // {"name": "float_disable", "type": "Double"},
             {"name": "kp", "type": "Double"},
             {"name": "ki", "type": "Double"},
             {"name": "kd", "type": "Double"},
