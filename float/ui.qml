@@ -40,6 +40,7 @@ Item {
     property ConfigParams mMcConf: VescIf.mcConfig()
     property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
+    property var quicksaveNames: []
 
     // property var dialogParent: ApplicationWindow.overlay
     
@@ -274,12 +275,13 @@ Item {
     }
 
     Component.onCompleted: {
-        displaySavedTunes()
+        restoreQuicksaveNames()
+        restoreDownloadedTunes()
     }
 
     Dialog {
         id: quicksavePopup
-        title: "Quicksave"
+        title: saveName
         standardButtons: Dialog.Save | Dialog.Cancel
         modal: true
         focus: true
@@ -289,6 +291,11 @@ Item {
         y: 10 + parent.height / 2 - height / 2
         parent: ApplicationWindow.overlay
         onAccepted: {
+            if(quicksaveNameInput.text){
+                quicksaveNames[saveName] = quicksaveNameInput.text
+                quicksaveNames = quicksaveNames
+                settingStorage.setValue("quicksave_names", JSON.stringify(quicksaveNames))
+            }
             settingStorage.setValue(saveName, saveValue)
             VescIf.emitStatusMessage(saveName + " complete!", true)
         }
@@ -299,13 +306,21 @@ Item {
         Overlay.modal: Rectangle {
             color: "#AA000000"
         }
-        
-        Text {
-            color: Utility.getAppHexColor("lightText")
-            verticalAlignment: Text.AlignVCenter
+
+        ColumnLayout {
             anchors.fill: parent
-            wrapMode: Text.WordWrap
-            text: "Do you want to overwrite this slot?"
+            Text {
+                color: Utility.getAppHexColor("lightText")
+                verticalAlignment: Text.AlignVCenter
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "Do you want to overwrite this slot?"
+            }
+            TextField {
+                id: quicksaveNameInput
+                placeholderText: qsTr("Quicksave name (optional)")
+                Layout.fillWidth: true
+            }
         }
     }
 
@@ -552,130 +567,111 @@ Item {
             ColumnLayout { // Tunes Page
                 id: tunesColumn
 
-                RowLayout {
+                Text {
+                    id: floatQuicksaveHeader
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
                     Layout.fillWidth: true
-                    Button {
-                        id: quicksave1Button
-                        text: "Quicksave 1"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 1")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 1")
-                        }
-                    }
-                    Button {
-                        id: quicksave2Button
-                        text: "Quicksave 2"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 2")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 2")
-                        }
-                    }
-                    Button {
-                        id: quicksave3Button
-                        text: "Quicksave 3"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 3")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 3")
-                        }
-                    }
+                    text: "Float Package Quicksave Slots"
+                    font.underline: true
+                    font.weight: Font.Black
+                    font.pointSize: 14
                 }
 
-                RowLayout {
+                GridLayout {
                     Layout.fillWidth: true
-                    Button {
-                        id: quicksave4Button
-                        text: "Quicksave 4"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 4")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 4")
-                        }
-                    }
-                    Button {
-                        id: quicksave5Button
-                        text: "Quicksave 5"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 5")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 5")
-                        }
-                    }
-                    Button {
-                        id: quicksave6Button
-                        text: "Quicksave 6"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveFloat("Float Quicksave 6")
-                        }
-                        onClicked: {
-                            quickloadFloat("Float Quicksave 6")
-                        }
-                    }
-                }
-
-                RowLayout {
-                    Layout.fillWidth: true
-                    Button {
-                        id: quicksaveIMU1Button
-                        text: "IMU Quicksave 1"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveIMU("IMU Quicksave 1")
-                        }
-                        onClicked: {
-                            quickloadIMU("IMU Quicksave 1")
-                        }
-                    }
-                    Button {
-                        id: quicksaveIMU2Button
-                        text: "IMU Quicksave 2"
-                        Layout.fillWidth: true
-                        onPressAndHold: {
-                            quicksaveIMU("IMU Quicksave 2")
-                        }
-                        onClicked: {
-                            quickloadIMU("IMU Quicksave 2")
-                        }
-                    }
-                }
-
-                Button {
-                    id: downloadTunesButton
-                    text: "Refresh Tune Archive"
-                    Layout.alignment: Qt.AlignCenter
-                    onClicked: {
-                        downloadTunesButton.text = "Downloading Tunes..."
-                        downloadedTunesModel.clear()
-                        var http = new XMLHttpRequest()
-                        // var url = "http://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv"
-                        var url = "http://us-central1-mimetic-union-377520.cloudfunctions.net/float_package_tunes_via_http"
-                        http.open("GET", url, true);
-                        http.onreadystatechange = function() {
-                            if (http.readyState == XMLHttpRequest.DONE) {
-                                downloadTunesButton.text = "Refresh Tune Archive"
-                                if (http.status == 200) {
-                                    settingStorage.setValue("tunes_csv", http.responseText)
-                                    displaySavedTunes()
-                                    VescIf.emitStatusMessage("Tune Download Success", true)
-                                } else {
-                                    VescIf.emitStatusMessage("Tune Download Failed: " + http.status, false)
-                                }
+                    columns: 3
+                    Repeater {
+                        model: [
+                            "Float Quicksave 1", "Float Quicksave 2", "Float Quicksave 3",
+                            "Float Quicksave 4", "Float Quicksave 5", "Float Quicksave 6"
+                        ]
+                        Button {
+                            text: quicksaveNames[modelData]
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 0
+                            onPressAndHold: {
+                                quicksaveFloat(modelData)
+                            }
+                            onClicked: {
+                                quickloadFloat(modelData)
                             }
                         }
-                        http.send()
+                    }
+                }
+
+                Text {
+                    id: imuQuicksaveHeader
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.fillWidth: true
+                    text: "IMU Config Quicksave Slots"
+                    font.underline: true
+                    font.weight: Font.Black
+                    font.pointSize: 14
+                }
+
+                GridLayout {
+                    Layout.fillWidth: true
+                    columns: 2
+                    Repeater {
+                        model: ["IMU Quicksave 1", "IMU Quicksave 2"]
+                        Button {
+                            text: quicksaveNames[modelData]
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 0
+                            onPressAndHold: {
+                                quicksaveIMU(modelData)
+                            }
+                            onClicked: {
+                                quickloadIMU(modelData)
+                            }
+                        }
+                    }
+                }
+
+                RowLayout {
+                    Layout.fillWidth: true
+
+                    Text {
+                        id: tunesHeader
+                        color: Utility.getAppHexColor("lightText")
+                        font.family: "DejaVu Sans Mono"
+                        Layout.margins: 0
+                        Layout.fillWidth: true
+                        text: "Tunes Archive"
+                        font.underline: true
+                        font.weight: Font.Black
+                        font.pointSize: 14
+                    }
+
+                    Button {
+                        id: downloadTunesButton
+                        text: "Refresh"
+                        Layout.alignment: Qt.AlignCenter
+                        onClicked: {
+                            downloadTunesButton.text = "Downloading Tunes..."
+                            downloadedTunesModel.clear()
+                            var http = new XMLHttpRequest()
+                            // var url = "http://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv"
+                            var url = "http://us-central1-mimetic-union-377520.cloudfunctions.net/float_package_tunes_via_http"
+                            http.open("GET", url, true);
+                            http.onreadystatechange = function() {
+                                if (http.readyState == XMLHttpRequest.DONE) {
+                                    downloadTunesButton.text = "Refresh"
+                                    if (http.status == 200) {
+                                        settingStorage.setValue("tunes_csv", http.responseText)
+                                        restoreDownloadedTunes()
+                                        VescIf.emitStatusMessage("Tune Download Success", true)
+                                    } else {
+                                        VescIf.emitStatusMessage("Tune Download Failed: " + http.status, false)
+                                    }
+                                }
+                            }
+                            http.send()
+                        }
                     }
                 }
 
@@ -683,8 +679,6 @@ Item {
                     id: downloadedTunesList
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    // focus: true
-                    // clip: true
                     spacing: 5
 
                     model: ListModel {
@@ -707,6 +701,7 @@ Item {
     function quicksaveFloat(saveName){
         var params = [
             {"name": "float_version", "type": "Double"},
+            {"name": "float_disable", "type": "Double"},
             {"name": "kp", "type": "Double"},
             {"name": "ki", "type": "Double"},
             {"name": "kd", "type": "Double"},
@@ -740,17 +735,20 @@ Item {
             {"name": "tiltback_constant_erpm", "type": "Int"},
             {"name": "tiltback_variable", "type": "Double"},
             {"name": "tiltback_variable_max", "type": "Double"},
+            {"name": "tiltback_variable_erpm", "type": "Int"},
             {"name": "inputtilt_remote_type", "type": "Enum"},
             {"name": "inputtilt_speed", "type": "Double"},
             {"name": "inputtilt_angle_limit", "type": "Double"},
+            {"name": "inputtilt_smoothing_factor", "type": "Int"},
             {"name": "inputtilt_invert_throttle", "type": "Bool"},
             {"name": "inputtilt_deadband", "type": "Double"},
+            {"name": "remote_throttle_current_max", "type": "Double"},
+            {"name": "remote_throttle_grace_period", "type": "Double"},
             {"name": "noseangling_speed", "type": "Double"},
             {"name": "startup_pitch_tolerance", "type": "Double"},
             {"name": "startup_roll_tolerance", "type": "Double"},
             {"name": "startup_speed", "type": "Double"},
             {"name": "startup_click_current", "type": "Double"},
-            {"name": "startup_softstart_enabled", "type": "Bool"},
             {"name": "startup_simplestart_enabled", "type": "Bool"},
             {"name": "startup_pushstart_enabled", "type": "Bool"},
             {"name": "startup_dirtylandings_enabled", "type": "Bool"},
@@ -759,6 +757,9 @@ Item {
             {"name": "booster_angle", "type": "Double"},
             {"name": "booster_ramp", "type": "Double"},
             {"name": "booster_current", "type": "Double"},
+            {"name": "brkbooster_angle", "type": "Double"},
+            {"name": "brkbooster_ramp", "type": "Double"},
+            {"name": "brkbooster_current", "type": "Double"},
             {"name": "torquetilt_start_current", "type": "Double"},
             {"name": "torquetilt_angle_limit", "type": "Double"},
             {"name": "torquetilt_on_speed", "type": "Double"},
@@ -767,6 +768,8 @@ Item {
             {"name": "torquetilt_strength_regen", "type": "Double"},
             {"name": "atr_strength_up", "type": "Double"},
             {"name": "atr_strength_down", "type": "Double"},
+            {"name": "atr_threshold_up", "type": "Double"},
+            {"name": "atr_threshold_down", "type": "Double"},
             {"name": "atr_torque_offset", "type": "Double"},
             {"name": "atr_speed_boost", "type": "Double"},
             {"name": "atr_angle_limit", "type": "Double"},
@@ -787,7 +790,13 @@ Item {
             {"name": "turntilt_erpm_boost", "type": "Int"},
             {"name": "turntilt_erpm_boost_end", "type": "Int"},
             {"name": "turntilt_yaw_aggregate", "type": "Int"},
-            {"name": "is_buzzer_enabled", "type": "Bool"}
+            {"name": "dark_pitch_offset", "type": "Double"},
+            {"name": "is_buzzer_enabled", "type": "Bool"},
+            {"name": "is_dutybuzz_enabled", "type": "Bool"},
+            {"name": "is_footbuzz_enabled", "type": "Bool"},
+            {"name": "is_surgebuzz_enabled", "type": "Bool"},
+            {"name": "surge_duty_start", "type": "Double"},
+            {"name": "surge_angle", "type": "Double"}
         ]
         for(var i in params){
             if(params[i].type == ("Double")){
@@ -889,7 +898,7 @@ Item {
         }
     }
 
-    function displaySavedTunes(){
+    function restoreDownloadedTunes(){
         var tunes = parseCSV(settingStorage.value("tunes_csv", ""))
         for(var i in tunes){
             downloadedTunesModel.append({"tune": tunes[i]})
@@ -933,6 +942,24 @@ Item {
                 }
                 mCommands.customConfigSet(0, mCustomConf)
             }
+        }
+    }
+
+    function restoreQuicksaveNames(){
+        var json = settingStorage.value("quicksave_names", "")
+        if(!json){
+            quicksaveNames = {
+                "Float Quicksave 1": "Quicksave 1",
+                "Float Quicksave 2": "Quicksave 2",
+                "Float Quicksave 3": "Quicksave 3",
+                "Float Quicksave 4": "Quicksave 4",
+                "Float Quicksave 5": "Quicksave 5",
+                "Float Quicksave 6": "Quicksave 6",
+                "IMU Quicksave 1": "IMU Quicksave 1",
+                "IMU Quicksave 2": "IMU Quicksave 2"
+            }
+        }else{
+            quicksaveNames = JSON.parse(json)
         }
     }
 
