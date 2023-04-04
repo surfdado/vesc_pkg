@@ -834,7 +834,7 @@ p, li { white-space: pre-wrap; }
             <vTx>7</vTx>
         </tiltback_variable_max>
         <tiltback_variable_erpm>
-            <longName>Variable Tiltback ERPM</longName>
+            <longName>Variable Tiltback Start ERPM</longName>
             <type>2</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;

@@ -1060,7 +1060,8 @@ static void apply_noseangling(data *d){
 	if (d->state != RUNNING_WHEELSLIP) {
 		// Nose angle adjustment, add variable then constant tiltback
 		float noseangling_target = 0;
-		float variable_erpm = fminf(0, fabsf(d->erpm) - d->float_conf.tiltback_variable_erpm); // Variable Tiltback looks at ERPM from the reference point of the set minimum ERPM
+
+		float variable_erpm = fmaxf(0, fabsf(d->erpm) - d->float_conf.tiltback_variable_erpm); // Variable Tiltback looks at ERPM from the reference point of the set minimum ERPM
 		if (variable_erpm > d->tiltback_variable_max_erpm) {
 			noseangling_target = d->float_conf.tiltback_variable_max * SIGN(d->erpm);
 		} else {
