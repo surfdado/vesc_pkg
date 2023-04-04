@@ -318,7 +318,9 @@ static void biquad_reset(Biquad *biquad) {
 
 // First start only, set initial state
 static void app_init(data *d) {
-	d->state = STARTUP;
+	if (d->state != DISABLED) {
+		d->state = STARTUP;
+	}
 	d->buzzer_enabled = true;
 	
 	// Allow saving of odometer
