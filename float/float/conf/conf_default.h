@@ -188,7 +188,7 @@
 #define APPCONF_FLOAT_TILTBACK_VARIABLE_MAX 0
 #endif
 
-// Variable Tiltback ERPM
+// Variable Tiltback Start ERPM
 #ifndef APPCONF_FLOAT_TILTBACK_VARIABLE_ERPM
 #define APPCONF_FLOAT_TILTBACK_VARIABLE_ERPM 0
 #endif
