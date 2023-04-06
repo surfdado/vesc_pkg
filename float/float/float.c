@@ -456,7 +456,7 @@ static void configure(data *d) {
 	d->inputtilt_ramped_step_size = 0;
 
 	// Speed above which to warn users about an impending full switch fault
-	d->switch_warn_buzz_erpm = d->float_conf.is_dutybuzz_enabled ? 2000 : 100000;
+	d->switch_warn_buzz_erpm = d->float_conf.is_footbuzz_enabled ? 2000 : 100000;
 
 	// Speed below which we check for quickstop conditions
 	d->quickstop_erpm = 200;
