@@ -210,12 +210,7 @@
 
 // Tiltback Speed
 #ifndef APPCONF_FLOAT_INPUTTILT_SPEED
-#define APPCONF_FLOAT_INPUTTILT_SPEED 30
-#endif
-
-// Tiltback Smoothing Factor
-#ifndef APPCONF_FLOAT_INPUTTILT_SMOOTHING_FACTOR
-#define APPCONF_FLOAT_INPUTTILT_SMOOTHING_FACTOR 1
+#define APPCONF_FLOAT_INPUTTILT_SPEED 25
 #endif
 
 // Tiltback Smoothing Factor
@@ -435,7 +430,7 @@
 
 // Tiltback Transition Boost
 #ifndef APPCONF_FLOAT_ATR_TRANSITION_BOOST
-#define APPCONF_FLOAT_ATR_TRANSITION_BOOST 2.5
+#define APPCONF_FLOAT_ATR_TRANSITION_BOOST 3
 #endif
 
 // Current Filter
@@ -445,12 +440,12 @@
 
 // Amps to Acceleration Ratio
 #ifndef APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO
-#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 11
+#define APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO 9
 #endif
 
 // Amps to Deceleration Ratio
 #ifndef APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO
-#define APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO 10
+#define APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO 8
 #endif
 
 // Brake Tilt Strength
