@@ -1872,7 +1872,7 @@ static void float_thd(void *arg) {
 				d->pid_mod += d->applied_booster_current;
 
 				if (d->softstart_pid_limit < d->mc_current_max) {
-					d->pid_mod = fminf(fabs(d->pid_mod), d->softstart_pid_limit) * SIGN(d->pid_mod);
+					d->pid_mod = fminf(d->pid_mod, d->softstart_pid_limit);
 					d->softstart_pid_limit += d->softstart_ramp_step_size;
 				}
 
