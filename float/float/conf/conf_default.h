@@ -353,7 +353,7 @@
 #define APPCONF_FLOAT_TURNTILT_ANGLE_LIMIT 3
 #endif
 
-// Turn Angle Threshold
+// Turn Aggregate Threshold
 #ifndef APPCONF_FLOAT_TURNTILT_START_ANGLE
 #define APPCONF_FLOAT_TURNTILT_START_ANGLE 2
 #endif
@@ -378,7 +378,7 @@
 #define APPCONF_FLOAT_TURNTILT_ERPM_BOOST_END 5000
 #endif
 
-// Yaw Aggregate Target
+// Turn Aggregate Target
 #ifndef APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE
 #define APPCONF_FLOAT_TURNTILT_YAW_AGGREGATE 90
 #endif
