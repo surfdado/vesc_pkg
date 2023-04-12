@@ -2189,53 +2189,76 @@ static void send_realtime_data(data *d){
 }
 
 static void cmd_send_all_data(data *d, unsigned char mode){
-	#define BUFSIZE 72
-	uint8_t send_buffer[BUFSIZE];
+	#define SNDBUFSIZE 60
+	uint8_t send_buffer[SNDBUFSIZE];
 	int32_t ind = 0;
+	mc_fault_code fault = VESC_IF->mc_get_fault();
+
 	send_buffer[ind++] = 101;//Magic Number
 	send_buffer[ind++] = FLOAT_COMMAND_GET_ALLDATA;
-	send_buffer[ind++] = mode;
 
-	// RT Data
-	buffer_append_float16(send_buffer, d->pid_value, 10, &ind);
-	buffer_append_float16(send_buffer, d->pitch_angle, 100, &ind);
-	buffer_append_float16(send_buffer, d->roll_angle, 100, &ind);
+	if (fault != FAULT_CODE_NONE) {
+		send_buffer[ind++] = 69;
+		send_buffer[ind++] = fault;
+	}
+	else {
+		send_buffer[ind++] = mode;
 
-	send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
-	send_buffer[ind++] = d->switch_state;
-	send_buffer[ind++] = d->adc1 * 50;
-	send_buffer[ind++] = d->adc2 * 50;
+		// RT Data
+		buffer_append_float16(send_buffer, d->pid_value, 10, &ind);
+		buffer_append_float16(send_buffer, d->pitch_angle, 10, &ind);
+		buffer_append_float16(send_buffer, d->roll_angle, 10, &ind);
 
-	// Setpoints (can be positive or negative)
-	send_buffer[ind++] = d->float_setpoint * 5 + 128;
-	send_buffer[ind++] = d->float_atr * 5 + 128;
-	send_buffer[ind++] = d->float_braketilt * 5 + 128;
-	send_buffer[ind++] = d->float_torquetilt * 5 + 128;
-	send_buffer[ind++] = d->float_turntilt * 5 + 128;
-	send_buffer[ind++] = d->float_inputtilt * 5 + 128;
+		send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
+		send_buffer[ind++] = d->switch_state;
+		send_buffer[ind++] = d->adc1 * 50;
+		send_buffer[ind++] = d->adc2 * 50;
+
+		// Setpoints (can be positive or negative)
+		send_buffer[ind++] = d->float_setpoint * 5 + 128;
+		send_buffer[ind++] = d->float_atr * 5 + 128;
+		send_buffer[ind++] = d->float_braketilt * 5 + 128;
+		send_buffer[ind++] = d->float_torquetilt * 5 + 128;
+		send_buffer[ind++] = d->float_turntilt * 5 + 128;
+		send_buffer[ind++] = d->float_inputtilt * 5 + 128;
 	
-	buffer_append_float16(send_buffer, d->true_pitch_angle, 2, &ind);
-	send_buffer[ind++] = d->applied_booster_current + 128;
+		buffer_append_float16(send_buffer, d->true_pitch_angle, 10, &ind);
+		send_buffer[ind++] = d->applied_booster_current + 128;
 
-	// Now send motor stuff:
-	buffer_append_float16(send_buffer, VESC_IF->mc_get_input_voltage_filtered(), 10, &ind);
-	buffer_append_float16(send_buffer, VESC_IF->mc_get_rpm(), 1, &ind);
-	buffer_append_float16(send_buffer, VESC_IF->mc_get_speed(), 10, &ind);
-	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current(), 10, &ind);
-	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current_in(), 10, &ind);
-	send_buffer[ind++] = VESC_IF->mc_get_duty_cycle_now() * 100 + 128;
-	//send_buffer[ind++] = VESC_IF->mc_
-	/*
-	
-	bms_temp_max_cell;
-	bms_volt_max_cell;
-	bms_volt_min_cell;
+		// Now send motor stuff:
+		buffer_append_float16(send_buffer, VESC_IF->mc_get_input_voltage_filtered(), 10, &ind);
+		buffer_append_int16(send_buffer, VESC_IF->mc_get_rpm(), &ind);
+		buffer_append_float16(send_buffer, VESC_IF->mc_get_speed(), 10, &ind);
+		buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current(), 10, &ind);
+		buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current_in(), 10, &ind);
+		send_buffer[ind++] = VESC_IF->mc_get_duty_cycle_now() * 100 + 128;
+		if (VESC_IF->foc_get_id != NULL)
+			send_buffer[ind++] = fabsf(VESC_IF->foc_get_id()) * 3;
+		else
+			send_buffer[ind++] = 222;	// using 222 as magic number to avoid false positives with 255
+		// ind = 35!
 
-	set_erpmlimit;
-		
-		
-	*/
-	if (ind > BUFSIZE) {
+		if (mode >= 2) {
+			// data not required as fast as possible
+			buffer_append_float32_auto(send_buffer, VESC_IF->mc_get_distance_abs(), &ind);
+			send_buffer[ind++] = fmaxf(0, VESC_IF->mc_temp_fet_filtered() * 2);
+			send_buffer[ind++] = fmaxf(0, VESC_IF->mc_temp_motor_filtered() * 2);
+			send_buffer[ind++] = 0;//fmaxf(VESC_IF->mc_batt_temp() * 2);
+			// ind = 42
+		}
+		if (mode >= 3) {
+			// data required even less frequently
+			buffer_append_uint32(send_buffer, VESC_IF->mc_get_odometer(), &ind);
+			buffer_append_float16(send_buffer, VESC_IF->mc_get_amp_hours(false), 10, &ind);
+			buffer_append_float16(send_buffer, VESC_IF->mc_get_amp_hours_charged(false), 10, &ind);
+			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours(false), 1, &ind);
+			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours_charged(false), 1, &ind);
+			send_buffer[ind++] = fmaxf(0, fminf(125, VESC_IF->mc_get_battery_level(NULL))) * 2;
+			// ind = 55
+		}
+	}
+
+	if (ind > SNDBUFSIZE) {
 		VESC_IF->printf("BUFSIZE too small...\n");
 	}
 	VESC_IF->send_app_data(send_buffer, ind);
@@ -2601,6 +2624,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = 101;	// magic nr.
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
+			send_buffer[ind++] = 1;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}
@@ -2656,6 +2680,11 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			if (len == 3) {
 				cmd_send_all_data(d, buffer[2]);
 			}
+                        else {
+                                if (!VESC_IF->app_is_output_disabled()) {
+                                        VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+                                }
+                        }
 			return;
 		}
 		case FLOAT_COMMAND_EXPERIMENT: {
