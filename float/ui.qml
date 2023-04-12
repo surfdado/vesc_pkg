@@ -312,7 +312,7 @@ Item {
             settingStorage.setValue(saveName, saveValue)
            
             quicksaveNameInput.text = ""
-            VescIf.emitStatusMessage(saveName + " complete!", true)
+            VescIf.emitStatusMessage(saveName + " saved!", true)
         }
         onDiscarded: {
             VescIf.emitStatusMessage(quicksaveNames[saveName] + " discarded", true)
@@ -354,6 +354,41 @@ Item {
     }
 
     Dialog {
+        id: downloadedTunePopup
+        title: tune._name
+        standardButtons: Dialog.Apply | Dialog.Cancel
+        modal: true
+        focus: true
+        width: parent.width - 20
+        closePolicy: Popup.CloseOnEscape
+        x: 10
+        y: 10 + parent.height / 2 - height / 2
+        parent: ApplicationWindow.overlay
+        onApplied: {
+            applyDownloadedTune(tune)
+            VescIf.emitStatusMessage(tune._name + " applied!", true)
+            close()
+        }
+        onRejected: VescIf.emitStatusMessage(tune._name + " cancelled", false)
+        property var tune: ""
+
+        Overlay.modal: Rectangle {
+            color: "#AA000000"
+        }
+
+        ColumnLayout {
+            anchors.fill: parent
+            Text {
+                color: Utility.getAppHexColor("lightText")
+                verticalAlignment: Text.AlignVCenter
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                text: "Applying this tune will OVERWRITE your current tune. Be sure to have a back-up ready if you would like to revert back at any time. Would you like to apply this tune?"
+            }
+        }
+    }
+
+    Dialog {
         id: quickloadErrorPopup
         title: "Quicksave Empty"
         standardButtons: Dialog.Ok
@@ -374,7 +409,7 @@ Item {
             verticalAlignment: Text.AlignVCenter
             anchors.fill: parent
             wrapMode: Text.WordWrap
-            text: "Long press slot to save data to this slot."
+            text: "Long Press a Quicksave slot to name and save your current tune, then tap it anytime to apply it instantly."
         }
     }
 
@@ -717,7 +752,8 @@ Item {
                         text: tune._name
                         width: parent.width
                         onClicked: {
-                            applyDownloadedTune(tune)
+                            downloadedTunePopup.tune = tune
+                            downloadedTunePopup.open()
                         }
                     }
                 }
