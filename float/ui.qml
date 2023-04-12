@@ -36,11 +36,24 @@ Item {
     anchors.fill: parent
     anchors.margins: 5
 
+    readonly property var defaultQuicksaveNames: {
+                "Float Quicksave 1": "Quicksave 1",
+                "Float Quicksave 2": "Quicksave 2",
+                "Float Quicksave 3": "Quicksave 3",
+                "Float Quicksave 4": "Quicksave 4",
+                "Float Quicksave 5": "Quicksave 5",
+                "Float Quicksave 6": "Quicksave 6",
+                "IMU Quicksave 1": "IMU Quicksave 1",
+                "IMU Quicksave 2": "IMU Quicksave 2"
+                }
+
     property Commands mCommands: VescIf.commands()
     property ConfigParams mMcConf: VescIf.mcConfig()
     property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
     property var quicksaveNames: []
+
+    
 
     // property var dialogParent: ApplicationWindow.overlay
     
@@ -282,7 +295,7 @@ Item {
     Dialog {
         id: quicksavePopup
         title: saveName
-        standardButtons: Dialog.Save | Dialog.Cancel
+        standardButtons: Dialog.Save | Dialog.Discard | Dialog.Cancel
         modal: true
         focus: true
         width: parent.width - 20
@@ -297,9 +310,25 @@ Item {
                 settingStorage.setValue("quicksave_names", JSON.stringify(quicksaveNames))
             }
             settingStorage.setValue(saveName, saveValue)
+           
+            quicksaveNameInput.text = ""
             VescIf.emitStatusMessage(saveName + " complete!", true)
         }
-        onRejected: VescIf.emitStatusMessage(saveName + " cancelled", false)
+        onDiscarded: {
+            VescIf.emitStatusMessage(quicksaveNames[saveName] + " discarded", true)
+
+            quicksaveNames[saveName] = defaultQuicksaveNames[saveName]
+            quicksaveNames = quicksaveNames
+            settingStorage.setValue("quicksave_names", JSON.stringify(quicksaveNames))
+            settingStorage.setValue(saveName, null)
+
+            quicksaveNameInput.text = ""
+            close()
+        }
+        onRejected: {
+            quicksaveNameInput.text = ""
+            VescIf.emitStatusMessage(saveName + " cancelled", false)
+        }
         property var saveName: "Temp Name"
         property var saveValue: ""
 
@@ -948,16 +977,7 @@ Item {
     function restoreQuicksaveNames(){
         var json = settingStorage.value("quicksave_names", "")
         if(!json){
-            quicksaveNames = {
-                "Float Quicksave 1": "Quicksave 1",
-                "Float Quicksave 2": "Quicksave 2",
-                "Float Quicksave 3": "Quicksave 3",
-                "Float Quicksave 4": "Quicksave 4",
-                "Float Quicksave 5": "Quicksave 5",
-                "Float Quicksave 6": "Quicksave 6",
-                "IMU Quicksave 1": "IMU Quicksave 1",
-                "IMU Quicksave 2": "IMU Quicksave 2"
-            }
+            quicksaveNames = defaultQuicksaveNames
         }else{
             quicksaveNames = JSON.parse(json)
         }
