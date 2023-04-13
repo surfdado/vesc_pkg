@@ -178,6 +178,12 @@ typedef struct {
 	float quickstop_erpm;
 	bool traction_control;
 
+	// PID Brake Scaling
+	float kp_brake_scale; // Used for brakes when riding forwards, and accel when riding backwards
+	float kp2_brake_scale;
+	float kp_accel_scale; // Used for accel when riding forwards, and brakes when riding backwards
+	float kp2_accel_scale;
+
 	// Darkride aka upside down mode:
 	bool is_upside_down;			// the board is upside down
 	bool is_upside_down_started;	// dark ride has been engaged
@@ -188,9 +194,6 @@ typedef struct {
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
 	float reverse_timer;
-
-	// Feature: Simple start
-	bool enable_simple_start;
 
 	// Feature: Soft Start
 	float softstart_pid_limit, softstart_ramp_step_size;
@@ -520,6 +523,12 @@ static void reset_vars(data *d) {
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
 	d->surge_adder = 0;
+
+	// PID Brake Scaling
+	d->kp_brake_scale = 1.0;
+	d->kp2_brake_scale = 1.0;
+	d->kp_accel_scale = 1.0;
+	d->kp2_accel_scale = 1.0;
 
 	// ATR:
 	d->accel_gap = 0;
@@ -1794,8 +1803,29 @@ static void float_thd(void *arg) {
 				apply_turntilt(d);
 			}
 
+			// Prepare Brake Scaling (ramp scale values as needed for smooth transitions)
+			if (fabsf(d->erpm) < 500) { // Nearly standstill
+				d->kp_brake_scale = 0.01 + 0.99 * d->kp_brake_scale; // All scaling should roll back to 1.0x when near a stop for a smooth stand-still and back-forth transition
+				d->kp2_brake_scale = 0.01 + 0.99 * d->kp2_brake_scale;
+				d->kp_accel_scale = 0.01 + 0.99 * d->kp_accel_scale;
+				d->kp2_accel_scale = 0.01 + 0.99 * d->kp2_accel_scale;
+
+			} else if (d->erpm > 0){ // Moving forwards
+				d->kp_brake_scale = 0.01 * d->float_conf.kp_brake + 0.99 * d->kp_brake_scale; // Once rolling forward, brakes should transition to scaled values
+				d->kp2_brake_scale = 0.01 * d->float_conf.kp2_brake + 0.99 * d->kp2_brake_scale;
+				d->kp_accel_scale = 0.01 + 0.99 * d->kp_accel_scale;
+				d->kp2_accel_scale = 0.01 + 0.99 * d->kp2_accel_scale;
+
+			} else { // Moving backwards
+				d->kp_brake_scale = 0.01 + 0.99 * d->kp_brake_scale; // Once rolling backward, the NEW brakes (we will use kp_accel) should transition to scaled values
+				d->kp2_brake_scale = 0.01 + 0.99 * d->kp2_brake_scale;
+				d->kp_accel_scale = 0.01 * d->float_conf.kp_brake + 0.99 * d->kp_accel_scale;
+				d->kp2_accel_scale = 0.01 * d->float_conf.kp2_brake + 0.99 * d->kp2_accel_scale;
+			}
+
 			// Do PID maths
 			d->proportional = d->setpoint - d->pitch_angle;
+			bool tail_down = SIGN(d->proportional) != SIGN(d->erpm);
 
 			// Resume real PID maths
 			d->integral = d->integral + d->proportional;
@@ -1809,7 +1839,15 @@ static void float_thd(void *arg) {
 				d->integral = d->float_conf.ki_limit / d->float_conf.ki * SIGN(d->integral);
 			}
 
-			d->pid_prop = d->float_conf.kp * d->proportional;
+			// Apply P Brake Scaling
+			float scaled_kp;
+			if (d->proportional < 0) { // Choose appropriate scale based on board angle (yes, this accomodates backwards riding)
+				scaled_kp = d->float_conf.kp * d->kp_brake_scale;
+			} else {
+				scaled_kp = d->float_conf.kp * d->kp_accel_scale;
+			}
+
+			d->pid_prop = scaled_kp * d->proportional;
 			d->pid_integral = d->float_conf.ki * d->integral;
 			new_pid_value = d->pid_prop + d->pid_integral;
 
@@ -1818,17 +1856,26 @@ static void float_thd(void *arg) {
 			// Start Rate PID and Booster portion a few cycles later, after the start clicks have been emitted
 			// this keeps the start smooth and predictable
 			if (d->start_counter_clicks == 0) {
+
 				// Rate P (Angle + Rate, rather than Angle-Rate Cascading)
 				float rate_prop = -d->gyro[1];
-				d->pid_mod = d->float_conf.kp2 * rate_prop;
+
+				float scaled_kp2;
+				if (rate_prop < 0) { // Choose appropriate scale based on board angle (yes, this accomodates backwards riding)
+					scaled_kp2 = d->float_conf.kp2 * d->kp_brake_scale;
+				} else {
+					scaled_kp2 = d->float_conf.kp2 * d->kp_accel_scale;
+				}
+
+				d->pid_mod = (scaled_kp2 * rate_prop);
+
 
 				// Apply Booster (Now based on True Pitch)
 				float true_proportional = (d->setpoint - d->braketilt_interpolated) - d->true_pitch_angle; // Braketilt excluded to allow for soft brakes that strengthen when near tail-drag
 				d->abs_proportional = fabsf(true_proportional);
-				bool boostbraking = SIGN(d->proportional) != SIGN(d->erpm);
 
 				float booster_current, booster_angle, booster_ramp;
-				if (boostbraking) {
+				if (tail_down) {
 					booster_current = d->float_conf.brkbooster_current;
 					booster_angle = d->float_conf.brkbooster_angle;
 					booster_ramp = d->float_conf.brkbooster_ramp;
@@ -1843,7 +1890,7 @@ static void float_thd(void *arg) {
 				const int boost_min_erpm = 3000;
 				if (d->abs_erpm > boost_min_erpm) {
 					float speedstiffness = fminf(1, (d->abs_erpm - boost_min_erpm) / 10000);
-					if (boostbraking) {
+					if (tail_down) {
 						// use higher current at speed when braking
 						booster_current += booster_current * speedstiffness;
 					}
@@ -2442,6 +2489,8 @@ static void cmd_tune_defaults(data *d){
 	d->float_conf.kp2 = APPCONF_FLOAT_KP2;
 	d->float_conf.ki = APPCONF_FLOAT_KI;
 	d->float_conf.mahony_kp = APPCONF_FLOAT_MAHONY_KP;
+	d->float_conf.kp_brake = APPCONF_FLOAT_KP_BRAKE;
+	d->float_conf.kp2_brake = APPCONF_FLOAT_KP2_BRAKE;
 	d->float_conf.ki_limit = APPCONF_FLOAT_KI_LIMIT;
 	d->float_conf.booster_angle = APPCONF_FLOAT_BOOSTER_ANGLE;
 	d->float_conf.booster_ramp = APPCONF_FLOAT_BOOSTER_RAMP;

@@ -23,6 +23,16 @@
 #define APPCONF_FLOAT_MAHONY_KP 2
 #endif
 
+// Angle P (Braking)
+#ifndef APPCONF_FLOAT_KP_BRAKE
+#define APPCONF_FLOAT_KP_BRAKE 1
+#endif
+
+// Rate P (Braking)
+#ifndef APPCONF_FLOAT_KP2_BRAKE
+#define APPCONF_FLOAT_KP2_BRAKE 1
+#endif
+
 // Loop Hertz
 #ifndef APPCONF_FLOAT_HERTZ
 #define APPCONF_FLOAT_HERTZ 832
