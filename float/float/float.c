@@ -2482,6 +2482,12 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg, int len)
 		d->torquetilt_on_step_size = d->float_conf.torquetilt_on_speed / d->float_conf.hertz;
 		d->torquetilt_off_step_size = d->float_conf.torquetilt_off_speed / d->float_conf.hertz;
 	}
+	if (len >= 17) {
+		split(cfg[16], &h1, &h2);
+		d->float_conf.kp_brake = ((float)h1 + 1) / 10;
+		d->float_conf.kp2_brake = ((float)h2) / 10;
+		beep_alert(d, 1, 1);
+	}
 }
 
 static void cmd_tune_defaults(data *d){
@@ -2673,6 +2679,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = 101;	// magic nr.
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
+			send_buffer[ind++] = 2;     // build number
 			send_buffer[ind++] = 1;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
