@@ -543,6 +543,27 @@ Item {
                         }
                     }
                 }
+				Item {
+					// spacer item
+					Layout.fillWidth: true
+					Layout.fillHeight: true
+					Rectangle { anchors.fill: parent; color: "#aaaaff" } // to visualize the spacer
+				}
+                RowLayout {
+					Text {
+						id: versionHeader
+						text: "Float Package Version:"
+						color: Utility.getAppHexColor("lightText")
+						font.pointSize: 8
+					}
+					Text {
+						id: versionText
+						text: "1.1"
+						color: Utility.getAppHexColor("lightText")
+						font.pointSize: 8
+						font.weight: Font.Black
+					}
+				}
             }
 
             ColumnLayout { // Controls Page
