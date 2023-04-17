@@ -101,6 +101,24 @@ Item {
                 dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
                 mCommands.sendCustomAppData(buffer)
             }
+            if(flywheelOnButton.pressed){
+                var buffer = new ArrayBuffer(8)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
+                dv.setUint8(ind, 0x81); ind += 1; // Flywheel On
+                mCommands.sendCustomAppData(buffer)
+            }
+            if(flywheelOffButton.pressed){
+                var buffer = new ArrayBuffer(8)
+                var dv = new DataView(buffer)
+                var ind = 0
+                dv.setUint8(ind, 101); ind += 1; // Float Package
+                dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
+                dv.setUint8(ind, 0x80); ind += 1; // Flywheel Off
+                mCommands.sendCustomAppData(buffer)
+            }
             if(tiltEnabled.checked){
                 mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
             }
@@ -549,20 +567,23 @@ Item {
 					// spacer item
 					Layout.fillWidth: true
 					Layout.fillHeight: true
-					Rectangle { anchors.fill: parent; color: "#aaaaff" } // to visualize the spacer
+				}
+				Rectangle {
+					Layout.fillWidth: true
+					Layout.preferredHeight: 2
+					color: Utility.getAppHexColor("lightText")
 				}
                 RowLayout {
 					Text {
-						id: versionHeader
 						text: "Float Package Version:"
 						color: Utility.getAppHexColor("lightText")
 						font.pointSize: 8
 					}
 					Text {
 						id: versionText
-						text: "1.1"
+						text: "xx.yy"
 						color: Utility.getAppHexColor("lightText")
-						font.pointSize: 8
+						font.pointSize: 10
 						font.weight: Font.Black
 					}
 				}
@@ -648,6 +669,49 @@ Item {
                     value: 0
                     to: 1
                     Layout.fillWidth: true
+                }
+				Item {
+					// spacer item
+					Layout.fillWidth: true
+					Layout.fillHeight: true
+				}
+				Rectangle {
+					Layout.fillWidth: true
+					Layout.preferredHeight: 2
+					color: Utility.getAppHexColor("lightText")
+				}
+                Text {
+                    color: Utility.getAppHexColor("lightText")
+                    font.family: "DejaVu Sans Mono"
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    text: "Magic Flywheel Mode"
+                    font.underline: true
+                    font.weight: Font.Black
+                    font.pointSize: 14
+                }
+                RowLayout {
+                    Layout.fillWidth: true
+					Button {
+						id: flywheelOnButton
+						text: "ON"
+						Layout.fillWidth: true
+					}
+					Button {
+						id: flywheelOffButton
+						text: "OFF"
+						Layout.fillWidth: true
+					}
+				}
+                Text {
+                    color: Utility.getAppHexColor("lightText")
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+					text: "Before enabling flywheel mode make sure that your board is nose up and perfectly balanced. To turn it off you must disengage the board first!"
+                    font.pointSize: 11
                 }
             }
 
