@@ -2050,7 +2050,7 @@ static void float_thd(void *arg) {
 			}else if(!d->is_flywheel_mode && d->flywheel_konami_state == 3 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 < 1 && d->adc2 > 1){
 				d->flywheel_konami_state = 4;
 				d->flywheel_konami_timer = d->current_time;
-				unsigned char enabled[5] = {0x81, 0, 0, 0, 0};
+				unsigned char enabled[6] = {0x81, 0, 0, 0, 0, 1};
 				cmd_flywheel_toggle(d, enabled);
 			}else if(d->current_time - d->flywheel_konami_timer > 0.5){
 				d->flywheel_konami_state = 0;
