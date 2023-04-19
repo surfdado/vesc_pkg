@@ -2031,13 +2031,12 @@ static void float_thd(void *arg) {
 		case (FAULT_SWITCH_HALF):
 		case (FAULT_SWITCH_FULL):
 		case (FAULT_STARTUP):
-			if (d->is_flywheel_mode && d->flywheel_abort) {
-				flywheel_stop(d);
-				break;
-			}
-			if (d->is_flywheel_mode && d->adc1 > 1 && d->adc2 > 1) {
-				flywheel_stop(d);
-				break;
+			if (d->is_flywheel_mode) {
+				if ((d->flywheel_abort) ||	// single-pad pressed while balancing upright
+					(d->flywheel_allow_abort && d->adc1 > 1 && d->adc2 > 1)) {
+					flywheel_stop(d);
+					break;
+				}
 			}
 			if(!d->is_flywheel_mode && d->flywheel_konami_state == 0 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 > 1 && d->adc2 < 1){
 				d->flywheel_konami_state = 1;
