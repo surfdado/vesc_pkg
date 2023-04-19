@@ -101,24 +101,6 @@ Item {
                 dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
                 mCommands.sendCustomAppData(buffer)
             }
-            if(flywheelOnButton.pressed){
-                var buffer = new ArrayBuffer(8)
-                var dv = new DataView(buffer)
-                var ind = 0
-                dv.setUint8(ind, 101); ind += 1; // Float Package
-                dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
-                dv.setUint8(ind, 0x81); ind += 1; // Flywheel On
-                mCommands.sendCustomAppData(buffer)
-            }
-            if(flywheelOffButton.pressed){
-                var buffer = new ArrayBuffer(8)
-                var dv = new DataView(buffer)
-                var ind = 0
-                dv.setUint8(ind, 101); ind += 1; // Float Package
-                dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
-                dv.setUint8(ind, 0x80); ind += 1; // Flywheel Off
-                mCommands.sendCustomAppData(buffer)
-            }
             if(tiltEnabled.checked){
                 mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
             }
@@ -697,11 +679,29 @@ Item {
 						id: flywheelOnButton
 						text: "ON"
 						Layout.fillWidth: true
+                        onClicked: {
+                            var buffer = new ArrayBuffer(8)
+                            var dv = new DataView(buffer)
+                            var ind = 0
+                            dv.setUint8(ind, 101); ind += 1; // Float Package
+                            dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
+                            dv.setUint8(ind, 0x81); ind += 1; // Flywheel On
+                            mCommands.sendCustomAppData(buffer)
+                        }
 					}
 					Button {
 						id: flywheelOffButton
 						text: "OFF"
 						Layout.fillWidth: true
+                        onClicked: {
+                            var buffer = new ArrayBuffer(8)
+                            var dv = new DataView(buffer)
+                            var ind = 0
+                            dv.setUint8(ind, 101); ind += 1; // Float Package
+                            dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
+                            dv.setUint8(ind, 0x80); ind += 1; // Flywheel Off
+                            mCommands.sendCustomAppData(buffer)
+                        }
 					}
 				}
                 Text {

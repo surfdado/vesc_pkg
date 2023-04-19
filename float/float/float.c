@@ -192,7 +192,8 @@ typedef struct {
 	float delay_upside_down_fault;
 	float darkride_setpoint_correction;
 	bool is_flywheel_mode, flywheel_abort, flywheel_allow_abort;
-	float flywheel_pitch_offset, flywheel_roll_offset;
+	float flywheel_pitch_offset, flywheel_roll_offset, flywheel_konami_timer;
+	int flywheel_konami_state;
 
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
@@ -228,6 +229,7 @@ typedef struct {
 static void brake(data *d);
 static void set_current(data *d, float current);
 static void flywheel_stop(data *d);
+static void cmd_flywheel_toggle(data *d, unsigned char *cfg);
 
 /**
  * BUZZER / BEEPER on Servo Pin
@@ -819,7 +821,7 @@ static bool check_faults(data *d){
 
 		if(d->is_flywheel_mode && d->flywheel_allow_abort) {
 			//if(d->adc1 > (d->float_conf.fault_adc1 * 0.8) || d->adc2 > (d->float_conf.fault_adc2 * 0.8)) {
-			if(d->adc1 > 1 || d->adc2 > 1) {
+			if(d->adc1 > 1 && d->adc2 > 1) {
 				// this is a hand-press, accept 80% of normal ADC threshold to turn it off board
 				d->state = FAULT_SWITCH_HALF;
 				d->flywheel_abort = true;
@@ -2033,6 +2035,27 @@ static void float_thd(void *arg) {
 				flywheel_stop(d);
 				break;
 			}
+			if (d->is_flywheel_mode && d->adc1 > 1 && d->adc2 > 1) {
+				flywheel_stop(d);
+				break;
+			}
+			if(!d->is_flywheel_mode && d->flywheel_konami_state == 0 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 > 1 && d->adc2 < 1){
+				d->flywheel_konami_state = 1;
+				d->flywheel_konami_timer = d->current_time;
+			}else if(!d->is_flywheel_mode && d->flywheel_konami_state == 1 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 < 1 && d->adc2 > 1){
+				d->flywheel_konami_state = 2;
+				d->flywheel_konami_timer = d->current_time;
+			}else if(!d->is_flywheel_mode && d->flywheel_konami_state == 2 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 > 1 && d->adc2 < 1){
+				d->flywheel_konami_state = 3;
+				d->flywheel_konami_timer = d->current_time;
+			}else if(!d->is_flywheel_mode && d->flywheel_konami_state == 3 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 < 1 && d->adc2 > 1){
+				d->flywheel_konami_state = 4;
+				d->flywheel_konami_timer = d->current_time;
+				unsigned char enabled[5] = {0x81, 0, 0, 0, 0};
+				cmd_flywheel_toggle(d, enabled);
+			}else if(d->current_time - d->flywheel_konami_timer > 0.5){
+				d->flywheel_konami_state = 0;
+			}
 
 			if (d->current_time - d->disengage_timer > 10) {
 				// 10 seconds of grace period between flipping the board over and allowing darkride mode...
@@ -2695,7 +2718,7 @@ void cmd_rc_move(data *d, unsigned char *cfg)//int amps, int time)
 	}
 }
 
-void cmd_flywheel_toggle(data *d, unsigned char *cfg)
+static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 {
 	if ((cfg[0] & 0x80) == 0)
 		return;
@@ -2746,7 +2769,7 @@ void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 			d->float_conf.kp2 /= 100;
 		}
 
-		d->float_conf.tiltback_duty_angle = 2;
+		d->float_conf.tiltback_duty_angle = 4;
 		d->float_conf.tiltback_duty = 0.1;
 
 		if (cfg[3] > 0) {
@@ -2764,7 +2787,7 @@ void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 		VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 6000);
 		d->mc_current_max = d->mc_current_min = 40;
 
-		d->flywheel_allow_abort = cfg[5];
+		d->flywheel_allow_abort = true;
 
 		// Disable I-term and all tune modifiers and tilts
 		d->float_conf.ki = 0;
