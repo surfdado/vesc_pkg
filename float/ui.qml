@@ -682,10 +682,14 @@ Item {
                         onClicked: {
                             var buffer = new ArrayBuffer(8)
                             var dv = new DataView(buffer)
-                            var ind = 0
-                            dv.setUint8(ind, 101); ind += 1; // Float Package
-                            dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
-                            dv.setUint8(ind, 0x81); ind += 1; // Flywheel On
+                            dv.setUint8(0, 101);  // Float Package
+                            dv.setUint8(1, 22);   // Command ID: Flywheel
+                            dv.setUint8(2, 0x81); // Flywheel On
+                            dv.setUint8(3, 0x0);  // use default kp
+                            dv.setUint8(4, 0x0);  // use default kp2
+                            dv.setUint8(5, 0x0);  // use default duty angle
+                            dv.setUint8(6, 0x0);  // use default duty start
+                            dv.setUint8(7, 0x1);  // allow abort with footpads
                             mCommands.sendCustomAppData(buffer)
                         }
 					}
@@ -696,10 +700,9 @@ Item {
                         onClicked: {
                             var buffer = new ArrayBuffer(8)
                             var dv = new DataView(buffer)
-                            var ind = 0
-                            dv.setUint8(ind, 101); ind += 1; // Float Package
-                            dv.setUint8(ind, 22); ind += 1; // Command ID: Flywheel
-                            dv.setUint8(ind, 0x80); ind += 1; // Flywheel Off
+                            dv.setUint8(0, 101);  // Float Package
+                            dv.setUint8(1, 22);   // Command ID: Flywheel
+                            dv.setUint8(2, 0x80); // Flywheel Off
                             mCommands.sendCustomAppData(buffer)
                         }
 					}

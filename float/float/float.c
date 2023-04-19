@@ -2787,7 +2787,7 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 		VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 6000);
 		d->mc_current_max = d->mc_current_min = 40;
 
-		d->flywheel_allow_abort = true;
+		d->flywheel_allow_abort = cfg[5];
 
 		// Disable I-term and all tune modifiers and tilts
 		d->float_conf.ki = 0;
