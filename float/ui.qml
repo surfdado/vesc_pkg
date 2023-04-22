@@ -77,29 +77,19 @@ Item {
             mCommands.sendCustomAppData(buffer)
             
             // Process Controls
-            if(reverseButton.pressed){
+            if(moveSlider.value != 0){
+                var current = Math.abs(Math.round(moveSlider.value * 70)) + 10 
                 var buffer = new ArrayBuffer(6)
                 var dv = new DataView(buffer)
                 var ind = 0
                 dv.setUint8(ind, 101); ind += 1; // Float Package
                 dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                dv.setUint8(ind, 0); ind += 1; // Direction
-                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
+                dv.setUint8(ind, moveSlider.value > 0 ? 1 : 0); ind += 1; // Direction
+                dv.setUint8(ind, current); ind += 1; // Current
                 dv.setUint8(ind, 1); ind += 1; // Time
-                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
+                dv.setUint8(ind, current + 1); ind += 1; // Sum = time + current
                 mCommands.sendCustomAppData(buffer)
-            }
-            if(forwardButton.pressed){
-                var buffer = new ArrayBuffer(6)
-                var dv = new DataView(buffer)
-                var ind = 0
-                dv.setUint8(ind, 101); ind += 1; // Float Package
-                dv.setUint8(ind, 7); ind += 1; // Command ID: RC Move
-                dv.setUint8(ind, 1); ind += 1; // Direction
-                dv.setUint8(ind, movementStrengthSlider.value); ind += 1; // Current
-                dv.setUint8(ind, 1); ind += 1; // Time
-                dv.setUint8(ind, movementStrengthSlider.value + 1); ind += 1; // Sum = time + current
-                mCommands.sendCustomAppData(buffer)
+
             }
             if(tiltEnabled.checked){
                 mCommands.lispSendReplCmd("(set-remote-state " + tiltSlider.value + " 0 0 0 0)")
@@ -114,6 +104,22 @@ Item {
         interval: 10
         
         onTriggered: {
+            if(!moveSlider.pressed){
+                var stepSize = 0.05
+                if(moveSlider.value > 0){
+                    if(moveSlider.value < stepSize){
+                        moveSlider.value = 0
+                    }else{
+                        moveSlider.value -= stepSize
+                    }
+                }else if(moveSlider.value < 0){
+                    if(moveSlider.value > -stepSize){
+                        moveSlider.value = 0
+                    }else{
+                        moveSlider.value += stepSize
+                    }
+                } 
+            }
             if(!tiltSlider.pressed){
                 var stepSize = 0.05
                 if(tiltSlider.value > 0){
@@ -445,11 +451,10 @@ Item {
             }
         }
         
-        StackLayout {
+        StackLayout { // Pages
             id: stackLayout
             Layout.fillWidth: true
             Layout.fillHeight: true
-            // onCurrentIndexChanged: {tabBar.currentIndex = currentIndex
 
             ColumnLayout { // RT Data Page
                 id: rtDataColumn
@@ -588,60 +593,38 @@ Item {
                     font.weight: Font.Black
                     font.pointSize: 14
                 }
-                RowLayout {
-                    id: movementStrength
+                Slider {
+                    id: moveSlider
+                    from: -1
+                    value: 0
+                    to: 1
                     Layout.fillWidth: true
-
-                    Text {
-                        id: movementStrengthLabel
-                        color: Utility.getAppHexColor("lightText")
-                        font.family: "DejaVu Sans Mono"
-                        text: "Strength:"
-                    }
-                    Slider {
-                        id: movementStrengthSlider
-                        from: 20
-                        value: 40
-                        to: 80
-                        stepSize: 1
-                    }
-                }
-                RowLayout {
-                    id: movementControls
-                    Layout.fillWidth: true
-                    Button {
-                        id: reverseButton
-                        text: "Reverse"
-                        Layout.fillWidth: true
-                    }
-                    Button {
-                        id: forwardButton
-                        text: "Forward"
-                        Layout.fillWidth: true
-                    }
                 }
                 
                 // Tilt controls
-                Text {
-                    id: tiltControlsHeader
-                    color: Utility.getAppHexColor("lightText")
-                    font.family: "DejaVu Sans Mono"
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
+                RowLayout {
+                    id: movementStrength
                     Layout.fillWidth: true
-                    text: "Tilt Controls"
-                    font.underline: true
-                    font.weight: Font.Black
-                    font.pointSize: 14
-                }
-                 CheckBox {
-                    id: tiltEnabled
-                    checked: false
-                    text: qsTr("Enabled (Overrides Remote)")
-                    onClicked: {
-                        if(tiltEnabled.checked && mCustomConf.getParamEnum("inputtilt_remote_type", 0) != 1){
-                            mCustomConf.updateParamEnum("inputtilt_remote_type", 1)
-                            mCommands.customConfigSet(0, mCustomConf)
+                    Text {
+                        id: tiltControlsHeader
+                        color: Utility.getAppHexColor("lightText")
+                        font.family: "DejaVu Sans Mono"
+                        Layout.margins: 0
+                        Layout.leftMargin: 0
+                        text: "Tilt Controls"
+                        font.underline: true
+                        font.weight: Font.Black
+                        font.pointSize: 14
+                    }
+                    CheckBox {
+                        id: tiltEnabled
+                        checked: false
+                        text: qsTr("Enabled (Overrides Remote)")
+                        onClicked: {
+                            if(tiltEnabled.checked && mCustomConf.getParamEnum("inputtilt_remote_type", 0) != 1){
+                                mCustomConf.updateParamEnum("inputtilt_remote_type", 1)
+                                mCommands.customConfigSet(0, mCustomConf)
+                            }
                         }
                     }
                 }
@@ -652,17 +635,10 @@ Item {
                     to: 1
                     Layout.fillWidth: true
                 }
-				Item {
-					// spacer item
-					Layout.fillWidth: true
-					Layout.fillHeight: true
-				}
-				Rectangle {
-					Layout.fillWidth: true
-					Layout.preferredHeight: 2
-					color: Utility.getAppHexColor("lightText")
-				}
+
+                // Flywheel controls
                 Text {
+                    id: flywheelControlsHeader
                     color: Utility.getAppHexColor("lightText")
                     font.family: "DejaVu Sans Mono"
                     Layout.margins: 0
@@ -672,6 +648,16 @@ Item {
                     font.underline: true
                     font.weight: Font.Black
                     font.pointSize: 14
+                }
+                Text {
+                    id: flywheelInstructions
+                    color: Utility.getAppHexColor("lightText")
+                    Layout.margins: 0
+                    Layout.leftMargin: 0
+                    Layout.fillWidth: true
+                    wrapMode: Text.WordWrap
+					text: "Before enabling flywheel mode make sure that your board is nose up and perfectly balanced. To turn it off you must disengage the board first!"
+                    font.pointSize: 11
                 }
                 RowLayout {
                     Layout.fillWidth: true
@@ -707,15 +693,6 @@ Item {
                         }
 					}
 				}
-                Text {
-                    color: Utility.getAppHexColor("lightText")
-                    Layout.margins: 0
-                    Layout.leftMargin: 0
-                    Layout.fillWidth: true
-                    wrapMode: Text.WordWrap
-					text: "Before enabling flywheel mode make sure that your board is nose up and perfectly balanced. To turn it off you must disengage the board first!"
-                    font.pointSize: 11
-                }
             }
 
             ColumnLayout { // Tunes Page
@@ -809,7 +786,7 @@ Item {
                             downloadTunesButton.text = "Downloading Tunes..."
                             downloadedTunesModel.clear()
                             var http = new XMLHttpRequest()
-                            // var url = "http://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv"
+                            // var url = "https://docs.google.com/spreadsheets/d/1bPH-gviDFyXvxx5s2cjs5BWTjqJOmRqB4Xi59itxbJ8/export?format=csv"
                             var url = "http://us-central1-mimetic-union-377520.cloudfunctions.net/float_package_tunes_via_http"
                             http.open("GET", url, true);
                             http.onreadystatechange = function() {

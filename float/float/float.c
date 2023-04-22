@@ -2052,7 +2052,7 @@ static void float_thd(void *arg) {
 				d->flywheel_konami_timer = d->current_time;
 				unsigned char enabled[6] = {0x81, 0, 0, 0, 0, 1};
 				cmd_flywheel_toggle(d, enabled);
-			}else if(d->current_time - d->flywheel_konami_timer > 0.5){
+			}else if(d->current_time - d->flywheel_konami_timer > 1.0){
 				d->flywheel_konami_state = 0;
 			}
 
