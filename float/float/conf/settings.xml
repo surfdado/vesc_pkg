@@ -417,7 +417,7 @@ p, li { white-space: pre-wrap; }
             <vTx>3</vTx>
         </fault_adc_half_erpm>
         <fault_is_dual_switch>
-            <longName>Treat Both Sensors as One</longName>
+            <longName>Treat Both Sensors as One (Posi)</longName>
             <type>5</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -2161,8 +2161,8 @@ p, li { white-space: pre-wrap; }
             <editorDecimalsDouble>2</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
-            <maxDouble>1</maxDouble>
-            <minDouble>1</minDouble>
+            <maxDouble>1.1</maxDouble>
+            <minDouble>1.1</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
             <valDouble>1.1</valDouble>

@@ -2746,9 +2746,9 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 		// Tighter startup/fault tolerances
 		d->startup_pitch_tolerance = 0.2;
 		d->float_conf.startup_pitch_tolerance = 0.2;
-		d->float_conf.startup_roll_tolerance = 15;
+		d->float_conf.startup_roll_tolerance = 25;
 		d->float_conf.fault_pitch = 6;
-		d->float_conf.fault_roll = 30;	// roll can fluctuate significantly in the upright position
+		d->float_conf.fault_roll = 35;	// roll can fluctuate significantly in the upright position
 		d->float_conf.fault_delay_pitch = 0;
 		d->float_conf.fault_delay_roll = 0;
 		d->float_conf.fault_adc1 = 0;

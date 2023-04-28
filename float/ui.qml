@@ -636,6 +636,17 @@ Item {
                     Layout.fillWidth: true
                 }
 
+		Item {
+		    // spacer item
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                }
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 2
+                    color: Utility.getAppHexColor("lightText")
+                }
+
                 // Flywheel controls
                 Text {
                     id: flywheelControlsHeader
