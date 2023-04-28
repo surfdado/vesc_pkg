@@ -77,3 +77,6 @@ To include your package in VESC Tool you can make a pull request to this reposit
 * Make sure that you build a VESC Package file (\*.vescpkg) in the main directory of your package (e.g. euc/euc.vescpkg)
 * Make sure to add your package to res_all.qrc in the root of the repository.
 * Test your .vescpkg-file before making a pull request!
+* How to generate code from settings.xml:
+
+vesc_tool --xmlConfToCode settings.xml
