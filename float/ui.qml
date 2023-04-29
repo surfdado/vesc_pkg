@@ -53,10 +53,6 @@ Item {
     property ConfigParams mCustomConf: VescIf.customConfig(0)
     property var quicksaveNames: []
 
-    
-
-    // property var dialogParent: ApplicationWindow.overlay
-    
     Settings {
         id: settingStorage
     }
@@ -636,8 +632,7 @@ Item {
                     Layout.fillWidth: true
                 }
 
-		Item {
-		    // spacer item
+		        Item { // spacer item
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                 }
@@ -1083,9 +1078,9 @@ Item {
                 }else if(key.startsWith("enum_")){
                     mCustomConf.updateParamEnum(key.substring(5), value)
                 }
-                mCommands.customConfigSet(0, mCustomConf)
             }
         }
+        mCommands.customConfigSet(0, mCustomConf)
     }
 
     function restoreQuicksaveNames(){

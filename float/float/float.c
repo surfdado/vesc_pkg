@@ -2050,7 +2050,7 @@ static void float_thd(void *arg) {
 			}else if(!d->is_flywheel_mode && d->flywheel_konami_state == 3 && d->true_pitch_angle > 75 && d->true_pitch_angle < 105 && d->adc1 < 1 && d->adc2 > 1){
 				d->flywheel_konami_state = 4;
 				d->flywheel_konami_timer = d->current_time;
-				unsigned char enabled[6] = {0x81, 0, 0, 0, 0, 1};
+				unsigned char enabled[6] = {0x82, 0, 0, 0, 0, 1};
 				cmd_flywheel_toggle(d, enabled);
 			}else if(d->current_time - d->flywheel_konami_timer > 1.0){
 				d->flywheel_konami_state = 0;
@@ -2770,6 +2770,8 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 
 		d->float_conf.tiltback_duty_angle = 4;
 		d->float_conf.tiltback_duty = 0.1;
+		d->float_conf.tiltback_duty_speed = 20;
+		d->float_conf.tiltback_return_speed = 20;
 
 		if (cfg[3] > 0) {
 			d->float_conf.tiltback_duty_angle = cfg[3];
