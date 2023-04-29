@@ -681,7 +681,7 @@ Item {
                             var dv = new DataView(buffer)
                             dv.setUint8(0, 101);  // Float Package
                             dv.setUint8(1, 22);   // Command ID: Flywheel
-                            dv.setUint8(2, 0x81); // Flywheel On
+                            dv.setUint8(2, 0x82); // Flywheel On (force calibration)
                             dv.setUint8(3, 0x0);  // use default kp
                             dv.setUint8(4, 0x0);  // use default kp2
                             dv.setUint8(5, 0x0);  // use default duty angle
