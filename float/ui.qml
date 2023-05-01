@@ -845,6 +845,8 @@ Item {
             {"name": "ki", "type": "Double"},
             {"name": "kd", "type": "Double"},
             {"name": "kp2", "type": "Double"},
+            {"name": "kp_brake", "type": "Double"},
+            {"name": "kp2_brake", "type": "Double"},
             {"name": "mahony_kp", "type": "Double"},
             // {"name": "hertz", "type": "Int"},
             {"name": "fault_pitch", "type": "Double"},
