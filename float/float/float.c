@@ -2796,6 +2796,8 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 
 		// Disable I-term and all tune modifiers and tilts
 		d->float_conf.ki = 0;
+		d->float_conf.kp_brake = 1;
+		d->float_conf.kp2_brake = 1;
 		d->float_conf.brkbooster_angle = 100;
 		d->float_conf.booster_angle = 100;
 		d->float_conf.torquetilt_strength = 0;
