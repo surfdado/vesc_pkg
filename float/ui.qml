@@ -672,7 +672,7 @@ Item {
 						text: "ON"
 						Layout.fillWidth: true
                         onClicked: {
-                            var buffer = new ArrayBuffer(8)
+                            var buffer = new ArrayBuffer(9)
                             var dv = new DataView(buffer)
                             dv.setUint8(0, 101);  // Float Package
                             dv.setUint8(1, 22);   // Command ID: Flywheel
@@ -682,6 +682,7 @@ Item {
                             dv.setUint8(5, 0x0);  // use default duty angle
                             dv.setUint8(6, 0x0);  // use default duty start
                             dv.setUint8(7, 0x1);  // allow abort with footpads
+                            dv.setUint8(8, 0x0);  // use default duty speed
                             mCommands.sendCustomAppData(buffer)
                         }
 					}

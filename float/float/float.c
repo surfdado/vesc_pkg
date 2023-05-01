@@ -229,7 +229,7 @@ typedef struct {
 static void brake(data *d);
 static void set_current(data *d, float current);
 static void flywheel_stop(data *d);
-static void cmd_flywheel_toggle(data *d, unsigned char *cfg);
+static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len);
 
 /**
  * BUZZER / BEEPER on Servo Pin
@@ -2051,7 +2051,7 @@ static void float_thd(void *arg) {
 				d->flywheel_konami_state = 4;
 				d->flywheel_konami_timer = d->current_time;
 				unsigned char enabled[6] = {0x82, 0, 0, 0, 0, 1};
-				cmd_flywheel_toggle(d, enabled);
+				cmd_flywheel_toggle(d, enabled, 6);
 			}else if(d->current_time - d->flywheel_konami_timer > 1.0){
 				d->flywheel_konami_state = 0;
 			}
@@ -2717,7 +2717,7 @@ void cmd_rc_move(data *d, unsigned char *cfg)//int amps, int time)
 	}
 }
 
-static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
+static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 {
 	if ((cfg[0] & 0x80) == 0)
 		return;
@@ -2780,6 +2780,10 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg)
 		if (cfg[4] > 0) {
 			d->float_conf.tiltback_duty = cfg[4];
 			d->float_conf.tiltback_duty /= 100;
+		}
+		if ((len > 6) && (cfg[6] > 1) && (cfg[6] < 100)) {
+			d->float_conf.tiltback_duty_speed = cfg[6];
+			d->float_conf.tiltback_return_speed = cfg[6];
 		}
 
 		// Limit speed of wheel and limit amps
@@ -2925,7 +2929,14 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_FLYWHEEL: {
-			cmd_flywheel_toggle(d, &buffer[2]);
+			if (len >= 8) {
+				cmd_flywheel_toggle(d, &buffer[2], len-2);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+				}
+			}
 			return;
 		}
 		default: {
