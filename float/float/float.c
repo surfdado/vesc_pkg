@@ -2936,7 +2936,7 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 	if ((cfg[0] & 0x80) == 0)
 		return;
 
-	if ((d->state >= RUNNING) && (d->state <= RUNNING_FLYWHEEL))
+	if ((d->state >= RUNNING) && (d->state < RUNNING_FLYWHEEL))
 		return;
 
 	// cfg[0]: Command (0 = stop, 1 = start)
@@ -2948,7 +2948,12 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 	// cfg[5]: Allow Abort via footpad (1 = do allow, 0 = don't allow)
 	// Optional:
 	// cfg[6]: Duty TB Speed in deg/sec
-	int command = cfg[0] & 0x7F;
+
+	int force = cfg[0] & 0x40;
+	if ((d->state == RUNNING_FLYWHEEL) && !force)
+	    return;
+
+	int command = cfg[0] & 0x3F;
 	d->is_flywheel_mode = (command == 0) ? false : true;
 
 	if (d->is_flywheel_mode) {
@@ -2961,7 +2966,7 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 			d->flywheel_roll_offset = d->roll_angle;
 			beep_alert(d, 1, 1);
 		}
-		else {
+		else if (!force) {
 			beep_alert(d, 3, 0);
 		}
 		d->flywheel_abort = false;
