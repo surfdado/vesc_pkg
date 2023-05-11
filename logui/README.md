@@ -2,7 +2,7 @@
 
 This package can be used for logging data to CAN-connected log devices such as the VESC Express. When installed it provides a QML-page in VESC Tool where logging can be configured, started and stopped. There is also a lisp-script that handles the logging.
 
-After a log is started it can be stopped with the stop-button or when a shutdown even it detected (from e.g. a power button). The log will also be stopped if the input voltage drops below 11V. The automatic stop is done in order to prevent data corruption on the SD-card when the power goes down.
+After a log is started it can be stopped with the stop-button or when a shutdown even it detected (from e.g. a power button). The log will also be stopped if the input voltage drops below 18V. The automatic stop is done in order to prevent data corruption on the SD-card when the power goes down.
 
 ## Data Selection
 
@@ -19,7 +19,7 @@ The following data can be selected for logging:
 
 ### Logger CAN ID
 
-The ID of the logger on the CAN-bus. Setting id to -1 will send log data to the log analysis page in the desktop version of VESC Tool.
+The ID of the logger on the CAN-bus. Setting id to -1 will send log data to the log analysis page in the desktop version of VESC Tool. If LOGUI runs on the express directly (supported from firmware 6.02+) setting id to -2 logs to the local VESC Express.
 
 ### Log Rate
 
