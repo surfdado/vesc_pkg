@@ -2251,6 +2251,7 @@ enum {
 	FLOAT_COMMAND_PRINT_INFO = 9,	// print verbose info
 	FLOAT_COMMAND_GET_ALLDATA = 10,	// send all data, compact
 	FLOAT_COMMAND_EXPERIMENT = 11,  // generic cmd for sending data, used for testing/tuning new features
+	FLOAT_COMMAND_LOCK = 12,
 	FLOAT_COMMAND_FLYWHEEL = 22,
 } float_commands;
 
@@ -2382,6 +2383,15 @@ static void split(unsigned char byte, int* h1, int* h2)
 static void cmd_print_info(data *d)
 {
 	//VESC_IF->printf("A:%.1f, D:%.2f\n", d->surge_angle, d->float_conf.surge_duty_start);
+}
+
+static void cmd_lock(data *d, unsigned char *cfg)
+{
+	if (d->state >= FAULT_ANGLE_PITCH) {
+		d->float_conf.float_disable = cfg[0] ? true : false;
+		d->state = cfg[0] ? DISABLED : STARTUP;
+		write_cfg_to_eeprom(d);
+	}
 }
 
 static void cmd_experiment(data *d, unsigned char *cfg)
@@ -2915,6 +2925,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_EXPERIMENT: {
 			cmd_experiment(d, &buffer[2]);
+			return;
+		}
+		case FLOAT_COMMAND_LOCK: {
+			cmd_lock(d, &buffer[2]);
 			return;
 		}
 		case FLOAT_COMMAND_BOOSTER: {
