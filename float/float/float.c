@@ -2897,6 +2897,9 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 		d->float_conf.tiltback_variable = 0;
 		d->float_conf.brake_current = 0;
 		d->float_conf.fault_darkride_enabled = false;
+		d->float_conf.tiltback_constant = 0;
+		d->tiltback_variable_max_erpm = 0;
+		d->tiltback_variable = 0;
 	} else {
 		flywheel_stop(d);
 	}
