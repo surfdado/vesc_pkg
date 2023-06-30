@@ -2834,8 +2834,11 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 		d->float_conf.startup_roll_tolerance = 25;
 		d->float_conf.fault_pitch = 6;
 		d->float_conf.fault_roll = 35;	// roll can fluctuate significantly in the upright position
-		d->float_conf.fault_delay_pitch = 0;
-		d->float_conf.fault_delay_roll = 0;
+		if (command & 0x4) {
+			d->float_conf.fault_roll = 90;
+		}
+		d->float_conf.fault_delay_pitch = 50; // 50ms delay should help filter out IMU noise
+		d->float_conf.fault_delay_roll = 50;  // 50ms delay should help filter out IMU noise
 		d->float_conf.fault_adc1 = 0;
 		d->float_conf.fault_adc2 = 0;
 		d->surge_enable = false;
