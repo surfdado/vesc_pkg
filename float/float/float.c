@@ -242,6 +242,7 @@ typedef struct {
 	int rc_counter;
 	float rc_current_target;
 	float rc_current;
+	int erpm_limit;
 
 	// Log values
 	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
@@ -512,6 +513,9 @@ static void configure(data *d) {
 		d->tiltback_variable_max_erpm = 100000;
 	}
 
+	// Temporary erpm limiting for flywheel/RC
+	d->erpm_limit = 0;
+
 	// Reset loop time variables
 	d->last_time = 0.0;
 	d->filtered_loop_overshoot = 0.0;
@@ -595,6 +599,20 @@ static void reset_vars(data *d) {
 	d->haptic_tone_in_progress = false;
 	d->haptic_timer = d->current_time;
 	d->applied_haptic_current = 0;
+
+	if (d->erpm_limit > 0) {
+		if (d->erpm_limit > 12000) {
+			VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, - d->erpm_limit);
+			VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, d->erpm_limit);
+		}
+		else {
+			VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -30000);
+			VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 30000);
+			VESC_IF->printf("erpm limit was %.1f...\n", d->erpm_limit);
+			beep_alert(d, 1, true);	// long beep
+		}
+		d->erpm_limit = 0;
+	}
 }
 
 
@@ -627,6 +645,11 @@ static void check_odometer(data *d)
 static void do_rc_move(data *d)
 {
 	if (d->rc_steps > 0) {
+		if (d->erpm_limit == 0) {
+			d->erpm_limit = VESC_IF->get_cfg_float(CFG_PARAM_l_max_erpm);
+			VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -2000);
+			VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 2000);
+		}
 		d->rc_current = d->rc_current * 0.95 + d->rc_current_target * 0.05;
 		if (d->abs_erpm > 800)
 			d->rc_current = 0;
@@ -644,6 +667,11 @@ static void do_rc_move(data *d)
 			float servo_val = d->throttle_val;
 			servo_val *= (d->float_conf.inputtilt_invert_throttle ? -1.0 : 1.0);
 			d->rc_current = d->rc_current * 0.95 + (d->float_conf.remote_throttle_current_max * servo_val) * 0.05;
+			if (d->erpm_limit == 0) {
+				d->erpm_limit = VESC_IF->get_cfg_float(CFG_PARAM_l_max_erpm);
+				VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -2000);
+				VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 2000);
+			}
 			set_current(d, d->rc_current);
 		}
 		else {
