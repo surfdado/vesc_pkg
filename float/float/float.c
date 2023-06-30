@@ -49,7 +49,8 @@ typedef enum {
 	RUNNING_TILTBACK = 2,
 	RUNNING_WHEELSLIP = 3,
 	RUNNING_UPSIDEDOWN = 4,
-	RUNNING_FLYWHEEL = 5,
+	RUNNING_FLYWHEEL = 5,   // we remain in "RUNNING" state in flywheel mode,
+	                        // but then report "RUNNING_FLYWHEEL" in rt data
 	FAULT_ANGLE_PITCH = 6,	// skipped 5 for compatibility
 	FAULT_ANGLE_ROLL = 7,
 	FAULT_SWITCH_HALF = 8,
@@ -60,6 +61,20 @@ typedef enum {
 	FAULT_QUICKSTOP = 13,
 	DISABLED = 15
 } FloatState;
+
+typedef enum {
+	BEEP_NONE = 0,
+	BEEP_LV = 1,
+	BEEP_HV = 2,
+	BEEP_TEMPFET = 3,
+	BEEP_TEMPMOT = 4,
+	BEEP_CURRENT = 5,
+	BEEP_DUTY = 6,
+	BEEP_SENSORS = 7,
+	BEEP_LOWBATT = 8,
+	BEEP_IDLE = 9,
+	BEEP_ERROR = 10
+} BeepReason;
 
 typedef enum {
 	CENTERING = 0,
@@ -104,6 +119,7 @@ typedef struct {
 	int beep_num_left;
 	int beep_duration;
 	int beep_countdown;
+	int beep_reason;
 	bool buzzer_enabled;
 
 	// Config values
@@ -194,6 +210,9 @@ typedef struct {
 	bool is_flywheel_mode, flywheel_abort, flywheel_allow_abort;
 	float flywheel_pitch_offset, flywheel_roll_offset, flywheel_konami_timer;
 	int flywheel_konami_state;
+
+	// Feature: Handtest
+	bool do_handtest;
 
 	// Feature: Reverse Stop
 	float reverse_stop_step_size, reverse_tolerance, reverse_total_erpm;
@@ -494,6 +513,8 @@ static void configure(data *d) {
 		d->state = STARTUP;
 		beep_alert(d, 1, false);
 	}
+
+	d->do_handtest = false;
 }
 
 static void reset_vars(data *d) {
@@ -677,6 +698,7 @@ static SwitchState check_adcs(data *d) {
 			// If we're at riding speed and the switch is off => ALERT the user
 			// set force=true since this could indicate an imminent shutdown/nosedive
 			beep_on(d, true);
+			d->beep_reason = BEEP_SENSORS;
 		}
 		else {
 			// if we drop below riding speed stop buzzing
@@ -907,6 +929,7 @@ static void calculate_setpoint_target(data *d) {
 		d->setpointAdjustmentType = TILTBACK_DUTY;
 		d->state = RUNNING_TILTBACK;
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage > d->float_conf.tiltback_hv) {
+		d->beep_reason = BEEP_HV;
 		beep_alert(d, 3, false);	// Triple-beep
 		if (((d->current_time - d->tb_highvoltage_timer) > .5) ||
 		   (input_voltage > d->float_conf.tiltback_hv + 1)) {
@@ -928,6 +951,7 @@ static void calculate_setpoint_target(data *d) {
 	} else if(VESC_IF->mc_temp_fet_filtered() > d->mc_max_temp_fet){
 		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
 		beep_alert(d, 3, true);	// Triple-beep (long beeps)
+		d->beep_reason = BEEP_TEMPFET;
 		if(VESC_IF->mc_temp_fet_filtered() > (d->mc_max_temp_fet + 1)) {
 			if(d->erpm > 0){
 				d->setpoint_target = d->float_conf.tiltback_lv_angle;
@@ -945,6 +969,7 @@ static void calculate_setpoint_target(data *d) {
 	} else if(VESC_IF->mc_temp_motor_filtered() > d->mc_max_temp_mot){
 		// Use the angle from Low-Voltage tiltback, but slower speed from High-Voltage tiltback
 		beep_alert(d, 3, true);	// Triple-beep (long beeps)
+		d->beep_reason = BEEP_TEMPMOT;
 		if(VESC_IF->mc_temp_motor_filtered() > (d->mc_max_temp_mot + 1)) {
 			if(d->erpm > 0){
 				d->setpoint_target = d->float_conf.tiltback_lv_angle;
@@ -961,6 +986,7 @@ static void calculate_setpoint_target(data *d) {
 		}
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage < d->float_conf.tiltback_lv) {
 		beep_alert(d, 3, false);	// Triple-beep
+		d->beep_reason = BEEP_LV;
 		float abs_motor_current = fabsf(d->motor_current);
 		float vdelta = d->float_conf.tiltback_lv - input_voltage;
 		float ratio = vdelta * 20 / abs_motor_current;
@@ -1014,6 +1040,7 @@ static void calculate_setpoint_target(data *d) {
 		if (d->setpointAdjustmentType == TILTBACK_DUTY) {
 			if (d->float_conf.is_dutybuzz_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
 				beep_on(d, true);
+				d->beep_reason = BEEP_DUTY;
 				d->duty_beeping = true;
 			}
 		}
@@ -1797,6 +1824,7 @@ static void float_thd(void *arg) {
 					if (bat_volts < threshold) {
 						int beeps = (int)fminf(6, threshold - bat_volts);
 						beep_alert(d, beeps + 1, true);
+						d->beep_reason = BEEP_LOWBATT;
 					}
 					else {
 						// // Let the rider know that the board is ready (one long beep)
@@ -2071,6 +2099,7 @@ static void float_thd(void *arg) {
 						d->idle_voltage = input_voltage;
 					}
 					else {
+						d->beep_reason = BEEP_IDLE;
 						beep_alert(d, 2, 1);						// 2 long beeps
 					}
 				}
@@ -2252,6 +2281,7 @@ enum {
 	FLOAT_COMMAND_GET_ALLDATA = 10,	// send all data, compact
 	FLOAT_COMMAND_EXPERIMENT = 11,  // generic cmd for sending data, used for testing/tuning new features
 	FLOAT_COMMAND_LOCK = 12,
+	FLOAT_COMMAND_HANDTEST = 13,
 	FLOAT_COMMAND_FLYWHEEL = 22,
 } float_commands;
 
@@ -2267,8 +2297,16 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->roll_angle, &ind);
 
-	send_buffer[ind++] = (d->state & 0xF) + (d->setpointAdjustmentType << 4);
-	send_buffer[ind++] = d->switch_state;
+	uint8_t state = (d->state & 0xF);
+	if ((d->is_flywheel_mode) && (d->state > 0) && (d->state < 6)) {
+		state = RUNNING_FLYWHEEL;
+	}
+	send_buffer[ind++] = (state & 0xF) + (d->setpointAdjustmentType << 4);
+	state = d->switch_state;
+	if (d->do_handtest) {
+		state |= 0x8;
+	}
+	send_buffer[ind++] = (state & 0xF) + (d->beep_reason << 4);
 	buffer_append_float32_auto(send_buffer, d->adc1, &ind);
 	buffer_append_float32_auto(send_buffer, d->adc2, &ind);
 
@@ -2320,7 +2358,15 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 			state = RUNNING_FLYWHEEL;
 		}
 		send_buffer[ind++] = state;
-		send_buffer[ind++] = d->switch_state;
+
+		// passed switch-state includes bit3 for handtest, and bits4..7 for beep reason
+		state = d->switch_state;
+		if (d->do_handtest) {
+			state |= 0x8;
+		}
+		send_buffer[ind++] = (state & 0xF) + (d->beep_reason << 4);
+		d->beep_reason = BEEP_NONE;
+
 		send_buffer[ind++] = d->adc1 * 50;
 		send_buffer[ind++] = d->adc2 * 50;
 
@@ -2391,6 +2437,37 @@ static void cmd_lock(data *d, unsigned char *cfg)
 		d->float_conf.float_disable = cfg[0] ? true : false;
 		d->state = cfg[0] ? DISABLED : STARTUP;
 		write_cfg_to_eeprom(d);
+	}
+}
+
+static void cmd_handtest(data *d, unsigned char *cfg)
+{
+	if (d->state >= FAULT_ANGLE_PITCH) {
+		d->do_handtest = cfg[0] ? true : false;
+		if (d->do_handtest) {
+			// temporarily reduce max currents to make hand test safer / gentler
+			d->mc_current_max = 7;
+			d->mc_current_min = -7;
+			// Disable I-term and all tune modifiers and tilts
+			d->float_conf.ki = 0;
+			d->float_conf.kp_brake = 1;
+			d->float_conf.kp2_brake = 1;
+			d->float_conf.brkbooster_angle = 100;
+			d->float_conf.booster_angle = 100;
+			d->float_conf.torquetilt_strength = 0;
+			d->float_conf.torquetilt_strength_regen = 0;
+			d->float_conf.atr_strength_up = 0;
+			d->float_conf.atr_strength_down = 0;
+			d->float_conf.turntilt_strength = 0;
+			d->float_conf.tiltback_constant = 0;
+			d->float_conf.tiltback_variable = 0;
+			d->float_conf.fault_delay_pitch = 50;
+			d->float_conf.fault_delay_roll = 50;
+		}
+		else {
+			read_cfg_from_eeprom(d);
+			configure(d);
+		}
 	}
 }
 
@@ -2931,6 +3008,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			cmd_lock(d, &buffer[2]);
 			return;
 		}
+		case FLOAT_COMMAND_HANDTEST: {
+			cmd_handtest(d, &buffer[2]);
+			return;
+		}
 		case FLOAT_COMMAND_BOOSTER: {
 			if (len == 6) {
 				cmd_booster(d, &buffer[2]);
@@ -3004,7 +3085,7 @@ static bool set_cfg(uint8_t *buffer) {
 	data *d = (data*)ARG;
 
 	// don't let users use the Float Cfg "write" button in flywheel mode
-	if (d->is_flywheel_mode)
+	if (d->is_flywheel_mode || d->do_handtest)
 		return false;
 
 	bool res = confparser_deserialize_float_config(buffer, &(d->float_conf));
@@ -3043,7 +3124,7 @@ static void stop(void *arg) {
 INIT_FUN(lib_info *info) {
 	INIT_START
 	if (!VESC_IF->app_is_output_disabled()) {
-		VESC_IF->printf("Init Float v%.1f - Surge3\n", (double)APPCONF_FLOAT_VERSION);
+		VESC_IF->printf("Init Float v%.1fd\n", (double)APPCONF_FLOAT_VERSION);
 	}
 
 	data *d = VESC_IF->malloc(sizeof(data));
