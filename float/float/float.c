@@ -2711,7 +2711,7 @@ static void cmd_tune_defaults(data *d){
 /**
  * cmd_runtime_tune_other		Extract settings from 20byte message but don't write to EEPROM!
  */
-static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
+static void cmd_runtime_tune_other(data *d, unsigned char *cfg, int len)
 {
 	unsigned int flags = cfg[0];
 	d->buzzer_enabled = ((flags & 0x2) == 2);
@@ -2763,11 +2763,19 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg)
 		} else {
 			d->tiltback_variable_max_erpm = 100000;
 		}
+		d->float_conf.tiltback_variable_erpm = cfg[11] * 100;
 	}
 
-	int inputtilt = cfg[11];
-	if (inputtilt == 0) {
-		d->float_conf.inputtilt_remote_type = INPUTTILT_NONE;
+	if (len >= 14) {
+		int inputtilt = cfg[12] & 0x3;
+		if (inputtilt <= INPUTTILT_PPM) {
+			d->float_conf.inputtilt_remote_type = inputtilt;
+			if (inputtilt > 0) {
+				d->float_conf.inputtilt_angle_limit = cfg[12] >> 2;
+				d->float_conf.inputtilt_speed = cfg[13];
+				d->inputtilt_step_size = d->float_conf.inputtilt_speed / d->float_conf.hertz;
+			}
+		}
 	}
 }
 
@@ -2957,7 +2965,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_TUNE_OTHER: {
 			if (len >= 14) {
-				cmd_runtime_tune_other(d, &buffer[2]);
+				cmd_runtime_tune_other(d, &buffer[2], len - 2);
 			}
 			else {
 				if (!VESC_IF->app_is_output_disabled()) {
