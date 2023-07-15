@@ -146,11 +146,11 @@ Item {
             var newcode = values.fault_code	// returns undefined for some reason
             var fault = values.fault_str
             fault = fault.replace("FAULT_CODE_", "")
-            motor_fault.text = "Fault(!!): " + fault  + "\n"
             if  (fault === "NONE") {
             }
             else {
                 fault_code = 1
+                motor_fault.text = "Fault(!!): " + fault  + "\n"
             }
         }
 
@@ -539,14 +539,23 @@ Item {
                             text: "No Fault"
                         }
                         Text {
-                            id: faultNotice
+                            id: faultNotice1
                             visible: fault_code > 0
                             color: Utility.getAppHexColor("lightText")
                             Layout.margins: 0
                             Layout.leftMargin: 5
-                            Layout.fillWidth: true
                             wrapMode: Text.WordWrap
-                            text: "Your VESC reported a fault. \nThis shouldn't be happening and could cause a nosedive\nor damage to your controller!\n\nYou should stop riding and try to identify and fix the root cause.\n"
+                            text: "Your VESC reported a fault.\n"
+                            font.pointSize: 11
+                        }
+                        Text {
+                            id: faultNotice2
+                            visible: fault_code > 0
+                            color: Utility.getAppHexColor("lightText")
+                            Layout.margins: 0
+                            Layout.leftMargin: 5
+                            wrapMode: Text.WordWrap
+                            text: "You should stop riding and try to identify and fix the root cause.\n"
                             font.pointSize: 11
                         }
                         Text {
