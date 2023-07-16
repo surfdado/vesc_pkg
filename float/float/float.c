@@ -2282,6 +2282,7 @@ enum {
 	FLOAT_COMMAND_EXPERIMENT = 11,  // generic cmd for sending data, used for testing/tuning new features
 	FLOAT_COMMAND_LOCK = 12,
 	FLOAT_COMMAND_HANDTEST = 13,
+	FLOAT_COMMAND_TUNE_TILT = 14,
 	FLOAT_COMMAND_FLYWHEEL = 22,
 } float_commands;
 
@@ -2709,6 +2710,40 @@ static void cmd_tune_defaults(data *d){
 }
 
 /**
+ * cmd_runtime_tune_tilt		Extract settings from 20byte message but don't write to EEPROM!
+ */
+static void cmd_runtime_tune_tilt(data *d, unsigned char *cfg, int len)
+{
+	unsigned int flags = cfg[0];
+	bool duty_buzz = flags & 0x1;
+	d->float_conf.is_dutybuzz_enabled = duty_buzz;
+	float retspeed = cfg[1];
+	if (retspeed > 0) {
+		d->float_conf.tiltback_return_speed = retspeed / 10;
+		d->tiltback_return_step_size = d->float_conf.tiltback_return_speed / d->float_conf.hertz;
+	}
+	d->float_conf.tiltback_duty = (float)cfg[2] / 100.0;
+	d->float_conf.tiltback_duty_angle = (float)cfg[3] / 10.0;
+	d->float_conf.tiltback_duty_speed = (float)cfg[4] / 10.0;
+
+	if (len >= 6) {
+		float surge_duty_start = cfg[5];
+		if (surge_duty_start > 0) {
+			d->float_conf.surge_duty_start = surge_duty_start / 100.0;
+			d->float_conf.surge_angle  = (float)cfg[6] / 20.0;
+			d->surge_angle = d->float_conf.surge_angle;
+			d->surge_angle2 = d->float_conf.surge_angle * 2;
+			d->surge_angle3 = d->float_conf.surge_angle * 3;
+			d->surge_enable = d->surge_angle > 0;
+		}
+		beep_alert(d, 1, 1);
+	}
+	else {
+		beep_alert(d, 3, 0);
+	}
+}
+
+/**
  * cmd_runtime_tune_other		Extract settings from 20byte message but don't write to EEPROM!
  */
 static void cmd_runtime_tune_other(data *d, unsigned char *cfg, int len)
@@ -2968,6 +3003,17 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		case FLOAT_COMMAND_TUNE_OTHER: {
 			if (len >= 14) {
 				cmd_runtime_tune_other(d, &buffer[2], len - 2);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+				}
+			}
+			return;
+		}
+		case FLOAT_COMMAND_TUNE_TILT: {
+			if (len >= 10) {
+				cmd_runtime_tune_tilt(d, &buffer[2], len - 2);
 			}
 			else {
 				if (!VESC_IF->app_is_output_disabled()) {
