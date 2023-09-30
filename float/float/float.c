@@ -125,6 +125,9 @@ typedef struct {
 	int beep_reason;
 	bool buzzer_enabled;
 
+	// BMS
+	bool is_bms_supported;
+	
 	// Config values
 	float loop_time_seconds;
 	unsigned int start_counter_clicks, start_counter_clicks_max;
@@ -531,6 +534,8 @@ static void configure(data *d) {
 	}
 
 	d->do_handtest = false;
+
+	d->is_bms_supported = VESC_IF->mc_fault_to_string(FAULT_CODE_DUMMY_FEATURE_CHECK)[0] == 'B';
 }
 
 static void reset_vars(data *d) {
@@ -2341,6 +2346,17 @@ static void read_cfg_from_eeprom(data *d) {
 		read_ok = false;
 	}
 
+	// Check if an API exists @get_fw_version and if the API returns non-zero
+	// APIs with arguments or APIs returning any result could still cause issues!
+	if ((VESC_IF->get_fw_version != NULL) && (VESC_IF->get_fw_version() != NULL)) {
+		VESC_IF->printf("FW Version = %s\n", VESC_IF->get_fw_version());
+		VESC_IF->printf("FW Name = %s\n", VESC_IF->get_fw_name());
+		VESC_IF->printf("HW Name = %s\n", VESC_IF->get_hw_name());
+	}
+	else {
+		VESC_IF->printf("FW Info APIs not found!\n");
+	}
+	
 	if (read_ok) {
 		memcpy(&(d->float_conf), buffer, sizeof(float_config));
 
@@ -2426,7 +2442,7 @@ enum {
 } float_commands;
 
 static void send_realtime_data(data *d){
-	#define BUFSIZE 72
+	#define BUFSIZE 78
 	uint8_t send_buffer[BUFSIZE];
 	int32_t ind = 0;
 	send_buffer[ind++] = 101;//Magic Number
@@ -2466,14 +2482,20 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
 
+	// BMS
+	if (d->is_bms_supported) {
+		send_buffer[ind++] = VESC_IF->bms_get_fault_state();
+		send_buffer[ind++] = VESC_IF->bms_get_op_state();
+	}
+	
 	if (ind > BUFSIZE) {
-		VESC_IF->printf("BUFSIZE too small...\n");
+		VESC_IF->printf("BUFSIZE too small [%d vs %d]...\n", ind, BUFSIZE);
 	}
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 
 static void cmd_send_all_data(data *d, unsigned char mode){
-	#define SNDBUFSIZE 60
+	#define SNDBUFSIZE 64
 	uint8_t send_buffer[SNDBUFSIZE];
 	int32_t ind = 0;
 	mc_fault_code fault = VESC_IF->mc_get_fault();
@@ -2551,11 +2573,16 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours_charged(false), 1, &ind);
 			send_buffer[ind++] = fmaxf(0, fminf(125, VESC_IF->mc_get_battery_level(NULL))) * 2;
 			// ind = 55
+			if (d->is_bms_supported) {
+				send_buffer[ind++] = VESC_IF->bms_get_fault_state();
+				send_buffer[ind++] = VESC_IF->bms_get_op_state();
+			}
+			// ind = 57
 		}
 	}
 
 	if (ind > SNDBUFSIZE) {
-		VESC_IF->printf("BUFSIZE too small...\n");
+		VESC_IF->printf("BUFSIZE too small [%d vs %d]...\n", ind, SNDBUFSIZE);
 	}
 	VESC_IF->send_app_data(send_buffer, ind);
 }

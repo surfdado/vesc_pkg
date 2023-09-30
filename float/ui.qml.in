@@ -198,6 +198,9 @@ Item {
                 // var debug1 = dv.getFloat32(ind); ind += 4;
                 // var debug2 = dv.getFloat32(ind); ind += 4;
 
+                var bmsstate = dv.getInt8(ind); ind += 1;
+                var bmsfault = dv.getInt8(ind); ind += 1;
+
                 var stateString
                 if(state == 0){
                     stateString = "BOOT"	// we're in this state only for the first second or so then never again
@@ -296,6 +299,130 @@ Item {
                     switchString = "On"
                 }
 
+		var bmsString = ""
+		var bmsFaultString = ""
+		if(bmsstate == 0){
+		    bmsString = "INIT"
+		}
+		else if(bmsstate == 1){
+		    bmsString = "CHARGING"
+		    }
+		else if(bmsstate == 2){
+		    bmsString = "PRE_CHARGE"
+		    }
+		else if(bmsstate == 3){
+		    bmsString = "LOAD_ENABLED"
+		    }
+		else if(bmsstate == 4){
+		    bmsString = "BATTERY_DEAD"
+		    }
+		else if(bmsstate == 5){
+		    bmsString = "POWER_DOWN"
+		    }
+		else if(bmsstate == 6){
+		    bmsString = "EXTERNAL"
+		    }
+		else if(bmsstate == 7){
+		    bmsString = "ERROR"
+		    }
+		else if(bmsstate == 8){
+		    bmsString = "ERROR_PRECHARGE"
+		    }
+		else if(bmsstate == 9){
+		    bmsString = "BALANCING"
+		    }
+		else if(bmsstate == 10){
+		    bmsString = "CHARGED"
+		    }
+		else if(bmsstate == 11){
+		    bmsString = "FORCEON"
+		    }
+		else {
+		    bmsString = "OTHER"
+		    }
+
+		if(bmsfault == 1){
+		    bmsFaultString = "PACK_OVER_VOLTAGE"
+		    }
+		else if(bmsfault == 2){
+		    bmsFaultString = "PACK_UNDER_VOLTAGE"
+		    }
+		else if(bmsfault == 3){
+		    bmsFaultString = "LOAD_OVER_VOLTAGE"
+		    }
+		else if(bmsfault == 4){
+		    bmsFaultString = "LOAD_UNDER_VOLTAGE"
+		    }
+		else if(bmsfault == 5){
+		    bmsFaultString = "CHARGER_OVER_VOLTAGE"
+		    }
+		else if(bmsfault == 6){
+		    bmsFaultString = "CHARGER_UNDER_VOLTAGE"
+		    }
+		else if(bmsfault == 7){
+		    bmsFaultString = "CELL_HARD_OVER_VOLTAGE"
+		    }
+		else if(bmsfault == 8){
+		    bmsFaultString = "CELL_HARD_UNDER_VOLTAGE"
+		    }
+		else if(bmsfault == 9){
+		    bmsFaultString = "CELL_SOFT_OVER_VOLTAGE"
+		    }
+		else if(bmsfault == 10){
+		    bmsFaultString = "CELL_SOFT_UNDER_VOLTAGE"
+		    }
+		else if(bmsfault == 11){
+		    bmsFaultString = "MAX_UVP_OVP_ERRORS"
+		    }
+		else if(bmsfault == 12){
+		    bmsFaultString = "MAX_UVT_OVT_ERRORS"
+		    }
+		else if(bmsfault == 13){
+		    bmsFaultString = "OVER_CURRENT"
+		    }
+		else if(bmsfault == 14){
+		    bmsFaultString = "OVER_TEMP_BMS"
+		    }
+		else if(bmsfault == 15){
+		    bmsFaultString = "UNDER_TEMP_BMS"
+		    }
+		else if(bmsfault == 16){
+		    bmsFaultString = "DISCHARGE_OVER_TEMP_CELLS"
+		    }
+		else if(bmsfault == 17){
+		    bmsFaultString = "DISCHARGE_UNDER_TEMP_CELLS"
+		    }
+		else if(bmsfault == 18){
+		    bmsFaultString = "CHARGE_OVER_TEMP_CELLS"
+		    }
+		else if(bmsfault == 19){
+		    bmsFaultString = "CHARGE_UNDER_TEMP_CELLS"
+		    }
+		else if(bmsfault == 20){
+		    bmsFaultString = "PRECHARGE_TIMEOUT"
+		    }
+		else if(bmsfault == 21){
+		    bmsFaultString = "DISCHARGE_RETRY"
+		    }
+		else if(bmsfault == 22){
+		    bmsFaultString = "CHARGE_RETRY"
+		    }
+		else if(bmsfault == 23){
+		    bmsFaultString = "CAN_DELAYED_POWER_DOWN"
+		    }
+		else if(bmsfault == 24){
+		    bmsFaultString = "NOT_USED_TIMEOUT"
+		    }
+		else if(bmsfault == 25){
+		    bmsFaultString = "CHARGER_DISCONNECT"
+		    }
+		else if(bmsfault == 26){
+		    bmsFaultString = "CHARGER_CURRENT_THRESHOLD_TIMEOUT"
+		    }
+		else {
+		    bmsFaultString = "OTHER"
+		    }
+
 		if(new_beep_reason > 0) {
 		    beep_reason = new_beep_reason;
 		}
@@ -333,7 +460,13 @@ Item {
                     "Torque              : " + filtered_current.toFixed(2) + "A\n" +
                     "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
                     "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
-                    "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n"
+                    "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n\n" +
+		    "BMS State           : " + bmsString + "\n"
+
+		if (bmsfault > 0) {
+		debug.text +=
+		    "BMS Fault Code      : " + bmsFaultString + "\n"
+		}
 
                 if (beep_reason > 0) {
 		    debug.text += "Last Beep Reason    : " + beepString + "\n"
