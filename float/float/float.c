@@ -186,7 +186,7 @@ typedef struct {
 	float atr_filtered_current, atr_target, atr_interpolated;
 	float torqueresponse_interpolated;
 	Biquad atr_current_biquad;
-	float braketilt_factor, braketilt_target, braketilt_interpolated;
+	float braketilt_factor, braketilt_target, braketilt_interpolated, braketilt_timer;
 	float turntilt_target, turntilt_interpolated;
 	SetpointAdjustmentType setpointAdjustmentType;
 	float current_time, last_time, diff_time, loop_overshoot; // Seconds
@@ -1495,7 +1495,7 @@ static void apply_torquetilt(data *d) {
 	// Feature: Brake Tiltback
 
 	// braking also should cause setpoint change lift, causing a delayed lingering nose lift
-	if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 2000)) {
+	if ((d->braketilt_factor < 0) && d->braking && (d->abs_erpm > 1000)) {
 		// negative currents alone don't necessarily consitute active braking, look at proportional:
 		if (SIGN(d->proportional) != SIGN(d->erpm)) {
 			float downhill_damper = 1;
@@ -1505,7 +1505,15 @@ static void apply_torquetilt(data *d) {
 				downhill_damper += fabsf(d->accel_gap) / 2;
 			}
 			d->braketilt_target = d->proportional / d->braketilt_factor / downhill_damper;
-			if (downhill_damper > 2) {
+
+			// After the lingering time we reverse the effect to avoid excessive tail dragging
+			if ((fabsf(d->braketilt_timer - d->current_time) > d->float_conf.braketilt_lingering) &&
+			    (fabsf(d->setpoint - d->true_pitch_angle) > 8)) {
+				beep_alert(d, 1, 1);
+				d->braketilt_target = (-1) * fminf(fabsf(d->proportional), 3);
+				d->braketilt_target *= SIGN(d->braketilt_target);
+			}
+			else if (downhill_damper > 2) {
 				// steep downhills, we don't enable this feature at all!
 				d->braketilt_target = 0;
 			}
@@ -1513,6 +1521,9 @@ static void apply_torquetilt(data *d) {
 	}
 	else {
 		d->braketilt_target = 0;
+	}
+	if (d->braketilt_target == 0) {
+		d->braketilt_timer = d->current_time;
 	}
 
 	braketilt_step_size = d->atr_off_step_size / d->float_conf.braketilt_lingering;
