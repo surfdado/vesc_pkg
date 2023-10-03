@@ -1996,7 +1996,7 @@ static void float_thd(void *arg) {
 				float true_proportional = (d->setpoint - d->braketilt_interpolated) - d->true_pitch_angle; // Braketilt excluded to allow for soft brakes that strengthen when near tail-drag
 				d->abs_proportional = fabsf(true_proportional);
 
-				float booster_current, booster_angle, booster_ramp;
+				/*float booster_current, booster_angle, booster_ramp;
 				if (tail_down) {
 					booster_current = d->float_conf.brkbooster_current;
 					booster_angle = d->float_conf.brkbooster_angle;
@@ -2034,11 +2034,12 @@ static void float_thd(void *arg) {
 				}
 				else {
 					booster_current = 0;
-				}
+					}
 
 				// No harsh changes in booster current (effective delay <= 100ms)
 				d->applied_booster_current = 0.01 * booster_current + 0.99 * d->applied_booster_current;
 				d->pid_mod += d->applied_booster_current;
+				*/
 
 				if (d->softstart_pid_limit < d->mc_current_max) {
 					d->pid_mod = fminf(fabs(d->pid_mod), d->softstart_pid_limit) * SIGN(d->pid_mod);
