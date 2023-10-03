@@ -177,6 +177,8 @@ typedef struct {
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
 	float applied_booster_current;
+	float applied_haptic_current, haptic_timer;
+	int haptic_counter, haptic_mode;
 	float noseangling_interpolated, inputtilt_interpolated;
 	float filtered_current;
 	float torquetilt_target, torquetilt_interpolated;
@@ -1617,6 +1619,44 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
+static float haptic_buzz(data *d) {
+	if (d->setpointAdjustmentType > TILTBACK_NONE) {
+		d->haptic_counter += 1;
+
+		float buzz_current = fminf(10, d->float_conf.booster_current);
+		int buzz_period = d->float_conf.booster_angle;
+
+		if (d->haptic_mode == 1) {
+			// alternate between two frequencies, depending on "mode"
+			buzz_period += 1;
+		}
+		if (d->haptic_counter > buzz_period) {
+			d->haptic_counter = 0;
+		}
+
+		if (d->haptic_counter == 0) {
+			if (d->applied_haptic_current > 0) {
+				d->applied_haptic_current = -buzz_current;
+			}
+			else {
+				d->applied_haptic_current = buzz_current;
+			}
+
+			if (fabsf(d->haptic_timer - d->current_time) > 0.3) {
+				d->haptic_mode = 1 - d->haptic_mode;
+				d->haptic_timer = d->current_time;
+			}
+		}
+	}
+	else {
+		d->haptic_mode = 0;
+		d->haptic_counter = 0;
+		d->haptic_timer = d->current_time;
+		d->applied_haptic_current = 0;
+	}
+	return d->applied_haptic_current;
+}
+
 static void brake(data *d) {
 	// Brake timeout logic
 	float brake_timeout_length = 1; // Brake Timeout hard-coded to 1s
@@ -2067,6 +2107,7 @@ static void float_thd(void *arg) {
 					set_current(d, d->pid_value + d->float_conf.startup_click_current);
 			}
 			else {
+				d->pid_value += haptic_buzz(d);
 				set_current(d, d->pid_value);
 			}
 
