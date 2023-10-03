@@ -2422,6 +2422,7 @@ enum {
 	FLOAT_COMMAND_HANDTEST = 13,
 	FLOAT_COMMAND_TUNE_TILT = 14,
 	FLOAT_COMMAND_FLYWHEEL = 22,
+	FLOAT_COMMAND_HAPTIC = 23,
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -2985,6 +2986,16 @@ void cmd_rc_move(data *d, unsigned char *cfg)//int amps, int time)
 	}
 }
 
+static void cmd_haptic_config(data *d, unsigned char *cfg, int len)
+{
+	d->float_conf.booster_current = cfg[0];
+	d->float_conf.booster_angle = cfg[1];
+	d->float_conf.booster_ramp = cfg[2];
+	d->float_conf.tiltback_duty = ((float)cfg[3]) / 100;
+	d->float_conf.tiltback_duty_angle = 0;
+	beep_alert(d, 1, 1);
+}
+
 static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 {
 	if ((cfg[0] & 0x80) == 0)
@@ -3311,6 +3322,17 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		case FLOAT_COMMAND_FLYWHEEL: {
 			if (len >= 8) {
 				cmd_flywheel_toggle(d, &buffer[2], len-2);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+				}
+			}
+			return;
+		}
+		case FLOAT_COMMAND_HAPTIC: {
+			if (len >= 6) {
+				cmd_haptic_config(d, &buffer[2], len-2);
 			}
 			else {
 				if (!VESC_IF->app_is_output_disabled()) {
