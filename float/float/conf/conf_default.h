@@ -118,7 +118,7 @@
 #define APPCONF_FLOAT_TILTBACK_DUTY_SPEED 3
 #endif
 
-// Duty Cycle
+// Duty Cycle Threshold
 #ifndef APPCONF_FLOAT_TILTBACK_DUTY
 #define APPCONF_FLOAT_TILTBACK_DUTY 0.8
 #endif
@@ -485,7 +485,7 @@
 
 // Package Version
 #ifndef APPCONF_FLOAT_VERSION
-#define APPCONF_FLOAT_VERSION 1.3
+#define APPCONF_FLOAT_VERSION 1.4
 #endif
 
 // CONF_DEFAULT_H_
