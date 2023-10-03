@@ -179,6 +179,7 @@ typedef struct {
 	float applied_booster_current;
 	float applied_haptic_current, haptic_timer;
 	int haptic_counter, haptic_mode;
+	bool haptic_tone_in_progress;
 	float noseangling_interpolated, inputtilt_interpolated;
 	float filtered_current;
 	float torquetilt_target, torquetilt_interpolated;
@@ -589,6 +590,11 @@ static void reset_vars(data *d) {
 	// RC Move:
 	d->rc_steps = 0;
 	d->rc_current = 0;
+
+	// Haptic Buzz:
+	d->haptic_tone_in_progress = false;
+	d->haptic_timer = d->current_time;
+	d->applied_haptic_current = 0;
 }
 
 
@@ -1616,6 +1622,16 @@ static void apply_turntilt(data *d) {
 
 static float haptic_buzz(data *d) {
 	if (d->setpointAdjustmentType > TILTBACK_NONE) {
+		if (d->state <= RUNNING_TILTBACK) {
+			// This kicks it off till at least one ~300ms tone is completed
+			d->haptic_tone_in_progress = true;
+		}
+	}
+	if ((d->state == RUNNING) && d->is_flywheel_mode) {
+		//d->haptic_tone_in_progress = true;
+	}
+
+	if (d->haptic_tone_in_progress) {
 		d->haptic_counter += 1;
 
 		float buzz_current = fminf(10, d->float_conf.booster_current);
@@ -1638,6 +1654,7 @@ static float haptic_buzz(data *d) {
 			}
 
 			if (fabsf(d->haptic_timer - d->current_time) > 0.3) {
+				d->haptic_tone_in_progress = false;
 				d->haptic_mode = 1 - d->haptic_mode;
 				d->haptic_timer = d->current_time;
 			}
@@ -1646,6 +1663,7 @@ static float haptic_buzz(data *d) {
 	else {
 		d->haptic_mode = 0;
 		d->haptic_counter = 0;
+		d->haptic_tone_in_progress = false;
 		d->haptic_timer = d->current_time;
 		d->applied_haptic_current = 0;
 	}
