@@ -177,6 +177,10 @@ typedef struct {
 	float pid_value;
 	float setpoint, setpoint_target, setpoint_target_interpolated;
 	float applied_booster_current;
+	float applied_haptic_current, haptic_timer;
+	int haptic_counter, haptic_mode;
+	HAPTIC_BUZZ_TYPE haptic_type;
+	bool haptic_tone_in_progress;
 	float noseangling_interpolated, inputtilt_interpolated;
 	float filtered_current;
 	float torquetilt_target, torquetilt_interpolated;
@@ -569,6 +573,11 @@ static void reset_vars(data *d) {
 	// RC Move:
 	d->rc_steps = 0;
 	d->rc_current = 0;
+
+	// Haptic Buzz:
+	d->haptic_tone_in_progress = false;
+	d->haptic_timer = d->current_time;
+	d->applied_haptic_current = 0;
 }
 
 
@@ -1564,6 +1573,85 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
+static float haptic_buzz(data *d, float note_period, bool brake) {
+	if (d->is_flywheel_mode) {
+		return 0;
+	}
+	if ((d->setpointAdjustmentType > TILTBACK_NONE) && (d->state <= RUNNING_TILTBACK)) {
+
+		if (d->setpointAdjustmentType == TILTBACK_DUTY)
+			d->haptic_type = d->float_conf.haptic_buzz_duty;
+		else if (d->setpointAdjustmentType == TILTBACK_HV)
+			d->haptic_type = d->float_conf.haptic_buzz_hv;
+		else if (d->setpointAdjustmentType == TILTBACK_LV)
+			d->haptic_type = d->float_conf.haptic_buzz_lv;
+		else
+			d->haptic_type = HAPTIC_BUZZ_NONE;
+
+		// This kicks it off till at least one ~300ms tone is completed
+		if (d->haptic_type != HAPTIC_BUZZ_NONE)
+			d->haptic_tone_in_progress = true;
+	}
+
+	if (d->haptic_tone_in_progress || brake) {
+		d->haptic_counter += 1;
+
+		float buzz_current = fminf(20, d->float_conf.haptic_buzz_intensity);
+		// small periods (1,2) produce audible tone, higher periods produce vibration
+		int buzz_period = d->haptic_type;
+		if (d->haptic_type == HAPTIC_BUZZ_ALTERNATING)
+			buzz_period = 1;
+
+		// alternate frequencies, depending on "mode"
+		buzz_period += d->haptic_mode;
+
+		if (brake) {
+			// This is to emulate the equivalent of "stop click"
+			buzz_current = fmaxf(5, d->float_conf.startup_click_current);
+			buzz_current = fminf(15, buzz_current);
+			buzz_period = 0;
+		}
+		else if ((d->abs_erpm < 10000) && (buzz_current > 5)) {
+			// scale high currents down to as low as 5A for lower erpms
+			buzz_current = fmaxf(d->float_conf.haptic_buzz_min, d->abs_erpm / 10000 * buzz_current);
+		}
+
+		if (d->haptic_counter > buzz_period) {
+			d->haptic_counter = 0;
+		}
+
+		if (d->haptic_counter == 0) {
+			if (d->applied_haptic_current > 0) {
+				d->applied_haptic_current = -buzz_current;
+			}
+			else {
+				d->applied_haptic_current = buzz_current;
+			}
+
+			if (fabsf(d->haptic_timer - d->current_time) > note_period) {
+				d->haptic_tone_in_progress = false;
+				if (brake)
+					d->haptic_mode += 1;
+				else {
+					if (d->haptic_type == HAPTIC_BUZZ_ALTERNATING)
+						d->haptic_mode = 5 - d->haptic_mode;
+					else
+						d->haptic_mode = 1 - d->haptic_mode;
+				}
+
+				d->haptic_timer = d->current_time;
+			}
+		}
+	}
+	else {
+		d->haptic_mode = 0;
+		d->haptic_counter = 0;
+		d->haptic_timer = d->current_time;
+		d->applied_haptic_current = 0;
+	}
+	return d->applied_haptic_current;
+}
+
 static void brake(data *d) {
 	// Brake timeout logic
 	float brake_timeout_length = 1; // Brake Timeout hard-coded to 1s
@@ -2023,6 +2111,7 @@ static void float_thd(void *arg) {
 					set_current(d, d->pid_value + d->float_conf.startup_click_current);
 			}
 			else {
+				d->pid_value += haptic_buzz(d, 0.3, false);
 				set_current(d, d->pid_value);
 			}
 
@@ -2116,8 +2205,16 @@ static void float_thd(void *arg) {
 				}
 			}
 
-			// Set RC current or maintain brake current (and keep WDT happy!)
-			do_rc_move(d);
+			if ((d->current_time - d->disengage_timer) < 0.012) {
+				// 20ms brake buzz, single tone
+				if (d->float_conf.startup_click_current > 0) {
+					set_current(d, haptic_buzz(d, 0.012, true));
+				}
+			}
+			else {
+				// Set RC current or maintain brake current (and keep WDT happy!)
+				do_rc_move(d);
+			}
 			break;
 		case (DISABLED):;
 			// no set_current, no brake_current

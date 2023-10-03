@@ -50,6 +50,11 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->tiltback_variable, 1000, &ind);
 	buffer_append_float16(buffer, conf->tiltback_variable_max, 100, &ind);
 	buffer_append_uint16(buffer, conf->tiltback_variable_erpm, &ind);
+	buffer[ind++] = (uint8_t)conf->haptic_buzz_intensity;
+	buffer[ind++] = (uint8_t)conf->haptic_buzz_min;
+	buffer[ind++] = conf->haptic_buzz_duty;
+	buffer[ind++] = conf->haptic_buzz_hv;
+	buffer[ind++] = conf->haptic_buzz_lv;
 	buffer_append_float16(buffer, conf->noseangling_speed, 100, &ind);
 	buffer[ind++] = conf->inputtilt_remote_type;
 	buffer_append_float16(buffer, conf->inputtilt_angle_limit, 100, &ind);
@@ -170,6 +175,11 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->tiltback_variable = buffer_get_float16(buffer, 1000, &ind);
 	conf->tiltback_variable_max = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_variable_erpm = buffer_get_uint16(buffer, &ind);
+	conf->haptic_buzz_intensity = buffer[ind++];
+	conf->haptic_buzz_min = buffer[ind++];
+	conf->haptic_buzz_duty = buffer[ind++];
+	conf->haptic_buzz_hv = buffer[ind++];
+	conf->haptic_buzz_lv = buffer[ind++];
 	conf->noseangling_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->inputtilt_remote_type = buffer[ind++];
 	conf->inputtilt_angle_limit = buffer_get_float16(buffer, 100, &ind);
@@ -283,6 +293,11 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->tiltback_variable = APPCONF_FLOAT_TILTBACK_VARIABLE;
 	conf->tiltback_variable_max = APPCONF_FLOAT_TILTBACK_VARIABLE_MAX;
 	conf->tiltback_variable_erpm = APPCONF_FLOAT_TILTBACK_VARIABLE_ERPM;
+	conf->haptic_buzz_intensity = APPCONF_FLOAT_HAPTIC_BUZZ_INTENSITY;
+	conf->haptic_buzz_min = APPCONF_FLOAT_HAPTIC_BUZZ_MIN;
+	conf->haptic_buzz_duty = APPCONF_FLOAT_HAPTIC_BUZZ_DUTY;
+	conf->haptic_buzz_hv = APPCONF_FLOAT_HAPTIC_BUZZ_HV;
+	conf->haptic_buzz_lv = APPCONF_FLOAT_HAPTIC_BUZZ_LV;
 	conf->noseangling_speed = APPCONF_FLOAT_NOSEANGLING_SPEED;
 	conf->inputtilt_remote_type = APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE;
 	conf->inputtilt_angle_limit = APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT;
