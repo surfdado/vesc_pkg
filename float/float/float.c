@@ -1620,27 +1620,35 @@ static void apply_turntilt(data *d) {
 	d->setpoint += d->turntilt_interpolated;
 }
 
-static float haptic_buzz(data *d) {
-	if (d->setpointAdjustmentType > TILTBACK_NONE) {
-		if (d->state <= RUNNING_TILTBACK) {
-			// This kicks it off till at least one ~300ms tone is completed
-			d->haptic_tone_in_progress = true;
-		}
+static float haptic_buzz(data *d, float note_period, bool brake) {
+	if (d->is_flywheel_mode) {
+		return 0;
 	}
-	if ((d->state == RUNNING) && d->is_flywheel_mode) {
-		//d->haptic_tone_in_progress = true;
+	if (((d->setpointAdjustmentType > TILTBACK_NONE) && (d->state <= RUNNING_TILTBACK)) || brake) {
+		// This kicks it off till at least one ~300ms tone is completed
+		d->haptic_tone_in_progress = true;
 	}
 
 	if (d->haptic_tone_in_progress) {
 		d->haptic_counter += 1;
 
-		float buzz_current = fminf(10, d->float_conf.booster_current);
+		float buzz_current = fminf(15, d->float_conf.booster_current);
 		int buzz_period = d->float_conf.booster_angle;
 
-		if (d->haptic_mode == 1) {
-			// alternate between two frequencies, depending on "mode"
-			buzz_period += 1;
+		// alternate frequencies, depending on "mode"
+		buzz_period += d->haptic_mode;
+
+		if (brake) {
+			// This is to emulate the equivalent of "stop click"
+			buzz_current = fmaxf(5, d->float_conf.startup_click_current);
+			buzz_current = fminf(15, buzz_current);
+			buzz_period = 0;
 		}
+		else if ((d->abs_erpm < 10000) && (buzz_current > 5)) {
+			// scale high currents down to as low as 3A for lower erpms
+			buzz_current = fmaxf(3, d->abs_erpm / 10000 * buzz_current);
+		}
+
 		if (d->haptic_counter > buzz_period) {
 			d->haptic_counter = 0;
 		}
@@ -1653,9 +1661,13 @@ static float haptic_buzz(data *d) {
 				d->applied_haptic_current = buzz_current;
 			}
 
-			if (fabsf(d->haptic_timer - d->current_time) > 0.3) {
+			if (fabsf(d->haptic_timer - d->current_time) > note_period) {
 				d->haptic_tone_in_progress = false;
-				d->haptic_mode = 1 - d->haptic_mode;
+				if (brake)
+					d->haptic_mode += 1;
+				else
+					d->haptic_mode = 1 - d->haptic_mode;
+
 				d->haptic_timer = d->current_time;
 			}
 		}
@@ -2121,7 +2133,7 @@ static void float_thd(void *arg) {
 					set_current(d, d->pid_value + d->float_conf.startup_click_current);
 			}
 			else {
-				d->pid_value += haptic_buzz(d);
+				d->pid_value += haptic_buzz(d, 0.3, false);
 				set_current(d, d->pid_value);
 			}
 
@@ -2208,8 +2220,14 @@ static void float_thd(void *arg) {
 				}
 			}
 
-			// Set RC current or maintain brake current (and keep WDT happy!)
-			do_rc_move(d);
+			if (!d->is_flywheel_mode && (d->current_time - d->disengage_timer) < 0.012) {
+				// 20ms brake buzz, single tone
+				set_current(d, haptic_buzz(d, 0.012, true));
+			}
+			else {
+				// Set RC current or maintain brake current (and keep WDT happy!)
+				do_rc_move(d);
+			}
 			break;
 		case (DISABLED):;
 			// no set_current, no brake_current
