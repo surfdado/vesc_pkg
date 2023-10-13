@@ -76,7 +76,8 @@ typedef enum {
 	BEEP_SENSORS = 7,
 	BEEP_LOWBATT = 8,
 	BEEP_IDLE = 9,
-	BEEP_ERROR = 10
+	BEEP_BMS = 10,
+	BEEP_ERROR = 11,
 } BeepReason;
 
 typedef enum {
@@ -86,7 +87,8 @@ typedef enum {
 	TILTBACK_DUTY,
 	TILTBACK_HV,
 	TILTBACK_LV,
-	TILTBACK_TEMP
+	TILTBACK_TEMP,
+	TILTBACK_BMS
 } SetpointAdjustmentType;
 
 typedef enum {
@@ -991,6 +993,11 @@ static void calculate_setpoint_target(data *d) {
 			d->setpoint_target = -d->float_conf.tiltback_duty_angle;
 		}
 		d->setpointAdjustmentType = TILTBACK_DUTY;
+		d->state = RUNNING_TILTBACK;
+	} else if (d->is_bms_supported && (VESC_IF->bms_get_fault_state() != BMS_FAULT_CODE_NONE)) {
+		d->beep_reason = BEEP_BMS;
+		beep_alert(d, 5, false);
+		d->setpointAdjustmentType = TILTBACK_BMS;
 		d->state = RUNNING_TILTBACK;
 	} else if (d->abs_duty_cycle > 0.05 && input_voltage > d->float_conf.tiltback_hv) {
 		d->beep_reason = BEEP_HV;
@@ -2494,6 +2501,10 @@ static void send_realtime_data(data *d){
 		send_buffer[ind++] = VESC_IF->bms_get_fault_state();
 		send_buffer[ind++] = VESC_IF->bms_get_op_state();
 	}
+	else {
+		send_buffer[ind++] = 0;
+		send_buffer[ind++] = 0;
+	}
 	
 	if (ind > BUFSIZE) {
 		VESC_IF->printf("BUFSIZE too small [%d vs %d]...\n", ind, BUFSIZE);
@@ -2580,9 +2591,14 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours_charged(false), 1, &ind);
 			send_buffer[ind++] = fmaxf(0, fminf(125, VESC_IF->mc_get_battery_level(NULL))) * 2;
 			// ind = 55
+			// BMS
 			if (d->is_bms_supported) {
 				send_buffer[ind++] = VESC_IF->bms_get_fault_state();
 				send_buffer[ind++] = VESC_IF->bms_get_op_state();
+			}
+			else {
+				send_buffer[ind++] = 0;
+				send_buffer[ind++] = 0;
 			}
 			// ind = 57
 		}
