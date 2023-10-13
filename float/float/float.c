@@ -2351,10 +2351,12 @@ static void read_cfg_from_eeprom(data *d) {
 		read_ok = false;
 	}
 
+	int vmaj, vmin, vtest;
 	// Check if an API exists @get_fw_version and if the API returns non-zero
 	// APIs with arguments or APIs returning any result could still cause issues!
-	if ((VESC_IF->get_fw_version != NULL) && (VESC_IF->get_fw_version() != NULL)) {
-		VESC_IF->printf("FW Version = %s\n", VESC_IF->get_fw_version());
+	if (VESC_IF->get_fw_version != NULL) {
+		VESC_IF->get_fw_version(&vmaj, &vmin, &vtest);
+		VESC_IF->printf("FW Version = %d.%d.%d\n", vmaj, vmin, vtest);
 		VESC_IF->printf("FW Name = %s\n", VESC_IF->get_fw_name());
 		VESC_IF->printf("HW Name = %s\n", VESC_IF->get_hw_name());
 	}
