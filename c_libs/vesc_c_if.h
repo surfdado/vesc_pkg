@@ -672,7 +672,7 @@ typedef struct {
 	void (*foc_set_openloop_duty_phase)(float dutyCycle, float phase);
 
 	// FW/HW Info
-	char* (*get_fw_version)(void);
+	void (*get_fw_version)(int *vmajor, int *vminor, int *vtest);
 	char* (*get_fw_name)(void);
 	char* (*get_hw_name)(void);
 
