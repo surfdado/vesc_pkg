@@ -198,8 +198,8 @@ Item {
                 // var debug1 = dv.getFloat32(ind); ind += 4;
                 // var debug2 = dv.getFloat32(ind); ind += 4;
 
-                var bmsstate = dv.getInt8(ind); ind += 1;
                 var bmsfault = dv.getInt8(ind); ind += 1;
+                var bmsstate = dv.getInt8(ind); ind += 1;
 
                 var stateString
                 if(state == 0){
@@ -317,7 +317,7 @@ Item {
 		    bmsString = "BATTERY_DEAD"
 		    }
 		else if(bmsstate == 5){
-		    bmsString = "POWER_DOWN"
+		    bmsString = "READY/IDLE"
 		    }
 		else if(bmsstate == 6){
 		    bmsString = "EXTERNAL"
