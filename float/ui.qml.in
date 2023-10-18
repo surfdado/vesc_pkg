@@ -462,6 +462,7 @@ Item {
                     "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
                     "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n\n" +
 		    "BMS State           : " + bmsString + "\n"
+		    "BMS Fault Code      : " + bmsFaultString + "\n"
 
 		if (bmsfault > 0) {
 		debug.text +=
