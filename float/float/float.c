@@ -244,6 +244,15 @@ typedef struct {
 	float rc_current_target;
 	float rc_current;
 
+	// LCM:
+	uint8_t lcm_headlight_brightness;
+	uint8_t lcm_lightbar_brightness;
+	uint8_t lcm_lightbar_mode;
+	uint8_t lcm_board_off;
+	uint8_t lcm_duty_beep;
+	uint8_t lcm_set;
+	uint8_t lcm_active;
+
 	// Log values
 	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
 	float float_expected_acc, float_measured_acc, float_acc_diff;
@@ -511,6 +520,15 @@ static void configure(data *d) {
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
 
 	led_init(&d->led_data, &d->float_conf);
+
+	// Floatwheel LCM Support:
+	d->lcm_headlight_brightness = 0;
+	d->lcm_lightbar_brightness = 10;
+	d->lcm_lightbar_mode = 0;
+	d->lcm_board_off = 0;
+	d->lcm_duty_beep = 90;
+	d->lcm_set = 0;
+	d->lcm_active = 0;
 }
 
 static void reset_vars(data *d) {
@@ -2366,6 +2384,9 @@ enum {
 	FLOAT_COMMAND_TUNE_TILT = 14,
 	FLOAT_COMMAND_FLYWHEEL = 22,
 	FLOAT_COMMAND_HAPTIC = 23,
+	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by LCM
+	FLOAT_COMMAND_LCM_INFO = 25,   // to be called by apps to check if an LCM is present / get info
+	FLOAT_COMMAND_LCM_CTRL = 26    // to be called by apps to change LCM settings
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -2955,6 +2976,90 @@ static void cmd_haptic_config(data *d, unsigned char *cfg, int len)
 	beep_alert(d, 1, 1);
 }
 
+/**
+ * Command for the LCM to poll data from the float package
+ */
+static void cmd_lcm_poll(data *d)
+{
+	#define POLLBUFSIZE 20
+	uint8_t send_buffer[POLLBUFSIZE];
+	int32_t ind = 0;
+	mc_fault_code fault = VESC_IF->mc_get_fault();
+
+	d->lcm_active = 1;
+
+	// 11 bytes for base info
+	send_buffer[ind++] = 101;//Magic Number
+	send_buffer[ind++] = FLOAT_COMMAND_LCM_POLL;
+
+	uint8_t state = (d->state & 0xF);
+	if ((d->is_flywheel_mode) && (d->state > 0) && (d->state < 6)) {
+		state = RUNNING_FLYWHEEL;
+	}
+	state += d->footpad_sensor.state << 4;
+	if (d->do_handtest) {
+		state |= 0x80;
+	}
+		
+	send_buffer[ind++] = state;
+	send_buffer[ind++] = fault;
+
+	// LCM only needs Duty Cycle, ERPM, and Input Current
+	send_buffer[ind++] = fminf(100, fabsf(d->abs_duty_cycle * 100));
+	buffer_append_float16(send_buffer, d->erpm, 1e0, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current_in(), 1e0, &ind);
+	buffer_append_float16(send_buffer, VESC_IF->mc_get_input_voltage_filtered(), 1e1, &ind);
+
+	if (d->lcm_set != 0) {
+		// LCM control info
+		send_buffer[ind++] = d->lcm_set;
+		send_buffer[ind++] = d->lcm_headlight_brightness;
+		send_buffer[ind++] = d->lcm_lightbar_brightness;
+		send_buffer[ind++] = d->lcm_lightbar_mode;
+		send_buffer[ind++] = d->lcm_duty_beep;
+		send_buffer[ind++] = d->lcm_board_off;
+	}
+
+	if (ind > POLLBUFSIZE) {
+		VESC_IF->printf("BUFSIZE too small [%d vs %d]...\n", ind, POLLBUFSIZE);
+	}
+	VESC_IF->send_app_data(send_buffer, ind);
+}
+
+/**
+ * Command for apps to call to get info about LCM
+ */
+static void cmd_lcm_info(data *d)
+{
+	// For now the only info is whether the LCM is present/active (and has new firmware)
+	uint8_t send_buffer[3];
+	int32_t ind = 0;
+	send_buffer[ind++] = 101;//Magic Number
+	send_buffer[ind++] = FLOAT_COMMAND_LCM_INFO;
+	send_buffer[ind++] = d->lcm_active;
+	VESC_IF->send_app_data(send_buffer, ind);
+}
+
+/**
+ * Command for apps to call to control LCM details (lights, behavior, etc)
+ */
+static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
+{
+	if (len < 4)
+		return;
+
+	d->lcm_set = 1;
+	d->lcm_headlight_brightness = cfg[0];
+	d->lcm_lightbar_brightness = cfg[1];
+	d->lcm_lightbar_mode = cfg[2];
+	if (len < 5) {
+		d->lcm_board_off = cfg[3];
+		return;
+	}
+	d->lcm_duty_beep = cfg[3];
+	d->lcm_board_off = cfg[4];
+}
+
 static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 {
 	if ((cfg[0] & 0x80) == 0)
@@ -3218,6 +3323,25 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		case FLOAT_COMMAND_HAPTIC: {
 			if (len >= 6) {
 				cmd_haptic_config(d, &buffer[2], len-2);
+			}
+			else {
+				if (!VESC_IF->app_is_output_disabled()) {
+					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
+				}
+			}
+			return;
+		}
+		case FLOAT_COMMAND_LCM_POLL: {
+			cmd_lcm_poll(d);
+			return;
+		}
+		case FLOAT_COMMAND_LCM_INFO: {
+			cmd_lcm_info(d);
+			return;
+		}
+		case FLOAT_COMMAND_LCM_CTRL: {
+			if (len >= 3) {
+				cmd_lcm_ctrl(d, &buffer[2], len-2);
 			}
 			else {
 				if (!VESC_IF->app_is_output_disabled()) {
