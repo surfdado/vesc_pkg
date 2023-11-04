@@ -548,6 +548,8 @@ static void configure(data *d) {
 	d->do_handtest = false;
 
 	d->is_bms_supported = VESC_IF->mc_fault_to_string(FAULT_CODE_DUMMY_FEATURE_CHECK)[0] == 'B';
+	if (d->is_bms_supported)
+		VESC_IF->printf("BMS Support Detected!\n");
 	d->allow_bms_tiltback = true;
 
 	d->lcm_headlight_brightness = 0;
@@ -2525,7 +2527,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
 
 	// BMS
-	VESC_IF->printf("BMS State/Fault = %d/%d\n", VESC_IF->bms_get_op_state(), VESC_IF->bms_get_fault_state());
+	//VESC_IF->printf("BMS State/Fault = %d/%d\n", VESC_IF->bms_get_op_state(), VESC_IF->bms_get_fault_state());
 	if (d->is_bms_supported) {
 		send_buffer[ind++] = VESC_IF->bms_get_fault_state();
 		send_buffer[ind++] = VESC_IF->bms_get_op_state();
