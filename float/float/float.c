@@ -3101,11 +3101,16 @@ static void cmd_lcm_poll(data *d)
 	if ((d->is_flywheel_mode) && (d->state > 0) && (d->state < 6)) {
 		state = RUNNING_FLYWHEEL;
 	}
+	state += d->switch_state << 4;
+	if (d->do_handtest) {
+		state |= 0x80;
+	}
+		
 	send_buffer[ind++] = state;
 	send_buffer[ind++] = fault;
 
 	// LCM only needs Duty Cycle, ERPM, and Input Current
-	send_buffer[ind++] = fminf(100, fabsf(d->abs_duty_cycle * 200));
+	send_buffer[ind++] = fminf(100, fabsf(d->abs_duty_cycle * 100));
 	buffer_append_float16(send_buffer, d->erpm, 1e0, &ind);
 	buffer_append_float16(send_buffer, VESC_IF->mc_get_tot_current_in(), 1e0, &ind);
 	buffer_append_float16(send_buffer, VESC_IF->mc_get_input_voltage_filtered(), 1e1, &ind);
