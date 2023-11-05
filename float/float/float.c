@@ -2608,9 +2608,21 @@ static void led_update(data *d){
 		if(d->erpm < d->float_conf.fault_adc_half_erpm){
 			// Display status LEDs
 			if(d->switch_state == OFF){
-				// TODO: Maybe show battery when foot is off
+				float batteryLevel = VESC_IF->mc_get_battery_level(NULL);
+				int batteryLeds = (int)(batteryLevel * d->float_conf.led_status_count);
+				int batteryColor = 0x0000FF00;
+				if(batteryLevel < .4){
+					batteryColor = 0x00FFFF00;
+				}else if(batteryLevel < .2){
+					batteryColor = 0x00FF0000;
+				}
 				for(int i = 0; i < d->float_conf.led_status_count; i++){
-					led_set_color(d, i, 0x00000000, 0xFF);
+					if(i < batteryLeds){
+						led_set_color(d, i, batteryColor, 0xFF);
+					}else{
+						led_set_color(d, i, 0x00000000, 0xFF);
+					}
+					
 				}
 			}else if(d->switch_state == HALF){
 				for(int i = 0; i < d->float_conf.led_status_count; i++){
@@ -2627,12 +2639,12 @@ static void led_update(data *d){
 			}
 		}else{
 			// Display duty cycle when riding
-			int dutyLeds = (int)(d->abs_duty_cycle * d->float_conf.led_status_count);
+			int dutyLeds = (int)(fminf((d->abs_duty_cycle * 1.1112), 1) * d->float_conf.led_status_count);
 			int dutyColor = 0x0000FF00;
-			if(d->abs_duty_cycle > 0.7){
-				dutyColor = 0x00FFFF00;
-			}else if(d->abs_duty_cycle > 0.85){
+			if(d->abs_duty_cycle > 0.85){
 				dutyColor = 0x00FF0000;
+			}else if(d->abs_duty_cycle > 0.7){
+				dutyColor = 0x00FFFF00;
 			}
 
 			for(int i = 0; i < d->float_conf.led_status_count; i++){
