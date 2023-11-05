@@ -145,11 +145,11 @@ void led_init(LEDData *led_data, float_config * float_conf) {
 	led_data->led_previous_brightness = 0;
 	led_data->led_latching_direction = true;
 	
-	led_ws2812_init(led_data, float_conf);
+	led_ws2812_init(led_data);
 	return;
 }
 
-void led_ws2812_init(LEDData *led_data, float_config * float_conf) {
+void led_ws2812_init(LEDData *led_data) {
 	// Deinit
 	TIM_DeInit(TIM4);
 	DMA_DeInit(DMA1_Stream3);
@@ -158,39 +158,6 @@ void led_ws2812_init(LEDData *led_data, float_config * float_conf) {
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
 	TIM_OCInitTypeDef  TIM_OCInitStructure;
 	DMA_InitTypeDef DMA_InitStructure;
-
-	// Default LED values
-	int i, bit;
-
-	for (i = 0;i < led_data->ledbuf_len;i++) {
-		led_data->RGBdata[i] = 0;
-	}
-
-	for (i = 0;i < led_data->ledbuf_len;i++) {
-		uint32_t tmp_color = led_rgb_to_local(led_data->RGBdata[i], float_conf->led_brightness, float_conf->led_type == 2);
-
-		int bits = 0;
-		if(float_conf->led_type == 1){
-			bits = 24;
-		} else {
-			bits = 32;
-		}
-
-		for (bit = 0;bit < bits;bit++) {
-			if (tmp_color & (1 << (bits - 1))) {
-				led_data->bitbuffer[bit + i * bits] = WS2812_ONE;
-			} else {
-				led_data->bitbuffer[bit + i * bits] = WS2812_ZERO;
-			}
-			tmp_color <<= 1;
-		}
-	}
-
-	// Fill the rest of the buffer with zeros to give the LEDs a chance to update
-	// after sending all bits
-	for (i = 0;i < BITBUFFER_PAD;i++) {
-		led_data->bitbuffer[led_data->bitbuf_len - BITBUFFER_PAD - 1 + i] = 0;
-	}
 
 	TIM_TypeDef *tim;
 	DMA_Stream_TypeDef *dma_stream;
@@ -300,7 +267,8 @@ void led_update(LEDData *led_data, float_config *float_conf, float current_time,
 				int batteryColor = 0x0000FF00;
 				if(batteryLevel < .4){
 					batteryColor = 0x00FFFF00;
-				}else if(batteryLevel < .2){
+				}
+                if(batteryLevel < .2){
 					batteryColor = 0x00FF0000;
 				}
 				for(int i = 0; i < float_conf->led_status_count; i++){
@@ -327,11 +295,11 @@ void led_update(LEDData *led_data, float_config *float_conf, float current_time,
 		}else{
 			// Display duty cycle when riding
 			int dutyLeds = (int)(fminf((abs_duty_cycle * 1.1112), 1) * float_conf->led_status_count);
-			int dutyColor = 0x0000FF00;
+			int dutyColor = 0x00FFFF00;
 			if(abs_duty_cycle > 0.85){
 				dutyColor = 0x00FF0000;
 			}else if(abs_duty_cycle > 0.7){
-				dutyColor = 0x00FFFF00;
+				dutyColor = 0x00FF8800;
 			}
 
 			for(int i = 0; i < float_conf->led_status_count; i++){
