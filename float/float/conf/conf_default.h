@@ -470,7 +470,7 @@
 
 // LED Type
 #ifndef APPCONF_FLOAT_LED_TYPE
-#define APPCONF_FLOAT_LED_TYPE 2
+#define APPCONF_FLOAT_LED_TYPE 0
 #endif
 
 // Status LED Strip Length
@@ -490,17 +490,17 @@
 
 // Forward/Rear LED Brightness
 #ifndef APPCONF_FLOAT_LED_BRIGHTNESS
-#define APPCONF_FLOAT_LED_BRIGHTNESS 20
+#define APPCONF_FLOAT_LED_BRIGHTNESS 50
 #endif
 
 // Forward/Rear LED Mode
 #ifndef APPCONF_FLOAT_LED_MODE
-#define APPCONF_FLOAT_LED_MODE 3
+#define APPCONF_FLOAT_LED_MODE 0
 #endif
 
 // Status LED Brightness
 #ifndef APPCONF_FLOAT_LED_STATUS_BRIGHTNESS
-#define APPCONF_FLOAT_LED_STATUS_BRIGHTNESS 1
+#define APPCONF_FLOAT_LED_STATUS_BRIGHTNESS 10
 #endif
 
 // Status LED Mode

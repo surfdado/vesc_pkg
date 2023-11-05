@@ -332,37 +332,86 @@ void led_update(LEDData *led_data, float_config *float_conf, float current_time,
 	// Find color
 	int forwardColor = 0;
 	int rearColor = 0;
-	if(float_conf->led_mode == 0){
+    bool fade = true;
+    bool directional = true;
+	if(float_conf->led_mode == 0){ // Red/White
 		forwardColor = 0xFFFFFFFF;
 		rearColor = 0x00FF0000;
-	}else if(float_conf->led_mode == 1){
+	}else if(float_conf->led_mode == 1){ // Cyan/Magenta
 		forwardColor = 0x0000FFFF;
 		rearColor = 0x00FF00FF;
-	}else if(float_conf->led_mode == 2){
+	}else if(float_conf->led_mode == 2){ // Blue/Green
 		forwardColor = 0x000000FF;
 		rearColor = 0x0000FF00;
-	}else if(float_conf->led_mode == 3){
+	}else if(float_conf->led_mode == 3){ // Yellow/Green
 		forwardColor = 0x00FFFF00;
 		rearColor = 0x0000FF00;
+	}else if(float_conf->led_mode == 4){ // RGB Fade
+		if((int)(current_time * 1000) % 3000 < 1000){
+            forwardColor = 0x00FF0000;
+            rearColor = 0x00FF0000;
+        }else if((int)(current_time * 1000) % 3000 < 2000){
+            forwardColor = 0x0000FF00;
+            rearColor = 0x0000FF00;
+        }else{
+            forwardColor = 0x000000FF;
+            rearColor = 0x000000FF;
+        }
+	}else if(float_conf->led_mode == 5){ // Strobe
+        fade = false;
+        if(led_data->led_previous_forward > 0){
+            forwardColor = 0x00000000;
+            rearColor = 0x00000000;
+        }else{
+            forwardColor = 0xFFFFFFFF;
+            rearColor = 0xFFFFFFFF;
+        }
+        led_data->led_previous_forward = forwardColor;
+	}else if(float_conf->led_mode == 6){ // Rave
+		fade = false;
+        if(led_data->led_previous_forward == 0x00FF0000){
+            forwardColor = 0x00FFFF00;
+            rearColor = 0x00FFFF00;
+        }else if(led_data->led_previous_forward == 0x00FFFF00){
+            forwardColor = 0x0000FF00;
+            rearColor = 0x0000FF00;
+        }else if(led_data->led_previous_forward == 0x0000FF00){
+            forwardColor = 0x0000FFFF;
+            rearColor = 0x0000FFFF;
+        }else if(led_data->led_previous_forward == 0x0000FFFF){
+            forwardColor = 0x000000FF;
+            rearColor = 0x000000FF;
+        }else if(led_data->led_previous_forward == 0x000000FF){
+            forwardColor = 0x00FF00FF;
+            rearColor = 0x00FF00FF;
+        }else{
+            forwardColor = 0x00FF0000;
+            rearColor = 0x00FF0000;
+        }
+        led_data->led_previous_forward = forwardColor;
 	}
 
 	// Set directonality
-	if(erpm > 100){
-		led_data->led_latching_direction = true;
-	}else if(erpm < -100){
-		led_data->led_latching_direction = false;
-	}
-	if(led_data->led_latching_direction == false){
-		int temp = forwardColor;
-		forwardColor = rearColor;
-		rearColor = temp;
-	}
+    if(directional){
+        if(erpm > 100){
+            led_data->led_latching_direction = true;
+        }else if(erpm < -100){
+            led_data->led_latching_direction = false;
+        }
+        if(led_data->led_latching_direction == false){
+            int temp = forwardColor;
+            forwardColor = rearColor;
+            rearColor = temp;
+        }
+    }
 
 	// Fade
-	forwardColor = led_fade_color(led_data->led_previous_forward, forwardColor);
-	rearColor = led_fade_color(led_data->led_previous_rear, rearColor);
-	led_data->led_previous_forward = forwardColor;
-	led_data->led_previous_rear = rearColor;
+    if(fade){
+        forwardColor = led_fade_color(led_data->led_previous_forward, forwardColor);
+        rearColor = led_fade_color(led_data->led_previous_rear, rearColor);
+        led_data->led_previous_forward = forwardColor;
+        led_data->led_previous_rear = rearColor;
+    }
 
 	if(float_conf->led_forward_count > 0){
 		int offset = float_conf->led_status_count;
