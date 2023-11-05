@@ -133,6 +133,7 @@ typedef struct {
 	bool allow_bms_tiltback;
 
 	// LEDs
+	float led_last_updated;
 	uint32_t led_previous_forward;
 	uint32_t led_previous_rear;
 	uint8_t led_previous_brightness;
@@ -2393,24 +2394,56 @@ static uint32_t led_fade_color(uint32_t from, uint32_t to){
 	uint8_t tb = to & 0xFF;
 
 	if(fw < tw){
-		fw++;
+		if(fw + 12 > tw){
+			fw = tw;
+		}else{
+			fw += 12;
+		}
 	}else if(fw > tw){
-		fw--;
+		if(fw - 12 < tw){
+			fw = tw;
+		}else{
+			fw -= 12;
+		}
 	}
 	if(fr < tr){
-		fr++;
+		if(fr + 12 > tr){
+			fr = tr;
+		}else{
+			fr += 12;
+		}
 	}else if(fr > tr){
-		fr--;
+		if(fr - 12 < tr){
+			fr = tr;
+		}else{
+			fr -= 12;
+		}
 	}
 	if(fg < tg){
-		fg++;
+		if(fg + 12 > tg){
+			fg = tg;
+		}else{
+			fg += 12;
+		}
 	}else if(fg > tg){
-		fg--;
+		if(fg - 12 < tg){
+			fg = tg;
+		}else{
+			fg -= 12;
+		}
 	}
 	if(fb < tb){
-		fb++;
+		if(fb + 12 > tb){
+			fb = tb;
+		}else{
+			fb += 12;
+		}
 	}else if(fb > tb){
-		fb--;
+		if(fb - 12 < tb){
+			fb = tb;
+		}else{
+			fb -= 12;
+		}
 	}
 	return (fw << 24) | (fr << 16) | (fg << 8) | fb;
 }
@@ -2458,6 +2491,7 @@ static void led_init(data *d) {
 		return;
 	}
 	
+	d->led_last_updated = 0;
 	d->led_previous_forward = 0;
 	d->led_previous_rear = 0;
 	d->led_previous_brightness = 0;
@@ -2603,6 +2637,11 @@ static void led_set_color(data *d, int led, uint32_t color, uint32_t brightness)
 }
 
 static void led_update(data *d){	
+	if(d->current_time - d->led_last_updated < 0.05){
+		return;
+	}else{
+		d->led_last_updated = d->current_time;
+	}
 	if(d->float_conf.led_status_count > 0){
 		int statusBrightness = (int)(d->float_conf.led_status_brightness * 2.55);
 		if(d->erpm < d->float_conf.fault_adc_half_erpm){
@@ -2618,7 +2657,7 @@ static void led_update(data *d){
 				}
 				for(int i = 0; i < d->float_conf.led_status_count; i++){
 					if(i < batteryLeds){
-						led_set_color(d, i, batteryColor, 0xFF);
+						led_set_color(d, i, batteryColor, statusBrightness);
 					}else{
 						led_set_color(d, i, 0x00000000, 0xFF);
 					}
@@ -2662,9 +2701,15 @@ static void led_update(data *d){
 		brightness = (uint8_t) (brightness * 0.05);
 	}
 	if(brightness > d->led_previous_brightness){
-		d->led_previous_brightness++;
+		d->led_previous_brightness += 5;
+		if(d->led_previous_brightness > brightness){
+			d->led_previous_brightness = brightness;
+		}
 	}else if(brightness < d->led_previous_brightness){
-		d->led_previous_brightness--;
+		d->led_previous_brightness -= 5;
+		if(d->led_previous_brightness < brightness){
+			d->led_previous_brightness = brightness;
+		}
 	}
 	brightness = d->led_previous_brightness;
 
