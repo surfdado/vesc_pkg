@@ -468,6 +468,46 @@
 #define APPCONF_FLOAT_BRAKETILT_LINGERING 2
 #endif
 
+// LED Type
+#ifndef APPCONF_FLOAT_LED_TYPE
+#define APPCONF_FLOAT_LED_TYPE 2
+#endif
+
+// Status LED Strip Length
+#ifndef APPCONF_FLOAT_LED_STATUS_COUNT
+#define APPCONF_FLOAT_LED_STATUS_COUNT 8
+#endif
+
+// Forward LED Strip Length
+#ifndef APPCONF_FLOAT_LED_FORWARD_COUNT
+#define APPCONF_FLOAT_LED_FORWARD_COUNT 13
+#endif
+
+// Rear LED Strip Length
+#ifndef APPCONF_FLOAT_LED_REAR_COUNT
+#define APPCONF_FLOAT_LED_REAR_COUNT 13
+#endif
+
+// Forward/Rear LED Brightness
+#ifndef APPCONF_FLOAT_LED_BRIGHTNESS
+#define APPCONF_FLOAT_LED_BRIGHTNESS 20
+#endif
+
+// Forward/Rear LED Mode
+#ifndef APPCONF_FLOAT_LED_MODE
+#define APPCONF_FLOAT_LED_MODE 3
+#endif
+
+// Status LED Brightness
+#ifndef APPCONF_FLOAT_LED_STATUS_BRIGHTNESS
+#define APPCONF_FLOAT_LED_STATUS_BRIGHTNESS 1
+#endif
+
+// Status LED Mode
+#ifndef APPCONF_FLOAT_LED_STATUS_MODE
+#define APPCONF_FLOAT_LED_STATUS_MODE 0
+#endif
+
 // Darkride Pitch Offset
 #ifndef APPCONF_FLOAT_DARK_PITCH_OFFSET
 #define APPCONF_FLOAT_DARK_PITCH_OFFSET 0
