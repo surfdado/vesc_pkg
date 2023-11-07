@@ -495,7 +495,7 @@
 
 // Forward/Rear LED Mode
 #ifndef APPCONF_FLOAT_LED_MODE
-#define APPCONF_FLOAT_LED_MODE 0
+#define APPCONF_FLOAT_LED_MODE 1
 #endif
 
 // Status LED Brightness
