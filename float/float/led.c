@@ -96,64 +96,7 @@ uint32_t led_fade_color(uint32_t from, uint32_t to) {
     return (fw << 24) | (fr << 16) | (fg << 8) | fb;
 }
 
-void led_init(LEDData* led_data, float_config* float_conf) {
-    // Deinit
-    led_data->ledbuf_len = 0;
-    led_data->bitbuf_len = 0;
-    if (led_data->bitbuffer) {
-        VESC_IF->free(led_data->bitbuffer);
-    }
-    if (led_data->RGBdata) {
-        VESC_IF->free(led_data->RGBdata);
-    }
-
-    // Init
-    int bits = 0;
-    if (float_conf->led_type == 0) {
-        led_data->ledbuf_len = 0;
-        led_data->bitbuf_len = 0;
-        return;
-    } else if (float_conf->led_type == 1) {
-        bits = 24;
-    } else {
-        bits = 32;
-    }
-
-    led_data->ledbuf_len = float_conf->led_status_count + float_conf->led_forward_count + float_conf->led_rear_count + 1;
-    led_data->bitbuf_len = bits * led_data->ledbuf_len + BITBUFFER_PAD;
-
-    bool ok = false;
-    led_data->bitbuffer = VESC_IF->malloc(sizeof(uint16_t) * led_data->bitbuf_len);
-    led_data->RGBdata = VESC_IF->malloc(sizeof(uint32_t) * led_data->ledbuf_len);
-    ok = led_data->bitbuffer != NULL && led_data->RGBdata != NULL;
-    if (!ok) {
-        led_data->ledbuf_len = 0;
-        led_data->bitbuf_len = 0;
-        if (led_data->bitbuffer) {
-            VESC_IF->free(led_data->bitbuffer);
-        }
-        if (led_data->RGBdata) {
-            VESC_IF->free(led_data->RGBdata);
-        }
-        VESC_IF->printf("LED setup failed, out of memory\n");
-        return;
-    }
-
-    led_data->led_last_updated = 0;
-    led_data->led_previous_forward = 0;
-    led_data->led_previous_rear = 0;
-    led_data->led_previous_brightness = 0;
-    led_data->led_latching_direction = true;
-
-    led_ws2812_init(led_data);
-    return;
-}
-
-void led_ws2812_init(LEDData* led_data) {
-    // Deinit
-    TIM_DeInit(TIM4);
-    DMA_DeInit(DMA1_Stream3);
-
+void led_init_dma(LEDData* led_data) {
     // Init
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
     TIM_OCInitTypeDef  TIM_OCInitStructure;
@@ -167,10 +110,7 @@ void led_ws2812_init(LEDData* led_data) {
     tim = TIM4;
     dma_stream = DMA1_Stream3;
     dma_ch = DMA_Channel_2;
-    VESC_IF->set_pad_mode(GPIOB, 7,
-        PAL_MODE_ALTERNATE(2) |
-        PAL_STM32_OTYPE_OPENDRAIN |
-        PAL_STM32_OSPEED_MID1);
+    VESC_IF->set_pad_mode(GPIOB, 7, PAL_MODE_ALTERNATE(2) | PAL_STM32_OTYPE_OPENDRAIN | PAL_STM32_OSPEED_MID1);
 
     TIM_DeInit(tim);
 
@@ -223,6 +163,66 @@ void led_ws2812_init(LEDData* led_data) {
     TIM_DMACmd(tim, TIM_DMA_CC2, ENABLE);
 }
 
+void led_init(LEDData* led_data, float_config* float_conf) {
+    // De-init
+    led_stop(led_data);
+
+    // Init
+    int bits = 0;
+    if (float_conf->led_type == 0) {
+        return;
+    } else if (float_conf->led_type == 1) {
+        bits = 24;
+    } else {
+        bits = 32;
+    }
+
+    led_data->ledbuf_len = float_conf->led_status_count + float_conf->led_forward_count + float_conf->led_rear_count + 1;
+    led_data->bitbuf_len = bits * led_data->ledbuf_len + BITBUFFER_PAD;
+
+    bool ok = false;
+    led_data->bitbuffer = VESC_IF->malloc(sizeof(uint16_t) * led_data->bitbuf_len);
+    led_data->RGBdata = VESC_IF->malloc(sizeof(uint32_t) * led_data->ledbuf_len);
+    ok = led_data->bitbuffer != NULL && led_data->RGBdata != NULL;
+    if (!ok) {
+        led_stop(led_data);
+        VESC_IF->printf("LED setup failed, out of memory\n");
+        return;
+    }
+
+    led_data->led_last_updated = 0;
+    led_data->led_previous_forward = 0;
+    led_data->led_previous_rear = 0;
+    led_data->led_previous_brightness = 0;
+    led_data->led_latching_direction = true;
+
+    // Default LED values
+    for (int i = 0;i < led_data->ledbuf_len;i++) {
+        led_data->RGBdata[i] = 0;
+    }
+    for (int i = 0;i < led_data->ledbuf_len;i++) {
+        uint32_t tmp_color = led_rgb_to_local(0x00000000, 0x00, bits == 32);
+
+        for (int bit = 0;bit < bits;bit++) {
+            if (tmp_color & (1 << (bits - 1))) {
+                led_data->bitbuffer[bit + i * bits] = WS2812_ONE;
+            } else {
+                led_data->bitbuffer[bit + i * bits] = WS2812_ZERO;
+            }
+            tmp_color <<= 1;
+        }
+    }
+
+    // Fill the rest of the buffer with zeros to give the LEDs a chance to update
+    // after sending all bits
+    for (int i = 0;i < BITBUFFER_PAD;i++) {
+        led_data->bitbuffer[led_data->bitbuf_len - BITBUFFER_PAD - 1 + i] = 0;
+    }
+
+    led_init_dma(led_data);
+    return;
+}
+
 void led_set_color(LEDData* led_data, float_config* float_conf, int led, uint32_t color, uint32_t brightness) {
     if (float_conf->led_type == 0) {
         return;
@@ -252,7 +252,7 @@ void led_set_color(LEDData* led_data, float_config* float_conf, int led, uint32_
 }
 
 void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state) {
-    if (current_time - led_data->led_last_updated < 0.05) {
+    if (float_conf->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
         return;
     } else {
         led_data->led_last_updated = current_time;
@@ -430,6 +430,9 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
 void led_stop(LEDData* led_data) {
     TIM_DeInit(TIM4);
     DMA_DeInit(DMA1_Stream3);
+
+    led_data->ledbuf_len = 0;
+    led_data->bitbuf_len = 0;
     if (led_data->bitbuffer) {
         VESC_IF->free(led_data->bitbuffer);
     }

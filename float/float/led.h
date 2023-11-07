@@ -16,7 +16,6 @@ typedef struct {
 } LEDData;
 
 void led_init(LEDData* led_data, float_config* float_conf);
-void led_ws2812_init(LEDData* led_data);
 void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state);
 void led_stop(LEDData* led_data);
 
