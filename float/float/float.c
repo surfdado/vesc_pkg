@@ -258,6 +258,13 @@ typedef struct {
 	uint8_t lcm_duty_beep;
 	uint8_t lcm_set;
 	uint8_t lcm_active;
+	uint8_t lcm_Power_Flag;//dbg[0];
+	uint8_t lcm_Charge_Flag;//dbg[1];
+	uint8_t lcm_Buzzer_Flag;//dbg[2];
+	uint8_t lcm_WS2812_Display_Flag;//dbg[3];
+	uint8_t lcm_WS2812_Flag;//dbg[4];
+	uint8_t lcm_Gear_Position;//dbg[5];
+	uint8_t lcm_errCode;//dbg[6];
 
 	// Log values
 	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
@@ -2482,7 +2489,8 @@ enum {
 	FLOAT_COMMAND_HAPTIC = 23,
 	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by LCM
 	FLOAT_COMMAND_LCM_INFO = 25,   // to be called by apps to check if an LCM is present / get info
-	FLOAT_COMMAND_LCM_CTRL = 26    // to be called by apps to change LCM settings
+	FLOAT_COMMAND_LCM_CTRL = 26,   // to be called by apps to change LCM settings
+	FLOAT_COMMAND_LCM_DEBUG = 28   // called by LCM to send debug info
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -2518,13 +2526,21 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->float_turntilt, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_inputtilt, &ind);
 
+	buffer_append_float32_auto(send_buffer, d->lcm_Power_Flag, &ind);
+	buffer_append_float32_auto(send_buffer, d->lcm_Charge_Flag, &ind);
+	buffer_append_float32_auto(send_buffer, d->lcm_Gear_Position, &ind);
+	buffer_append_float32_auto(send_buffer, d->lcm_WS2812_Display_Flag, &ind);
+	buffer_append_float32_auto(send_buffer, d->lcm_WS2812_Flag, &ind);
+	buffer_append_float32_auto(send_buffer, d->lcm_errCode, &ind);
+	//buffer_append_float32_auto(send_buffer, d->lcm_Gear_Position, &ind);
+
 	// DEBUG
-	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
+	/*buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
 	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
+	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);*/
 
 	// BMS
 	//VESC_IF->printf("BMS State/Fault = %d/%d\n", VESC_IF->bms_get_op_state(), VESC_IF->bms_get_fault_state());
@@ -3150,6 +3166,23 @@ static void cmd_lcm_info(data *d)
 /**
  * Command for apps to call to control LCM details (lights, behavior, etc)
  */
+static void cmd_lcm_debug(data *d, unsigned char *dbg, int len)
+{
+	if (len < 6)
+		return;
+
+	d->lcm_Power_Flag = dbg[0];
+	d->lcm_Charge_Flag = dbg[1];
+	d->lcm_Buzzer_Flag = dbg[2];
+	d->lcm_WS2812_Display_Flag = dbg[3];
+	d->lcm_WS2812_Flag = dbg[4];
+	d->lcm_Gear_Position = dbg[5];
+	d->lcm_errCode = dbg[6];
+}
+
+/**
+ * Command for apps to call to control LCM details (lights, behavior, etc)
+ */
 static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
 {
 	if (len < 4)
@@ -3518,6 +3551,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_LCM_INFO: {
 			cmd_lcm_info(d);
+			return;
+		}
+		case FLOAT_COMMAND_LCM_DEBUG: {
+			cmd_lcm_debug(d, &buffer[2], len-2);
 			return;
 		}
 		case FLOAT_COMMAND_LCM_CTRL: {
