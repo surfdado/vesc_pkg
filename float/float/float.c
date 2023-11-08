@@ -25,6 +25,7 @@
 #include "conf/confxml.h"
 #include "conf/buffer.h"
 #include "conf/conf_default.h"
+#include "./led.h"
 
 #include <math.h>
 #include <string.h>
@@ -130,6 +131,9 @@ typedef struct {
 	// BMS
 	bool is_bms_supported;
 	bool allow_bms_tiltback;
+
+	// LEDs
+	LEDData led_data;
 
 	// Config values
 	float loop_time_seconds;
@@ -559,6 +563,8 @@ static void configure(data *d) {
 	d->lcm_duty_beep = 90;
 	d->lcm_set = 0;
 	d->lcm_active = 0;
+
+	led_init(&d->led_data, &d->float_conf);
 }
 
 static void reset_vars(data *d) {
@@ -1969,6 +1975,8 @@ static void float_thd(void *arg) {
 			d->yaw_aggregate += d->yaw_change;
 
 		d->switch_state = check_adcs(d);
+
+		led_update(&d->led_data, &d->float_conf, d->current_time, d->erpm, d->abs_duty_cycle, d->switch_state);
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
@@ -3609,7 +3617,10 @@ static void stop(void *arg) {
 	VESC_IF->request_terminate(d->thread);
 	if (!VESC_IF->app_is_output_disabled()) {
 		VESC_IF->printf("Float App Terminated");
-	}
+	}	
+	
+	led_stop(&d->led_data);
+
 	VESC_IF->free(d);
 }
 
