@@ -456,14 +456,23 @@ Item {
                     "TurnTilt Setpoint   : " + float_turntilt.toFixed(2) + "°\n" +
                     "RemoteTilt Setpoint  : " + float_inputtilt.toFixed(2) + "°\n"
 
-                debug.text =
+                /*debug.text =
                     "True Pitch          : " + true_pitch.toFixed(2) + "°\n" +
                     "Torque              : " + filtered_current.toFixed(2) + "A\n" +
                     "Acc. Diff.          : " + float_acc_diff.toFixed(2) + "\n" +
                     "Booster Current     : " + applied_booster_current.toFixed(2) + "A\n" +
                     "Remote Input        : " + (throttle_val * 100).toFixed(0) + "%\n\n" +
-		    "BMS State           : " + bmsString + "\n"
+		    "BMS State           : " + bmsString + "\n" +
 		    "BMS Fault Code      : " + bmsFaultString + "\n"
+		    */
+
+                debug.text =
+                    "Power               : " + true_pitch.toFixed(0) + "\n" +
+                    "Charge              : " + filtered_current.toFixed(0) + "\n" +
+                    "Gear_Pos            : " + float_acc_diff.toFixed(0) + "\n" +
+                    "WS2812_Display      : " + applied_booster_current.toFixed(0) + "\n" +
+                    "WS2812_Flag         : " + motor_current.toFixed(0) + "\n" +
+                    "errCode             : " + throttle_val.toFixed(0) + "\n"
 
 		if (bmsfault > 0) {
 		debug.text +=
@@ -811,7 +820,7 @@ Item {
 					}
 					Text {
 						id: versionText
-						text: "{{VERSION}}"
+						text: "{{VERSION}}lcm"
 						color: Utility.getAppHexColor("lightText")
 						font.pointSize: 10
 						font.weight: Font.Black
