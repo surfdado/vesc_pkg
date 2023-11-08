@@ -27,6 +27,7 @@
 #include "conf/confxml.h"
 #include "conf/buffer.h"
 #include "conf/conf_default.h"
+#include "./led.h"
 
 #include "konami.h"
 
@@ -121,6 +122,9 @@ typedef struct {
 	int beep_countdown;
 	int beep_reason;
 	bool buzzer_enabled;
+
+	// LEDs
+	LEDData led_data;
 
 	// Config values
 	float loop_time_seconds;
@@ -521,6 +525,8 @@ static void configure(data *d) {
 	d->do_handtest = false;
 
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
+
+	led_init(&d->led_data, &d->float_conf);
 }
 
 static void reset_vars(data *d) {
@@ -1787,6 +1793,9 @@ static void float_thd(void *arg) {
 			// if the switch comes back on we stop buzzing
 			beep_off(d, false);
 		}
+
+		int switch_state = footpad_sensor_state_to_switch_compat(d->footpad_sensor.state);
+		led_update(&d->led_data, &d->float_conf, d->current_time, d->erpm, d->abs_duty_cycle, switch_state);
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
@@ -3175,7 +3184,10 @@ static void stop(void *arg) {
 	VESC_IF->request_terminate(d->thread);
 	if (!VESC_IF->app_is_output_disabled()) {
 		VESC_IF->printf("Float App Terminated");
-	}
+	}	
+	
+	led_stop(&d->led_data);
+
 	VESC_IF->free(d);
 }
 
