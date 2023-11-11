@@ -1629,6 +1629,7 @@ static void float_thd(void *arg) {
 	data *d = (data*)arg;
 
 	app_init(d);
+	led_init(&d->led_data, &d->float_conf);
 
 	while (!VESC_IF->should_terminate()) {
 		buzzer_update(d);

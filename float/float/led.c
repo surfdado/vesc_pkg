@@ -167,17 +167,23 @@ void led_init(LEDData* led_data, float_config* float_conf) {
     // De-init
     led_stop(led_data);
 
+    // Copy params that require a reboot
+    led_data->led_type = float_conf->led_type;
+    led_data->led_status_count = float_conf->led_status_count;
+    led_data->led_forward_count = float_conf->led_forward_count;
+    led_data->led_rear_count = float_conf->led_rear_count;
+
     // Init
     int bits = 0;
-    if (float_conf->led_type == 0) {
+    if (led_data->led_type == 0) {
         return;
-    } else if (float_conf->led_type == 1) {
+    } else if (led_data->led_type == 1) {
         bits = 24;
     } else {
         bits = 32;
     }
 
-    led_data->ledbuf_len = float_conf->led_status_count + float_conf->led_forward_count + float_conf->led_rear_count + 1;
+    led_data->ledbuf_len = led_data->led_status_count + led_data->led_forward_count + led_data->led_rear_count + 1;
     led_data->bitbuf_len = bits * led_data->ledbuf_len + BITBUFFER_PAD;
 
     bool ok = false;
@@ -223,17 +229,20 @@ void led_init(LEDData* led_data, float_config* float_conf) {
     return;
 }
 
-void led_set_color(LEDData* led_data, float_config* float_conf, int led, uint32_t color, uint32_t brightness) {
-    if (float_conf->led_type == 0) {
+void led_set_color(LEDData* led_data, int led, uint32_t color, uint32_t brightness, bool fade) {
+    if (led_data->led_type == 0) {
         return;
     }
     if (led >= 0 && led < led_data->ledbuf_len) {
+        if (fade) {
+            color = led_fade_color(led_data->RGBdata[led], color);
+        }
         led_data->RGBdata[led] = color;
 
-        color = led_rgb_to_local(color, brightness, float_conf->led_type == 2);
+        color = led_rgb_to_local(color, brightness, led_data->led_type == 2);
 
         int bits = 0;
-        if (float_conf->led_type == 1) {
+        if (led_data->led_type == 1) {
             bits = 24;
         } else {
             bits = 32;
@@ -251,7 +260,7 @@ void led_set_color(LEDData* led_data, float_config* float_conf, int led, uint32_
     }
 }
 
-void led_display_battery(LEDData* led_data, float_config* float_conf, int brightness, int strip_offset, int strip_length) {
+void led_display_battery(LEDData* led_data, int brightness, int strip_offset, int strip_length, bool fade) {
     float batteryLevel = VESC_IF->mc_get_battery_level(NULL);
     int batteryLeds = (int)(batteryLevel * strip_length);
     int batteryColor = 0x0000FF00;
@@ -263,41 +272,41 @@ void led_display_battery(LEDData* led_data, float_config* float_conf, int bright
     }
     for (int i = strip_offset; i < strip_offset + strip_length; i++) {
         if (i < strip_offset + batteryLeds) {
-            led_set_color(led_data, float_conf, i, batteryColor, brightness);
+            led_set_color(led_data, i, batteryColor, brightness, fade);
         } else {
-            led_set_color(led_data, float_conf, i, 0x00000000, 0xFF);
+            led_set_color(led_data, i, 0x00000000, brightness, fade);
         }
     }
 }
 
 void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state) {
-    if (float_conf->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
+    if (led_data->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
         return;
     } else {
         led_data->led_last_updated = current_time;
     }
-    if (float_conf->led_status_count > 0) {
+    if (led_data->led_status_count > 0) {
         int statusBrightness = (int)(float_conf->led_status_brightness * 2.55);
         if (erpm < float_conf->fault_adc_half_erpm) {
             // Display status LEDs
             if (switch_state == 0) {
-                led_display_battery(led_data, float_conf, statusBrightness, 0, float_conf->led_status_count);
+                led_display_battery(led_data, statusBrightness, 0, led_data->led_status_count, false);
             } else if (switch_state == 1) {
-                for (int i = 0; i < float_conf->led_status_count; i++) {
-                    if (i < float_conf->led_status_count / 2) {
-                        led_set_color(led_data, float_conf, i, 0x000000FF, statusBrightness);
+                for (int i = 0; i < led_data->led_status_count; i++) {
+                    if (i < led_data->led_status_count / 2) {
+                        led_set_color(led_data, i, 0x000000FF, statusBrightness, false);
                     } else {
-                        led_set_color(led_data, float_conf, i, 0x00000000, 0xFF);
+                        led_set_color(led_data, i, 0x00000000, 0xFF, false);
                     }
                 }
             } else {
-                for (int i = 0; i < float_conf->led_status_count; i++) {
-                    led_set_color(led_data, float_conf, i, 0x000000FF, statusBrightness);
+                for (int i = 0; i < led_data->led_status_count; i++) {
+                    led_set_color(led_data, i, 0x000000FF, statusBrightness, false);
                 }
             }
         } else {
             // Display duty cycle when riding
-            int dutyLeds = (int)(fminf((abs_duty_cycle * 1.1112), 1) * float_conf->led_status_count);
+            int dutyLeds = (int)(fminf((abs_duty_cycle * 1.1112), 1) * led_data->led_status_count);
             int dutyColor = 0x00FFFF00;
             if (abs_duty_cycle > 0.85) {
                 dutyColor = 0x00FF0000;
@@ -305,11 +314,11 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
                 dutyColor = 0x00FF8800;
             }
 
-            for (int i = 0; i < float_conf->led_status_count; i++) {
+            for (int i = 0; i < led_data->led_status_count; i++) {
                 if (i < dutyLeds) {
-                    led_set_color(led_data, float_conf, i, dutyColor, statusBrightness);
+                    led_set_color(led_data, i, dutyColor, statusBrightness, false);
                 } else {
-                    led_set_color(led_data, float_conf, i, 0x00000000, 0xFF);
+                    led_set_color(led_data, i, 0x00000000, 0xFF, false);
                 }
             }
         }
@@ -397,6 +406,23 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             rearColor = 0x00FF0000;
         }
         led_data->led_previous_forward = forwardColor;
+    } else if (float_conf->led_mode == 8) { // Mullet
+        fade = false;
+        forwardColor = 0xFFFFFFFF;
+        if (led_data->led_previous_rear == 0x00FF0000) {
+            rearColor = 0x00FFFF00;
+        } else if (led_data->led_previous_rear == 0x00FFFF00) {
+            rearColor = 0x0000FF00;
+        } else if (led_data->led_previous_rear == 0x0000FF00) {
+            rearColor = 0x0000FFFF;
+        } else if (led_data->led_previous_rear == 0x0000FFFF) {
+            rearColor = 0x000000FF;
+        } else if (led_data->led_previous_rear == 0x000000FF) {
+            rearColor = 0x00FF00FF;
+        } else {
+            rearColor = 0x00FF0000;
+        }
+        led_data->led_previous_rear = rearColor;
     }
 
     // Set directonality
@@ -413,30 +439,22 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
     }
 
-    // Fade
-    if (fade) {
-        forwardColor = led_fade_color(led_data->led_previous_forward, forwardColor);
-        rearColor = led_fade_color(led_data->led_previous_rear, rearColor);
-        led_data->led_previous_forward = forwardColor;
-        led_data->led_previous_rear = rearColor;
-    }
-
     if (batteryMeter && switch_state == 0) {
         // Idle voltage display
-        led_display_battery(led_data, float_conf, brightness, float_conf->led_status_count, float_conf->led_forward_count);
-        led_display_battery(led_data, float_conf, brightness, float_conf->led_status_count + float_conf->led_forward_count, float_conf->led_rear_count);
+        led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, fade);
+        led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, fade);
     } else {
         // Normal color/pattern display
-        if (float_conf->led_forward_count > 0) {
-            int offset = float_conf->led_status_count;
-            for (int i = offset; i < float_conf->led_forward_count + offset; i++) {
-                led_set_color(led_data, float_conf, i, forwardColor, brightness);
+        if (led_data->led_forward_count > 0) {
+            int offset = led_data->led_status_count;
+            for (int i = offset; i < led_data->led_forward_count + offset; i++) {
+                led_set_color(led_data, i, forwardColor, brightness, fade);
             }
         }
-        if (float_conf->led_rear_count > 0) {
-            int offset = float_conf->led_status_count + float_conf->led_forward_count;
-            for (int i = offset; i < float_conf->led_rear_count + offset; i++) {
-                led_set_color(led_data, float_conf, i, rearColor, brightness);
+        if (led_data->led_rear_count > 0) {
+            int offset = led_data->led_status_count + led_data->led_forward_count;
+            for (int i = offset; i < led_data->led_rear_count + offset; i++) {
+                led_set_color(led_data, i, rearColor, brightness, fade);
             }
         }
     }

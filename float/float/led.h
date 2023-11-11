@@ -9,6 +9,10 @@ typedef struct {
     uint32_t led_previous_rear;
     uint8_t led_previous_brightness;
     bool led_latching_direction;
+    uint8_t led_type;
+	uint8_t led_status_count;
+	uint8_t led_forward_count;
+	uint8_t led_rear_count;
     int ledbuf_len;
     int bitbuf_len;
     uint16_t* bitbuffer;
