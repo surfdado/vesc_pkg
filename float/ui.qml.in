@@ -53,6 +53,7 @@ Item {
     property ConfigParams mCustomConf: VescIf.customConfig(0)
     property var quicksaveNames: []
     property var handtest_toggle: 0
+    property var lights_toggle: 0
     property var beep_reason: 0
     property var fault_code: 0
 
@@ -916,6 +917,25 @@ Item {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 2
                     color: Utility.getAppHexColor("lightText")
+                }
+                Button {
+                        id: lightsButton
+                        text: "TOGGLE HEADLIGHTS"
+                        Layout.fillWidth: true
+                        font.pointSize: 16
+                        onClicked: {
+                            lights_toggle = 1 - lights_toggle
+                            var buffer = new ArrayBuffer(7)
+                            var dv = new DataView(buffer)
+                            dv.setUint8(0, 101)  // Float Package
+                            dv.setUint8(1, 26)   // Command ID: LCM_CTRL
+                            dv.setUint8(2, lights_toggle * 255)	          // brightness
+                            dv.setUint8(3, (1 - lights_toggle) * 30 + 20) // status brightness
+                            dv.setUint8(4, 0)
+                            dv.setUint8(5, 0)
+                            dv.setUint8(6, 0)
+                            mCommands.sendCustomAppData(buffer)
+                        }
                 }
 
                 // Handtest Controls
