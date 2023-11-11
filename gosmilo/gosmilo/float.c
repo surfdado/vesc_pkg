@@ -680,34 +680,68 @@ static SwitchState check_adcs(data *d) {
 	}
 
 	// Calculate switch state from ADC values
-	if(fault_adc1 == 0 && fault_adc2 == 0){ // No Switch
-		sw_state = ON;
-	}else if(fault_adc2 == 0){ // Single switch on ADC1
-		if(d->adc1 > fault_adc1){
+	if (!d->float_conf.fault_invert_adc) {
+		if(fault_adc1 == 0 && fault_adc2 == 0){ // No Switch
 			sw_state = ON;
-		} else {
-			sw_state = OFF;
-		}
-	}else if(fault_adc1 == 0){ // Single switch on ADC2
-		if(d->adc2 > fault_adc2){
-			sw_state = ON;
-		} else {
-			sw_state = OFF;
-		}
-	}else{ // Double switch
-		if(d->adc1 > fault_adc1 && d->adc2 > fault_adc2){
-			sw_state = ON;
-		}else if(d->adc1 > fault_adc1 || d->adc2 > fault_adc2){
-			// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
-			bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
-				(d->current_time - d->disengage_timer > 5);
-
-			if (d->float_conf.fault_is_dual_switch || is_simple_start)
+		}else if(fault_adc2 == 0){ // Single switch on ADC1
+			if(d->adc1 > fault_adc1){
 				sw_state = ON;
-			else
-				sw_state = HALF;
-		}else{
-			sw_state = OFF;
+			} else {
+				sw_state = OFF;
+			}
+		}else if(fault_adc1 == 0){ // Single switch on ADC2
+			if(d->adc2 > fault_adc2){
+				sw_state = ON;
+			} else {
+				sw_state = OFF;
+			}
+		}else{ // Double switch
+			if(d->adc1 > fault_adc1 && d->adc2 > fault_adc2){
+				sw_state = ON;
+			}else if(d->adc1 > fault_adc1 || d->adc2 > fault_adc2){
+				// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
+				bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
+					(d->current_time - d->disengage_timer > 5);
+
+				if (d->float_conf.fault_is_dual_switch || is_simple_start)
+					sw_state = ON;
+				else
+					sw_state = HALF;
+			}else{
+				sw_state = OFF;
+			}
+		}
+	}
+	else { // Inverted ADC Thresholds
+		if(fault_adc1 == 0 && fault_adc2 == 0){ // No Switch
+			sw_state = ON;
+		}else if(fault_adc2 == 0){ // Single switch on ADC1
+			if(d->adc1 < fault_adc1){
+				sw_state = ON;
+			} else {
+				sw_state = OFF;
+			}
+		}else if(fault_adc1 == 0){ // Single switch on ADC2
+			if(d->adc2 < fault_adc2){
+				sw_state = ON;
+			} else {
+				sw_state = OFF;
+			}
+		}else{ // Double switch
+			if(d->adc1 < fault_adc1 && d->adc2 < fault_adc2){
+				sw_state = ON;
+			}else if(d->adc1 < fault_adc1 || d->adc2 < fault_adc2){
+				// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
+				bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
+					(d->current_time - d->disengage_timer > 5);
+
+				if (d->float_conf.fault_is_dual_switch || is_simple_start)
+					sw_state = ON;
+				else
+					sw_state = HALF;
+			}else{
+				sw_state = OFF;
+			}
 		}
 	}
 

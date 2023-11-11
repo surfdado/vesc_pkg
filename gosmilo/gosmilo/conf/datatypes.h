@@ -44,6 +44,7 @@ typedef struct {
 	float fault_roll;
 	float fault_adc1;
 	float fault_adc2;
+	bool fault_invert_adc;
 	uint16_t fault_delay_pitch;
 	uint16_t fault_delay_roll;
 	uint16_t fault_delay_switch_half;

@@ -21,6 +21,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->fault_roll, 10, &ind);
 	buffer_append_float16(buffer, conf->fault_adc1, 1000, &ind);
 	buffer_append_float16(buffer, conf->fault_adc2, 1000, &ind);
+	buffer[ind++] = conf->fault_invert_adc;
 	buffer[ind++] = conf->is_footbuzz_enabled;
 	buffer_append_uint16(buffer, conf->fault_delay_pitch, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_roll, &ind);
@@ -130,6 +131,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->fault_roll = buffer_get_float16(buffer, 10, &ind);
 	conf->fault_adc1 = buffer_get_float16(buffer, 1000, &ind);
 	conf->fault_adc2 = buffer_get_float16(buffer, 1000, &ind);
+	conf->fault_invert_adc = buffer[ind++];
 	conf->is_footbuzz_enabled = buffer[ind++];
 	conf->fault_delay_pitch = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_roll = buffer_get_uint16(buffer, &ind);
@@ -232,6 +234,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->fault_roll = APPCONF_FLOAT_FAULT_ROLL;
 	conf->fault_adc1 = APPCONF_FLOAT_FAULT_ADC1;
 	conf->fault_adc2 = APPCONF_FLOAT_FAULT_ADC2;
+	conf->fault_invert_adc = APPCONF_FLOAT_FAULT_INVERT_ADC;
 	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
 	conf->fault_delay_pitch = APPCONF_FLOAT_FAULT_DELAY_PITCH;
 	conf->fault_delay_roll = APPCONF_FLOAT_FAULT_DELAY_ROLL;

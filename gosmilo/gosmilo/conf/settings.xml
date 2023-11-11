@@ -302,6 +302,22 @@ p, li { white-space: pre-wrap; }
             <suffix> V</suffix>
             <vTx>7</vTx>
         </fault_adc2>
+        <fault_invert_adc>
+            <longName>Invert ADC Logic</longName>
+            <type>5</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Inverts ADC Logic, such that ADC values must be below ADC Thresholds for Switch State to be On (i.e. 0V = On, 3.0V = Off).&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;*DISCLAIMER: Make sure you adjust your ADC Thresholds to safe/fitting values as well! If Engaged is a solid 0V, maybe set ADC Thresholds to 0.5V or so. Give yourself safe headroom to prevent accidental cutoffs, but not too much as to cause ghosting. Observe your ADC values in the AppUI Tab and set them accordingly.&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;*DISCLAIMER: This WILL cause Ghosting if incorrectly set for your hardware!! This should only be enabled if your sensor defaults to high ADC Voltage, such as 3.3V when &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;DISENGAGED&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;, and 0V when &lt;/span&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;ENGAGED&lt;/span&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_FAULT_INVERT_ADC</cDefine>
+            <valInt>1</valInt>
+        </fault_invert_adc>
         <is_footbuzz_enabled>
             <longName>Beep on Sensor Fault</longName>
             <type>5</type>
@@ -2183,6 +2199,7 @@ p, li { white-space: pre-wrap; }
         <ser>fault_roll</ser>
         <ser>fault_adc1</ser>
         <ser>fault_adc2</ser>
+        <ser>fault_invert_adc</ser>
         <ser>is_footbuzz_enabled</ser>
         <ser>fault_delay_pitch</ser>
         <ser>fault_delay_roll</ser>
@@ -2435,6 +2452,7 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Foot Sensors</param>
                     <param>fault_adc1</param>
                     <param>fault_adc2</param>
+                    <param>fault_invert_adc</param>
                     <param>is_footbuzz_enabled</param>
                     <param>::sep::Miscellaneous</param>
                     <param>dark_pitch_offset</param>
