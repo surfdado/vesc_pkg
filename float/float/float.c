@@ -563,8 +563,6 @@ static void configure(data *d) {
 	d->lcm_duty_beep = 90;
 	d->lcm_set = 0;
 	d->lcm_active = 0;
-
-	led_init(&d->led_data, &d->float_conf);
 }
 
 static void reset_vars(data *d) {
@@ -1816,6 +1814,7 @@ static void float_thd(void *arg) {
 	data *d = (data*)arg;
 
 	app_init(d);
+	led_init(&d->led_data, &d->float_conf);
 
 	while (!VESC_IF->should_terminate()) {
 		buzzer_update(d);

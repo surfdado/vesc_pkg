@@ -2217,6 +2217,7 @@ p, li { white-space: pre-wrap; }
             <enumNames>RGB Fade</enumNames>
             <enumNames>Strobe</enumNames>
             <enumNames>Rave</enumNames>
+            <enumNames>Mullet</enumNames>
         </led_mode>
         <led_status_brightness>
             <longName>Status LED Brightness</longName>
@@ -2588,7 +2589,7 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Status</param>
                     <param>led_status_brightness</param>
                     <param>led_status_mode</param>
-                    <param>::sep::Config</param>
+                    <param>::sep::Config (changes require reboot)</param>
                     <param>led_type</param>
                     <param>led_status_count</param>
                     <param>led_forward_count</param>
