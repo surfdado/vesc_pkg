@@ -698,14 +698,7 @@ static SwitchState check_adcs(data *d) {
 		if(d->adc1 > fault_adc1 && d->adc2 > fault_adc2){
 			sw_state = ON;
 		}else if(d->adc1 > fault_adc1 || d->adc2 > fault_adc2){
-			// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
-			bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
-				(d->current_time - d->disengage_timer > 5);
-
-			if (d->float_conf.fault_is_dual_switch || is_simple_start)
-				sw_state = ON;
-			else
-				sw_state = HALF;
+			sw_state = HALF;
 		}else{
 			sw_state = OFF;
 		}
@@ -1798,6 +1791,16 @@ static void float_thd(void *arg) {
 			d->yaw_aggregate += d->yaw_change;
 
 		d->switch_state = check_adcs(d);
+
+		if (d->switch_state == HALF) {
+			// 5 seconds after stopping we allow starting with a single sensor (e.g. for jump starts)
+			bool is_simple_start = d->float_conf.startup_simplestart_enabled &&
+				(d->current_time - d->disengage_timer > 5);
+
+			if (d->float_conf.fault_is_dual_switch || is_simple_start) {
+				d->switch_state = ON;
+			}
+		}
 
 		if (d->switch_state == OFF && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_buzz_erpm) {
 			// If we're at riding speed and the switch is off => ALERT the user
