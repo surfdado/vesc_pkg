@@ -711,16 +711,6 @@ static SwitchState check_adcs(data *d) {
 		}
 	}
 
-	if (sw_state == OFF && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_buzz_erpm) {
-		// If we're at riding speed and the switch is off => ALERT the user
-		// set force=true since this could indicate an imminent shutdown/nosedive
-		beep_on(d, true);
-		d->beep_reason = BEEP_SENSORS;
-	} else {
-		// if the switch comes back on we stop buzzing
-		beep_off(d, false);
-	}
-
 	return sw_state;
 }
 
@@ -1813,6 +1803,16 @@ static void float_thd(void *arg) {
 			d->yaw_aggregate += d->yaw_change;
 
 		d->switch_state = check_adcs(d);
+
+		if (d->switch_state == OFF && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_buzz_erpm) {
+			// If we're at riding speed and the switch is off => ALERT the user
+			// set force=true since this could indicate an imminent shutdown/nosedive
+			beep_on(d, true);
+			d->beep_reason = BEEP_SENSORS;
+		} else {
+			// if the switch comes back on we stop buzzing
+			beep_off(d, false);
+		}
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
