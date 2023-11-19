@@ -2,7 +2,7 @@ VESC_TOOL ?= vesc_tool
 
 TARGET = float
 
-SOURCES = float.c footpad_sensor.c conf/buffer.c conf/confparser.c conf/confxml.c
+SOURCES = float.c footpad_sensor.c konami.c conf/buffer.c conf/confparser.c conf/confxml.c
 
 ADD_TO_CLEAN = conf/confxml.h conf/confxml.c
 
