@@ -36,9 +36,6 @@
 // Acceleration average
 #define ACCEL_ARRAY_SIZE 40
 
-// ADC Hand-Press Scale Factor (Accomdate lighter presses than what's needed for engagement by foot)
-#define ADC_HAND_PRESS_SCALE 0.8
-
 HEADER
 
 // Return the sign of the argument. -1.0 if negative, 1.0 if zero or positive.
@@ -818,8 +815,8 @@ static bool check_faults(data *d){
 		}
 
 		if (d->is_flywheel_mode && d->flywheel_allow_abort) {
-			if (d->footpad_sensor.adc1 > (d->float_conf.fault_adc1 * ADC_HAND_PRESS_SCALE)
-				&& d->footpad_sensor.adc2 > (d->float_conf.fault_adc2 * ADC_HAND_PRESS_SCALE)) {
+			FootpadSensorState state = footpad_sensor_state_evaluate(&d->footpad_sensor, &d->float_conf, true);
+			if (state == FS_BOTH) {
 				d->state = FAULT_SWITCH_HALF;
 				d->flywheel_abort = true;
 				return true;
@@ -2049,7 +2046,7 @@ static void float_thd(void *arg) {
 			}
 
 			if (!d->is_flywheel_mode && d->true_pitch_angle > 75 && d->true_pitch_angle < 105) {
-				if (konami_check(&d->flywheel_konami, &d->footpad_sensor, d->current_time)) {
+				if (konami_check(&d->flywheel_konami, &d->footpad_sensor, &d->float_conf, d->current_time)) {
 					unsigned char enabled[6] = {0x82, 0, 0, 0, 0, 1};
 					cmd_flywheel_toggle(d, enabled, 6);
 				}
