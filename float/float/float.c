@@ -2038,12 +2038,9 @@ static void float_thd(void *arg) {
 		case (FAULT_SWITCH_HALF):
 		case (FAULT_SWITCH_FULL):
 		case (FAULT_STARTUP):
-			if (d->is_flywheel_mode) {
-				if ((d->flywheel_abort) ||	// single-pad pressed while balancing upright
-					(d->flywheel_allow_abort && d->footpad_sensor.adc1 > 1 && d->footpad_sensor.adc2 > 1)) {
-					flywheel_stop(d);
-					break;
-				}
+			if (d->is_flywheel_mode && d->flywheel_abort) {
+				flywheel_stop(d);
+				break;
 			}
 			else {
 				if (flywheel_konami_check(d)) {
