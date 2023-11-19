@@ -14,7 +14,7 @@ typedef struct {
 	FootpadSensorState state;
 } FootpadSensor;
 
-FootpadSensorState footpad_sensor_state_evaluate(const FootpadSensor *fs, const float_config *config);
+FootpadSensorState footpad_sensor_state_evaluate(const FootpadSensor *fs, const float_config *config, bool handpress);
 
 void footpad_sensor_update(FootpadSensor *fs, const float_config *config);
 

@@ -12,13 +12,14 @@ static void konami_reset(Konami *konami) {
 	konami->state = 0;
 }
 
-bool konami_check(Konami *konami, const FootpadSensor *fs, float current_time) {
+bool konami_check(Konami *konami, const FootpadSensor *fs, const float_config *config, float current_time) {
 	if (konami->time > 0 && current_time - konami->time > 0.5) {
 		konami_reset(konami);
 		return false;
 	}
 
-	if (fs->state == konami->sequence[konami->state]) {
+	FootpadSensorState fs_state = footpad_sensor_state_evaluate(fs, config, true);
+	if (fs_state == konami->sequence[konami->state]) {
 		++konami->state;
 		if (konami->state == konami->sequence_size) {
 			konami_reset(konami);
@@ -26,7 +27,7 @@ bool konami_check(Konami *konami, const FootpadSensor *fs, float current_time) {
 		}
 
 		konami->time = current_time;
-	} else if (konami->state > 0 && fs->state != konami->sequence[konami->state - 1]) {
+	} else if (konami->state > 0 && fs_state != konami->sequence[konami->state - 1]) {
 		konami_reset(konami);
 	}
 
