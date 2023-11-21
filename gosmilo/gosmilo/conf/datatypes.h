@@ -130,6 +130,14 @@ typedef struct {
 	bool is_surgebuzz_enabled;
 	float surge_duty_start;
 	float surge_angle;
+	uint8_t led_type;
+	uint8_t led_status_count;
+	uint8_t led_forward_count;
+	uint8_t led_rear_count;
+	uint8_t led_brightness;
+	uint8_t led_mode;
+	uint8_t led_status_brightness;
+	uint8_t led_status_mode;
 } float_config;
 
 // DATATYPES_H_
