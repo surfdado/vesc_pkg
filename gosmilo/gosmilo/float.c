@@ -25,6 +25,7 @@
 #include "conf/confxml.h"
 #include "conf/buffer.h"
 #include "conf/conf_default.h"
+#include "./led.h"
 
 #include <math.h>
 #include <string.h>
@@ -124,6 +125,9 @@ typedef struct {
 	int beep_countdown;
 	int beep_reason;
 	bool buzzer_enabled;
+
+	// LEDs
+	LEDData led_data;
 
 	// Config values
 	float loop_time_seconds;
@@ -1690,6 +1694,7 @@ static void float_thd(void *arg) {
 	data *d = (data*)arg;
 
 	app_init(d);
+	led_init(&d->led_data, &d->float_conf);
 
 	while (!VESC_IF->should_terminate()) {
 		buzzer_update(d);
@@ -1849,6 +1854,8 @@ static void float_thd(void *arg) {
 			d->yaw_aggregate += d->yaw_change;
 
 		d->switch_state = check_adcs(d);
+
+		led_update(&d->led_data, &d->float_conf, d->current_time, d->erpm, d->abs_duty_cycle, d->switch_state);
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
@@ -3300,6 +3307,9 @@ static void stop(void *arg) {
 	if (!VESC_IF->app_is_output_disabled()) {
 		VESC_IF->printf("Float App Terminated");
 	}
+
+	led_stop(&d->led_data);
+
 	VESC_IF->free(d);
 }
 
