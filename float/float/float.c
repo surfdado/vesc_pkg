@@ -1965,14 +1965,9 @@ static void float_thd(void *arg) {
 				d->pid_mod = 0;
 			}
 
-			// Current Limiting!
-			float current_limit;
-			if (d->braking) {
-				current_limit = d->mc_current_min;
-			}
-			else {
-				current_limit = d->mc_current_max;
-			}
+			// current limiting
+			bool braking = d->abs_erpm > 250 && SIGN(d->motor_current) != SIGN(d->erpm);
+			float current_limit = braking ? d->mc_current_min : d->mc_current_max;
 			if (fabsf(new_pid_value) > current_limit) {
 				new_pid_value = SIGN(new_pid_value) * current_limit;
 			}
