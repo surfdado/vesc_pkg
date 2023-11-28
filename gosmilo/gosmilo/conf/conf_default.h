@@ -50,12 +50,12 @@
 
 // ADC1 Switch Voltage
 #ifndef APPCONF_FLOAT_FAULT_ADC1
-#define APPCONF_FLOAT_FAULT_ADC1 3
+#define APPCONF_FLOAT_FAULT_ADC1 2
 #endif
 
 // ADC2 Switch Voltage
 #ifndef APPCONF_FLOAT_FAULT_ADC2
-#define APPCONF_FLOAT_FAULT_ADC2 3
+#define APPCONF_FLOAT_FAULT_ADC2 2
 #endif
 
 // Invert ADC Logic
@@ -160,7 +160,7 @@
 
 // High Voltage Threshold
 #ifndef APPCONF_FLOAT_TILTBACK_HV
-#define APPCONF_FLOAT_TILTBACK_HV 64.5
+#define APPCONF_FLOAT_TILTBACK_HV 68
 #endif
 
 // Angle
@@ -175,7 +175,7 @@
 
 // Low Voltage Threshold
 #ifndef APPCONF_FLOAT_TILTBACK_LV
-#define APPCONF_FLOAT_TILTBACK_LV 45
+#define APPCONF_FLOAT_TILTBACK_LV 48
 #endif
 
 // Return To Level Speed
@@ -475,22 +475,22 @@
 
 // LED Type
 #ifndef APPCONF_FLOAT_LED_TYPE
-#define APPCONF_FLOAT_LED_TYPE 0
+#define APPCONF_FLOAT_LED_TYPE 1
 #endif
 
 // Status LED Strip Length
 #ifndef APPCONF_FLOAT_LED_STATUS_COUNT
-#define APPCONF_FLOAT_LED_STATUS_COUNT 8
+#define APPCONF_FLOAT_LED_STATUS_COUNT 0
 #endif
 
 // Forward LED Strip Length
 #ifndef APPCONF_FLOAT_LED_FORWARD_COUNT
-#define APPCONF_FLOAT_LED_FORWARD_COUNT 13
+#define APPCONF_FLOAT_LED_FORWARD_COUNT 7
 #endif
 
 // Rear LED Strip Length
 #ifndef APPCONF_FLOAT_LED_REAR_COUNT
-#define APPCONF_FLOAT_LED_REAR_COUNT 13
+#define APPCONF_FLOAT_LED_REAR_COUNT 7
 #endif
 
 // Forward/Rear LED Brightness
