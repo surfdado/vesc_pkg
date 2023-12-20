@@ -8,9 +8,9 @@
 
 #define WS2812_CLK_HZ		800000
 #define TIM_PERIOD			(((168000000 / 2 / WS2812_CLK_HZ) - 1))
-#define WS2812_ZERO			(TIM_PERIOD * 0.2)
-#define WS2812_ONE			(TIM_PERIOD * 0.8)
-#define BITBUFFER_PAD		50
+#define WS2812_ZERO			(TIM_PERIOD * 0.3)
+#define WS2812_ONE			(TIM_PERIOD * 0.7)
+#define BITBUFFER_PAD		1000
 
 uint32_t led_rgb_to_local(uint32_t color, uint8_t brightness, bool rgbw) {
     uint32_t w = (color >> 24) & 0xFF;
