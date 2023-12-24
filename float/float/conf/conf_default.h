@@ -59,8 +59,8 @@
 #endif
 
 // Beep on Sensor Fault
-#ifndef APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED 1
+#ifndef APPCONF_FLOAT_IS_FOOTBEEP_ENABLED
+#define APPCONF_FLOAT_IS_FOOTBEEP_ENABLED 1
 #endif
 
 // Pitch Fault Delay
@@ -124,8 +124,8 @@
 #endif
 
 // Beep on Duty Tiltback
-#ifndef APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED 0
+#ifndef APPCONF_FLOAT_IS_DUTYBEEP_ENABLED
+#define APPCONF_FLOAT_IS_DUTYBEEP_ENABLED 0
 #endif
 
 // Surge Angle Increment
@@ -139,8 +139,8 @@
 #endif
 
 // Beep when Surging
-#ifndef APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED
-#define APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED 1
+#ifndef APPCONF_FLOAT_IS_SURGEBEEP_ENABLED
+#define APPCONF_FLOAT_IS_SURGEBEEP_ENABLED 1
 #endif
 
 // Angle
@@ -528,9 +528,9 @@
 #define APPCONF_FLOAT_DARK_PITCH_OFFSET 0
 #endif
 
-// Enable Buzzer on Servo/PPM
-#ifndef APPCONF_FLOAT_IS_BUZZER_ENABLED
-#define APPCONF_FLOAT_IS_BUZZER_ENABLED 0
+// Enable Beeper on Servo/PPM
+#ifndef APPCONF_FLOAT_IS_BEEPER_ENABLED
+#define APPCONF_FLOAT_IS_BEEPER_ENABLED 0
 #endif
 
 // Disable Float Package

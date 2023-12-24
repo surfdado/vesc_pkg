@@ -8,7 +8,7 @@
 #include <stdbool.h>
 
 // Constants
-#define FLOAT_CONFIG_SIGNATURE		610985009
+#define FLOAT_CONFIG_SIGNATURE		677634528
 
 // Functions
 int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *conf);

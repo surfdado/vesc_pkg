@@ -116,12 +116,12 @@ typedef struct {
 	// Firmware version, passed in from Lisp
 	int fw_version_major, fw_version_minor, fw_version_beta;
 
-	// Buzzer
+	// Beeper
 	int beep_num_left;
 	int beep_duration;
 	int beep_countdown;
 	int beep_reason;
-	bool buzzer_enabled;
+	bool beeper_enabled;
 
 	// LEDs
 	LEDData led_data;
@@ -194,7 +194,7 @@ typedef struct {
 	float motor_timeout_seconds;
 	float brake_timeout; // Seconds
 	float wheelslip_timer, wheelslip_end_timer, overcurrent_timer, tb_highvoltage_timer;
-	float switch_warn_buzz_erpm;
+	float switch_warn_beep_erpm;
 	float quickstop_erpm;
 	bool traction_control;
 
@@ -259,42 +259,42 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len);
 /**
  * BUZZER / BEEPER on Servo Pin
  */
-const VESC_PIN buzzer_pin = VESC_PIN_PPM;
+const VESC_PIN beeper_pin = VESC_PIN_PPM;
 
-#define EXT_BUZZER_ON()  VESC_IF->io_write(buzzer_pin, 1)
-#define EXT_BUZZER_OFF() VESC_IF->io_write(buzzer_pin, 0)
+#define EXT_BEEPER_ON()  VESC_IF->io_write(beeper_pin, 1)
+#define EXT_BEEPER_OFF() VESC_IF->io_write(beeper_pin, 0)
 
-void buzzer_init()
+void beeper_init()
 {
-	VESC_IF->io_set_mode(buzzer_pin, VESC_PIN_MODE_OUTPUT);
+	VESC_IF->io_set_mode(beeper_pin, VESC_PIN_MODE_OUTPUT);
 }
 
-void buzzer_update(data *d)
+void beeper_update(data *d)
 {
-	if (d->buzzer_enabled && (d->beep_num_left > 0)) {
+	if (d->beeper_enabled && (d->beep_num_left > 0)) {
 		d->beep_countdown--;
 		if (d->beep_countdown <= 0) {
 			d->beep_countdown = d->beep_duration;
 			d->beep_num_left--;	
 			if (d->beep_num_left & 0x1)
-				EXT_BUZZER_ON();
+				EXT_BEEPER_ON();
 			else
-				EXT_BUZZER_OFF();
+				EXT_BEEPER_OFF();
 		}
 	}
 }
 
-void buzzer_enable(data *d, bool enable)
+void beeper_enable(data *d, bool enable)
 {
-	d->buzzer_enabled = enable;
+	d->beeper_enabled = enable;
 	if (!enable) {
-		EXT_BUZZER_OFF();
+		EXT_BEEPER_OFF();
 	}
 }
 
 void beep_alert(data *d, int num_beeps, bool longbeep)
 {
-	if (!d->buzzer_enabled)
+	if (!d->beeper_enabled)
 		return;
 	if (d->beep_num_left == 0) {
 		d->beep_num_left = num_beeps * 2 + 1;
@@ -305,18 +305,18 @@ void beep_alert(data *d, int num_beeps, bool longbeep)
 
 void beep_off(data *d, bool force)
 {
-	// don't mess with the buzzer if we're in the process of doing a multi-beep
+	// don't mess with the beeper if we're in the process of doing a multi-beep
 	if (force || (d->beep_num_left == 0))
-		EXT_BUZZER_OFF();
+		EXT_BEEPER_OFF();
 }
 
 void beep_on(data *d, bool force)
 {
-	if (!d->buzzer_enabled)
+	if (!d->beeper_enabled)
 		return;
-	// don't mess with the buzzer if we're in the process of doing a multi-beep
+	// don't mess with the beeper if we're in the process of doing a multi-beep
 	if (force || (d->beep_num_left == 0))
-		EXT_BUZZER_ON();
+		EXT_BEEPER_ON();
 }
 
 // Utility Functions
@@ -355,7 +355,7 @@ static void app_init(data *d) {
 	if (d->state != DISABLED) {
 		d->state = STARTUP;
 	}
-	d->buzzer_enabled = true;
+	d->beeper_enabled = true;
 	
 	// Allow saving of odometer
 	d->odometer_dirty = 0;
@@ -474,7 +474,7 @@ static void configure(data *d) {
 	d->inputtilt_ramped_step_size = 0;
 
 	// Speed above which to warn users about an impending full switch fault
-	d->switch_warn_buzz_erpm = d->float_conf.is_footbuzz_enabled ? 2000 : 100000;
+	d->switch_warn_beep_erpm = d->float_conf.is_footbeep_enabled ? 2000 : 100000;
 
 	// Speed below which we check for quickstop conditions
 	d->quickstop_erpm = 200;
@@ -491,7 +491,7 @@ static void configure(data *d) {
 	d->last_time = 0.0;
 	d->filtered_loop_overshoot = 0.0;
 
-	d->buzzer_enabled = d->float_conf.is_buzzer_enabled;
+	d->beeper_enabled = d->float_conf.is_beeper_enabled;
 	if (d->float_conf.float_disable) {
 		d->state = DISABLED;
 		beep_alert(d, 3, false);
@@ -1002,7 +1002,7 @@ static void calculate_setpoint_target(data *d) {
 
 	if (d->is_flywheel_mode == false) {
 		if (d->setpointAdjustmentType == TILTBACK_DUTY) {
-			if (d->float_conf.is_dutybuzz_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
+			if (d->float_conf.is_dutybeep_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
 				beep_on(d, true);
 				d->beep_reason = BEEP_DUTY;
 				d->duty_beeping = true;
@@ -1611,7 +1611,7 @@ static void float_thd(void *arg) {
 	led_init(&d->led_data, &d->float_conf);
 
 	while (!VESC_IF->should_terminate()) {
-		buzzer_update(d);
+		beeper_update(d);
 
 		// Update times
 		d->current_time = VESC_IF->system_time();
@@ -1764,13 +1764,13 @@ static void float_thd(void *arg) {
 
 		footpad_sensor_update(&d->footpad_sensor, &d->float_conf);
 
-		if (d->footpad_sensor.state == FS_NONE && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_buzz_erpm) {
+		if (d->footpad_sensor.state == FS_NONE && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_beep_erpm) {
 			// If we're at riding speed and the switch is off => ALERT the user
 			// set force=true since this could indicate an imminent shutdown/nosedive
 			beep_on(d, true);
 			d->beep_reason = BEEP_SENSORS;
 		} else {
-			// if the switch comes back on we stop buzzing
+			// if the switch comes back on we stop beeping
 			beep_off(d, false);
 		}
 
@@ -2657,7 +2657,7 @@ static void cmd_tune_defaults(data *d){
 	d->float_conf.startup_speed = APPCONF_FLOAT_STARTUP_SPEED;
 	d->float_conf.startup_click_current = APPCONF_FLOAT_STARTUP_CLICK_CURRENT;
 	d->float_conf.brake_current = APPCONF_FLOAT_BRAKE_CURRENT;
-	d->float_conf.is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
+	d->float_conf.is_beeper_enabled = APPCONF_FLOAT_IS_BEEPER_ENABLED;
 	d->float_conf.tiltback_constant = APPCONF_FLOAT_TILTBACK_CONSTANT;
 	d->float_conf.tiltback_constant_erpm = APPCONF_FLOAT_TILTBACK_CONSTANT_ERPM;
 	d->float_conf.tiltback_variable = APPCONF_FLOAT_TILTBACK_VARIABLE;
@@ -2689,8 +2689,8 @@ static void cmd_tune_defaults(data *d){
 static void cmd_runtime_tune_tilt(data *d, unsigned char *cfg, int len)
 {
 	unsigned int flags = cfg[0];
-	bool duty_buzz = flags & 0x1;
-	d->float_conf.is_dutybuzz_enabled = duty_buzz;
+	bool duty_beep = flags & 0x1;
+	d->float_conf.is_dutybeep_enabled = duty_beep;
 	float retspeed = cfg[1];
 	if (retspeed > 0) {
 		d->float_conf.tiltback_return_speed = retspeed / 10;
@@ -2723,7 +2723,7 @@ static void cmd_runtime_tune_tilt(data *d, unsigned char *cfg, int len)
 static void cmd_runtime_tune_other(data *d, unsigned char *cfg, int len)
 {
 	unsigned int flags = cfg[0];
-	d->buzzer_enabled = ((flags & 0x2) == 2);
+	d->beeper_enabled = ((flags & 0x2) == 2);
 	d->float_conf.fault_reversestop_enabled = ((flags & 0x4) == 4);
 	d->float_conf.fault_is_dual_switch = ((flags & 0x8) == 8);
 	d->float_conf.fault_darkride_enabled = ((flags & 0x10) == 0x10);
@@ -2731,7 +2731,7 @@ static void cmd_runtime_tune_other(data *d, unsigned char *cfg, int len)
 	d->float_conf.startup_simplestart_enabled = ((flags & 0x40) == 0x40);
 	d->float_conf.startup_pushstart_enabled = ((flags & 0x80) == 0x80);
 
-	d->float_conf.is_buzzer_enabled = d->buzzer_enabled;
+	d->float_conf.is_beeper_enabled = d->beeper_enabled;
 	d->startup_pitch_trickmargin = dirty_landings ? 10 : 0;
 	d->float_conf.startup_dirtylandings_enabled = dirty_landings;
 
@@ -3195,8 +3195,8 @@ INIT_FUN(lib_info *info) {
 
 	configure(d);
 
-	if ((d->float_conf.is_buzzer_enabled) || (d->float_conf.inputtilt_remote_type != INPUTTILT_PPM)) {
-		buzzer_init();
+	if ((d->float_conf.is_beeper_enabled) || (d->float_conf.inputtilt_remote_type != INPUTTILT_PPM)) {
+		beeper_init();
 	}
 
 	VESC_IF->ahrs_init_attitude_info(&d->m_att_ref);

@@ -21,7 +21,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->fault_roll, 10, &ind);
 	buffer_append_float16(buffer, conf->fault_adc1, 1000, &ind);
 	buffer_append_float16(buffer, conf->fault_adc2, 1000, &ind);
-	buffer[ind++] = conf->is_footbuzz_enabled;
+	buffer[ind++] = conf->is_footbeep_enabled;
 	buffer_append_uint16(buffer, conf->fault_delay_pitch, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_roll, &ind);
 	buffer_append_uint16(buffer, conf->fault_delay_switch_half, &ind);
@@ -34,10 +34,10 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->tiltback_duty_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_duty_speed, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_duty, 1000, &ind);
-	buffer[ind++] = conf->is_dutybuzz_enabled;
+	buffer[ind++] = conf->is_dutybeep_enabled;
 	buffer_append_float16(buffer, conf->surge_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->surge_duty_start, 1000, &ind);
-	buffer[ind++] = conf->is_surgebuzz_enabled;
+	buffer[ind++] = conf->is_surgebeep_enabled;
 	buffer_append_float16(buffer, conf->tiltback_hv_angle, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_hv_speed, 100, &ind);
 	buffer_append_float16(buffer, conf->tiltback_hv, 10, &ind);
@@ -115,7 +115,7 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_int16(buffer, conf->limit_current_brake, &ind);
 	buffer_append_int16(buffer, conf->limit_current_cont, &ind);
 	buffer_append_float16(buffer, conf->dark_pitch_offset, 10, &ind);
-	buffer[ind++] = conf->is_buzzer_enabled;
+	buffer[ind++] = conf->is_beeper_enabled;
 	buffer[ind++] = conf->float_disable;
 	buffer_append_float16(buffer, conf->float_version, 1000, &ind);
 
@@ -141,7 +141,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->fault_roll = buffer_get_float16(buffer, 10, &ind);
 	conf->fault_adc1 = buffer_get_float16(buffer, 1000, &ind);
 	conf->fault_adc2 = buffer_get_float16(buffer, 1000, &ind);
-	conf->is_footbuzz_enabled = buffer[ind++];
+	conf->is_footbeep_enabled = buffer[ind++];
 	conf->fault_delay_pitch = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_roll = buffer_get_uint16(buffer, &ind);
 	conf->fault_delay_switch_half = buffer_get_uint16(buffer, &ind);
@@ -154,10 +154,10 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->tiltback_duty_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_duty_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_duty = buffer_get_float16(buffer, 1000, &ind);
-	conf->is_dutybuzz_enabled = buffer[ind++];
+	conf->is_dutybeep_enabled = buffer[ind++];
 	conf->surge_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->surge_duty_start = buffer_get_float16(buffer, 1000, &ind);
-	conf->is_surgebuzz_enabled = buffer[ind++];
+	conf->is_surgebeep_enabled = buffer[ind++];
 	conf->tiltback_hv_angle = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_hv_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->tiltback_hv = buffer_get_float16(buffer, 10, &ind);
@@ -235,7 +235,7 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->limit_current_brake = buffer_get_int16(buffer, &ind);
 	conf->limit_current_cont = buffer_get_int16(buffer, &ind);
 	conf->dark_pitch_offset = buffer_get_float16(buffer, 10, &ind);
-	conf->is_buzzer_enabled = buffer[ind++];
+	conf->is_beeper_enabled = buffer[ind++];
 	conf->float_disable = buffer[ind++];
 	conf->float_version = buffer_get_float16(buffer, 1000, &ind);
 
@@ -254,7 +254,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->fault_roll = APPCONF_FLOAT_FAULT_ROLL;
 	conf->fault_adc1 = APPCONF_FLOAT_FAULT_ADC1;
 	conf->fault_adc2 = APPCONF_FLOAT_FAULT_ADC2;
-	conf->is_footbuzz_enabled = APPCONF_FLOAT_IS_FOOTBUZZ_ENABLED;
+	conf->is_footbeep_enabled = APPCONF_FLOAT_IS_FOOTBEEP_ENABLED;
 	conf->fault_delay_pitch = APPCONF_FLOAT_FAULT_DELAY_PITCH;
 	conf->fault_delay_roll = APPCONF_FLOAT_FAULT_DELAY_ROLL;
 	conf->fault_delay_switch_half = APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF;
@@ -267,10 +267,10 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->tiltback_duty_angle = APPCONF_FLOAT_TILTBACK_DUTY_ANGLE;
 	conf->tiltback_duty_speed = APPCONF_FLOAT_TILTBACK_DUTY_SPEED;
 	conf->tiltback_duty = APPCONF_FLOAT_TILTBACK_DUTY;
-	conf->is_dutybuzz_enabled = APPCONF_FLOAT_IS_DUTYBUZZ_ENABLED;
+	conf->is_dutybeep_enabled = APPCONF_FLOAT_IS_DUTYBEEP_ENABLED;
 	conf->surge_angle = APPCONF_FLOAT_SURGE_ANGLE;
 	conf->surge_duty_start = APPCONF_FLOAT_SURGE_DUTY_START;
-	conf->is_surgebuzz_enabled = APPCONF_FLOAT_IS_SURGEBUZZ_ENABLED;
+	conf->is_surgebeep_enabled = APPCONF_FLOAT_IS_SURGEBEEP_ENABLED;
 	conf->tiltback_hv_angle = APPCONF_FLOAT_TILTBACK_HV_ANGLE;
 	conf->tiltback_hv_speed = APPCONF_FLOAT_TILTBACK_HV_SPEED;
 	conf->tiltback_hv = APPCONF_FLOAT_TILTBACK_HV;
@@ -348,7 +348,7 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->limit_current_brake = LIMIT_CURRENT_BRAKE;
 	conf->limit_current_cont = LIMIT_CURRENT_CONT;
 	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
-	conf->is_buzzer_enabled = APPCONF_FLOAT_IS_BUZZER_ENABLED;
+	conf->is_beeper_enabled = APPCONF_FLOAT_IS_BEEPER_ENABLED;
 	conf->float_disable = APPCONF_FLOAT_DISABLE;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }
