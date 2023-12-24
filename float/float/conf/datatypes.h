@@ -137,6 +137,9 @@ typedef struct {
 	uint8_t led_mode;
 	uint8_t led_status_brightness;
 	uint8_t led_status_mode;
+	int limit_current_accel;
+	int limit_current_brake;
+	int limit_current_cont;
 } float_config;
 
 // DATATYPES_H_

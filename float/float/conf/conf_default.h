@@ -508,6 +508,21 @@
 #define APPCONF_FLOAT_LED_STATUS_MODE 0
 #endif
 
+// Acceleration Current Limit
+#ifndef LIMIT_CURRENT_ACCEL
+#define LIMIT_CURRENT_ACCEL 150
+#endif
+
+// Braking Current Limit
+#ifndef LIMIT_CURRENT_BRAKE
+#define LIMIT_CURRENT_BRAKE -150
+#endif
+
+// Continuous Current Limit
+#ifndef LIMIT_CURRENT_CONT
+#define LIMIT_CURRENT_CONT 100
+#endif
+
 // Darkride Pitch Offset
 #ifndef APPCONF_FLOAT_DARK_PITCH_OFFSET
 #define APPCONF_FLOAT_DARK_PITCH_OFFSET 0

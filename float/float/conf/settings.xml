@@ -2252,6 +2252,72 @@ p, li { white-space: pre-wrap; }
             <valInt>0</valInt>
             <enumNames>Green-&gt;Red Voltage, Blue Sensor, Yellow-&gt;Red Duty</enumNames>
         </led_status_mode>
+        <limit_current_accel>
+            <longName>Acceleration Current Limit</longName>
+            <type>2</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Current limit for acceleration during normal riding on level ground. Lower values make nosedrags easier. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This limit will be surpassed when ATR starts kicking in.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>LIMIT_CURRENT_ACCEL</cDefine>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxInt>1000</maxInt>
+            <minInt>50</minInt>
+            <showDisplay>0</showDisplay>
+            <stepInt>1</stepInt>
+            <valInt>150</valInt>
+            <suffix>A</suffix>
+            <vTx>4</vTx>
+        </limit_current_accel>
+        <limit_current_brake>
+            <longName>Braking Current Limit</longName>
+            <type>2</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Current limit for braking during normal riding on street. Lower values make taildrags easier. &lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;This limit will be surpassed when ATR starts kicking in.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>LIMIT_CURRENT_BRAKE</cDefine>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxInt>-50</maxInt>
+            <minInt>-1000</minInt>
+            <showDisplay>0</showDisplay>
+            <stepInt>1</stepInt>
+            <valInt>-150</valInt>
+            <suffix>A</suffix>
+            <vTx>4</vTx>
+        </limit_current_brake>
+        <limit_current_cont>
+            <longName>Continuous Current Limit</longName>
+            <type>2</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Maximum current to be output continuously. Whenever the average current exceeds this value for longer than 5 seconds the buzzer will go off.&lt;/p&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Actual limiting is not yet in place - this is for awareness only!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>LIMIT_CURRENT_CONT</cDefine>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxInt>1000</maxInt>
+            <minInt>30</minInt>
+            <showDisplay>0</showDisplay>
+            <stepInt>1</stepInt>
+            <valInt>100</valInt>
+            <suffix>A</suffix>
+            <vTx>4</vTx>
+        </limit_current_cont>
         <dark_pitch_offset>
             <longName>Darkride Pitch Offset</longName>
             <type>1</type>
@@ -2424,6 +2490,9 @@ p, li { white-space: pre-wrap; }
         <ser>led_mode</ser>
         <ser>led_status_brightness</ser>
         <ser>led_status_mode</ser>
+        <ser>limit_current_accel</ser>
+        <ser>limit_current_brake</ser>
+        <ser>limit_current_cont</ser>
         <ser>dark_pitch_offset</ser>
         <ser>is_buzzer_enabled</ser>
         <ser>float_disable</ser>
@@ -2613,7 +2682,11 @@ p, li { white-space: pre-wrap; }
                     <param>is_footbuzz_enabled</param>
                     <param>::sep::Miscellaneous</param>
                     <param>dark_pitch_offset</param>
+                    <param>::sep::Current Limiting</param>
                     <param>is_buzzer_enabled</param>
+                    <param>limit_current_accel</param>
+                    <param>limit_current_brake</param>
+                    <param>limit_current_cont</param>
                 </subgroupParams>
             </subgroup>
         </group>

@@ -407,33 +407,12 @@ static void configure(data *d) {
 	d->mc_max_temp_fet = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_fet_start) - 3;
 	d->mc_max_temp_mot = VESC_IF->get_cfg_float(CFG_PARAM_l_temp_motor_start) - 3;
 
+	// Current limiting
 	d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
-	int mcm = d->mc_current_max;
-	float mc_max_reduce = d->mc_current_max - mcm;
-	if (mc_max_reduce >= 0.5) {
-		// reduce the max current by X% to save that for torque tilt situations
-		// less than 60 peak amps makes no sense though so I'm not allowing it
-		d->mc_current_max = fmaxf(mc_max_reduce * d->mc_current_max, 60);
-	}
-
-	// min current is a positive value here!
+	d->mc_current_max = fminf(d->mc_current_max, d->float_conf.limit_current_accel);
 	d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
-	mcm = d->mc_current_min;
-	float mc_min_reduce = fabsf(d->mc_current_min - mcm);
-	if (mc_min_reduce >= 0.5) {
-		// reduce the max current by X% to save that for torque tilt situations
-		// less than 50 peak breaking amps makes no sense though so I'm not allowing it
-		d->mc_current_min = fmaxf(mc_min_reduce * d->mc_current_min, 50);
-	}
-
-	// Decimals of abs-max specify max continuous current
-	float max_abs = VESC_IF->get_cfg_float(CFG_PARAM_l_abs_current_max);
-	int mabs = max_abs;
-	d->max_continuous_current = (max_abs - mabs) * 100;
-	if (d->max_continuous_current < 25) {
-		// anything below 25A is suspicious and will be ignored!
-		d->max_continuous_current = d->mc_current_max;
-	}
+	d->mc_current_min = fminf(d->mc_current_min, fabsf(d->float_conf.limit_current_brake));
+	d->max_continuous_current = d->float_conf.limit_current_cont;
 
 	// Maximum amps change when braking
 	d->pid_brake_increment = 5;
