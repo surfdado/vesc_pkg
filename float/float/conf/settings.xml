@@ -1005,6 +1005,46 @@ p, li { white-space: pre-wrap; }
             <enumNames>Vibrating3</enumNames>
             <enumNames>Alternating</enumNames>
         </haptic_buzz_lv>
+        <haptic_buzz_temp>
+            <longName>Haptic Buzz - Temperature</longName>
+            <type>4</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;The type of haptic buzz to use when either controller or motor temperature gets within 3 degrees of the throttle start threshold (in Motor Config - General)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_HAPTIC_BUZZ_TEMP</cDefine>
+            <valInt>0</valInt>
+            <enumNames>None</enumNames>
+            <enumNames>Audible1</enumNames>
+            <enumNames>Audible2</enumNames>
+            <enumNames>Audible3</enumNames>
+            <enumNames>Vibrating1</enumNames>
+            <enumNames>Vibrating2</enumNames>
+            <enumNames>Vibrating3</enumNames>
+            <enumNames>Alternating</enumNames>
+        </haptic_buzz_temp>
+        <haptic_buzz_current>
+            <longName>Haptic Buzz - Current Limits</longName>
+            <type>4</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;The type of haptic buzz to use when exceeding the configured motor current or continuous current limits&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_HAPTIC_BUZZ_CURRENT</cDefine>
+            <valInt>0</valInt>
+            <enumNames>None</enumNames>
+            <enumNames>Audible1</enumNames>
+            <enumNames>Audible2</enumNames>
+            <enumNames>Audible3</enumNames>
+            <enumNames>Vibrating1</enumNames>
+            <enumNames>Vibrating2</enumNames>
+            <enumNames>Vibrating3</enumNames>
+            <enumNames>Alternating</enumNames>
+        </haptic_buzz_current>
         <noseangling_speed>
             <longName>Nose Angling Speed</longName>
             <type>1</type>
@@ -2536,6 +2576,8 @@ p, li { white-space: pre-wrap; }
         <ser>haptic_buzz_duty</ser>
         <ser>haptic_buzz_hv</ser>
         <ser>haptic_buzz_lv</ser>
+        <ser>haptic_buzz_temp</ser>
+        <ser>haptic_buzz_current</ser>
         <ser>noseangling_speed</ser>
         <ser>inputtilt_remote_type</ser>
         <ser>inputtilt_angle_limit</ser>
@@ -2744,6 +2786,9 @@ p, li { white-space: pre-wrap; }
                     <param>tiltback_lv_angle</param>
                     <param>tiltback_lv_speed</param>
                     <param>haptic_buzz_lv</param>
+                    <param>::sep::Other Alerts</param>
+                    <param>haptic_buzz_temp</param>
+                    <param>haptic_buzz_current</param>
                 </subgroupParams>
             </subgroup>
             <subgroup>

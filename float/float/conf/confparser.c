@@ -55,6 +55,8 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer[ind++] = conf->haptic_buzz_duty;
 	buffer[ind++] = conf->haptic_buzz_hv;
 	buffer[ind++] = conf->haptic_buzz_lv;
+	buffer[ind++] = conf->haptic_buzz_temp;
+	buffer[ind++] = conf->haptic_buzz_current;
 	buffer_append_float16(buffer, conf->noseangling_speed, 100, &ind);
 	buffer[ind++] = conf->inputtilt_remote_type;
 	buffer_append_float16(buffer, conf->inputtilt_angle_limit, 100, &ind);
@@ -180,6 +182,8 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->haptic_buzz_duty = buffer[ind++];
 	conf->haptic_buzz_hv = buffer[ind++];
 	conf->haptic_buzz_lv = buffer[ind++];
+	conf->haptic_buzz_temp = buffer[ind++];
+	conf->haptic_buzz_current = buffer[ind++];
 	conf->noseangling_speed = buffer_get_float16(buffer, 100, &ind);
 	conf->inputtilt_remote_type = buffer[ind++];
 	conf->inputtilt_angle_limit = buffer_get_float16(buffer, 100, &ind);
@@ -298,6 +302,8 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->haptic_buzz_duty = APPCONF_FLOAT_HAPTIC_BUZZ_DUTY;
 	conf->haptic_buzz_hv = APPCONF_FLOAT_HAPTIC_BUZZ_HV;
 	conf->haptic_buzz_lv = APPCONF_FLOAT_HAPTIC_BUZZ_LV;
+	conf->haptic_buzz_temp = APPCONF_FLOAT_HAPTIC_BUZZ_TEMP;
+	conf->haptic_buzz_current = APPCONF_FLOAT_HAPTIC_BUZZ_CURRENT;
 	conf->noseangling_speed = APPCONF_FLOAT_NOSEANGLING_SPEED;
 	conf->inputtilt_remote_type = APPCONF_FLOAT_INPUTTILT_REMOTE_TYPE;
 	conf->inputtilt_angle_limit = APPCONF_FLOAT_INPUTTILT_ANGLE_LIMIT;

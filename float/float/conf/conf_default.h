@@ -228,6 +228,16 @@
 #define APPCONF_FLOAT_HAPTIC_BUZZ_LV 0
 #endif
 
+// Haptic Buzz - Temperature
+#ifndef APPCONF_FLOAT_HAPTIC_BUZZ_TEMP
+#define APPCONF_FLOAT_HAPTIC_BUZZ_TEMP 0
+#endif
+
+// Haptic Buzz - Current Limits
+#ifndef APPCONF_FLOAT_HAPTIC_BUZZ_CURRENT
+#define APPCONF_FLOAT_HAPTIC_BUZZ_CURRENT 0
+#endif
+
 // Nose Angling Speed
 #ifndef APPCONF_FLOAT_NOSEANGLING_SPEED
 #define APPCONF_FLOAT_NOSEANGLING_SPEED 5

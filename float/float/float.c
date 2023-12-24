@@ -135,8 +135,9 @@ typedef struct {
 	float torquetilt_on_step_size, torquetilt_off_step_size, turntilt_step_size;
 	float tiltback_variable, tiltback_variable_max_erpm, noseangling_step_size, inputtilt_ramped_step_size, inputtilt_step_size;
 	float mc_max_temp_fet, mc_max_temp_mot;
-	float mc_current_max, mc_current_min, max_continuous_current;
+	float mc_current_max, mc_current_min, current_max, current_min, max_continuous_current;
 	float surge_angle, surge_angle2, surge_angle3, surge_adder;
+	bool overcurrent;
 	bool surge_enable;
 	bool current_beeping;
 	bool duty_beeping;
@@ -413,9 +414,9 @@ static void configure(data *d) {
 
 	// Current limiting
 	d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
-	d->mc_current_max = fminf(d->mc_current_max, d->float_conf.limit_current_accel);
+	d->current_max = fminf(d->mc_current_max, d->float_conf.limit_current_accel);
 	d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
-	d->mc_current_min = fminf(d->mc_current_min, fabsf(d->float_conf.limit_current_brake));
+	d->current_min = fminf(d->mc_current_min, fabsf(d->float_conf.limit_current_brake));
 	d->max_continuous_current = d->float_conf.limit_current_cont;
 
 	// Maximum amps change when braking
@@ -547,6 +548,7 @@ static void reset_vars(data *d) {
 	d->softstart_pid_limit = 0;
 	d->startup_pitch_tolerance = d->float_conf.startup_pitch_tolerance;
 	d->surge_adder = 0;
+	d->overcurrent = false;
 
 	// PID Brake Scaling
 	d->kp_brake_scale = 1.0;
@@ -1577,7 +1579,8 @@ static float haptic_buzz(data *d, float note_period, bool brake) {
 	if (d->is_flywheel_mode) {
 		return 0;
 	}
-	if ((d->setpointAdjustmentType > TILTBACK_NONE) && (d->state <= RUNNING_TILTBACK)) {
+	if (((d->setpointAdjustmentType > TILTBACK_NONE) && (d->state <= RUNNING_TILTBACK))
+	    || d->overcurrent) {
 
 		if (d->setpointAdjustmentType == TILTBACK_DUTY)
 			d->haptic_type = d->float_conf.haptic_buzz_duty;
@@ -1585,6 +1588,10 @@ static float haptic_buzz(data *d, float note_period, bool brake) {
 			d->haptic_type = d->float_conf.haptic_buzz_hv;
 		else if (d->setpointAdjustmentType == TILTBACK_LV)
 			d->haptic_type = d->float_conf.haptic_buzz_lv;
+		else if (d->setpointAdjustmentType == TILTBACK_TEMP)
+			d->haptic_type = d->float_conf.haptic_buzz_temp;
+		else if (d->overcurrent)
+			d->haptic_type = d->float_conf.haptic_buzz_current;
 		else
 			d->haptic_type = HAPTIC_BUZZ_NONE;
 
@@ -1671,11 +1678,12 @@ static void brake(data *d) {
 }
 
 static void set_current(data *d, float current){
-	// Limit current output to configured max output
-	if (current > 0 && current > VESC_IF->get_cfg_float(CFG_PARAM_l_current_max)) {
-		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
-	} else if(current < 0 && current < VESC_IF->get_cfg_float(CFG_PARAM_l_current_min)) {
-		current = VESC_IF->get_cfg_float(CFG_PARAM_l_current_min);
+	// Limit current output to configured max output (as configured in motor cfg)
+	if (current > d->mc_current_max) {
+		current = d->mc_current_max;
+		d->overcurrent = true;
+	} else if(current < -d->mc_current_min) {
+		current = -d->mc_current_min;
 	}
 
 	// Reset the timeout
@@ -2058,30 +2066,32 @@ static void float_thd(void *arg) {
 			// Current Limiting!
 			float current_limit;
 			if (d->braking) {
-				current_limit = d->mc_current_min * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
+				current_limit = d->current_min * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
 			}
 			else {
-				current_limit = d->mc_current_max * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
+				current_limit = d->current_max * (1 + 0.6 * fabsf(d->torqueresponse_interpolated / 10));
 			}
 			if (fabsf(new_pid_value) > current_limit) {
 				new_pid_value = SIGN(new_pid_value) * current_limit;
 			}
-			else {
-				// Over continuous current for more than 3 seconds? Just beep, don't actually limit currents
-				if (fabsf(d->atr_filtered_current) < d->max_continuous_current) {
-					d->overcurrent_timer = d->current_time;
-					if (d->current_beeping) {
-						d->current_beeping = false;
-						beep_off(d, false);
-					}
-				} else {
-					if (d->current_time - d->overcurrent_timer > 3) {
-						beep_on(d, true);
-						d->current_beeping = true;
-					}
+
+			d->overcurrent = false;
+
+			// Over continuous current for more than 3 seconds? Just beep, don't actually limit currents
+			if (fabsf(d->atr_filtered_current) < d->max_continuous_current) {
+				d->overcurrent_timer = d->current_time;
+				if (d->current_beeping) {
+					d->current_beeping = false;
+					beep_off(d, false);
+				}
+			} else {
+				if (d->current_time - d->overcurrent_timer > 3) {
+					beep_on(d, true);
+					d->current_beeping = true;
+					d->overcurrent = true;
 				}
 			}
-			
+
 			if (d->traction_control) {
 				// freewheel while traction loss is detected
 				d->pid_value = 0;
@@ -2518,8 +2528,8 @@ static void cmd_handtest(data *d, unsigned char *cfg)
 		d->do_handtest = cfg[0] ? true : false;
 		if (d->do_handtest) {
 			// temporarily reduce max currents to make hand test safer / gentler
-			d->mc_current_max = 7;
-			d->mc_current_min = -7;
+			d->current_max = 7;
+			d->current_min = -7;
 			// Disable I-term and all tune modifiers and tilts
 			d->float_conf.ki = 0;
 			d->float_conf.kp_brake = 1;
@@ -2535,6 +2545,8 @@ static void cmd_handtest(data *d, unsigned char *cfg)
 			d->float_conf.tiltback_variable = 0;
 			d->float_conf.fault_delay_pitch = 50;
 			d->float_conf.fault_delay_roll = 50;
+			d->float_conf.startup_pitch_tolerance = 1;
+			d->float_conf.startup_speed = 10;
 		}
 		else {
 			read_cfg_from_eeprom(d);
@@ -2661,10 +2673,10 @@ static void cmd_runtime_tune(data *d, unsigned char *cfg, int len)
 		d->float_conf.braketilt_lingering = h2;
 
 		split(cfg[11], &h1, &h2);
-		d->mc_current_max = h1 * 5 + 55;
-		d->mc_current_min = h2 * 5 + 55;
-		if (h1 == 0) d->mc_current_max = VESC_IF->get_cfg_float(CFG_PARAM_l_current_max);
-		if (h2 == 0) d->mc_current_min = fabsf(VESC_IF->get_cfg_float(CFG_PARAM_l_current_min));
+		d->current_max = h1 * 5 + 55;
+		d->current_min = h2 * 5 + 55;
+		if (h1 == 0) d->current_max = fminf(d->mc_current_max, d->float_conf.limit_current_accel);
+		if (h2 == 0) d->current_min = fminf(d->mc_current_min, fabsf(d->float_conf.limit_current_brake));
 
 		// Update values normally done in configure()
 		d->atr_on_step_size = d->float_conf.atr_on_speed / d->float_conf.hertz;
@@ -3004,7 +3016,7 @@ static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
 		//backup_erpm = mc_interface_get_configuration()->l_max_erpm;
 		VESC_IF->set_cfg_float(CFG_PARAM_l_min_erpm + 100, -6000);
 		VESC_IF->set_cfg_float(CFG_PARAM_l_max_erpm + 100, 6000);
-		d->mc_current_max = d->mc_current_min = 40;
+		d->current_max = d->current_min = 50;
 
 		d->flywheel_allow_abort = cfg[5];
 
