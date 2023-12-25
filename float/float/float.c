@@ -102,6 +102,7 @@ typedef enum {
 } BiquadType;
 
 static const FootpadSensorState flywheel_konami_sequence[] = { FS_LEFT, FS_NONE, FS_RIGHT, FS_NONE, FS_LEFT, FS_NONE, FS_RIGHT };
+static const FootpadSensorState battery_konami_sequence[] = { FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT };
 
 // This is all persistent state of the application, which will be allocated in init. It
 // is put here because variables can only be read-only when this program is loaded
@@ -115,6 +116,7 @@ typedef struct {
 
 	// Firmware version, passed in from Lisp
 	int fw_version_major, fw_version_minor, fw_version_beta;
+	uint8_t battery_level;
 
 	// Beeper
 	int beep_num_left;
@@ -263,6 +265,7 @@ typedef struct {
 	int debug_experiment_1, debug_experiment_2, debug_experiment_3, debug_experiment_4, debug_experiment_5, debug_experiment_6;
 
 	Konami flywheel_konami;
+	Konami battery_konami;
 } data;
 
 static void brake(data *d);
@@ -518,6 +521,7 @@ static void configure(data *d) {
 	d->do_handtest = false;
 
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
+	konami_init(&d->battery_konami, battery_konami_sequence, sizeof(battery_konami_sequence));
 
 	led_init(&d->led_data, &d->float_conf);
 
@@ -2164,6 +2168,15 @@ static void float_thd(void *arg) {
 				}
 			}
 
+			if (konami_check(&d->battery_konami, &d->footpad_sensor, &d->float_conf, d->current_time)) {
+				if (d->battery_level > 94)
+					// 1 long beep indicates full charge (95% or more)
+					beep_alert(d, 1, 1);
+				else
+					// N short beeps where N is batterylevel/10 (e.g. 5 beeps for 50%)
+					beep_alert(d, d->battery_level / 10, 0);
+			}
+
 			if (d->current_time - d->disengage_timer > 10) {
 				// 10 seconds of grace period between flipping the board over and allowing darkride mode...
 				if (d->is_upside_down) {
@@ -2513,7 +2526,7 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 			buffer_append_float16(send_buffer, VESC_IF->mc_get_amp_hours_charged(false), 10, &ind);
 			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours(false), 1, &ind);
 			buffer_append_float16(send_buffer, VESC_IF->mc_get_watt_hours_charged(false), 1, &ind);
-			send_buffer[ind++] = fmaxf(0, fminf(125, VESC_IF->mc_get_battery_level(NULL))) * 2;
+			send_buffer[ind++] = fmaxf(0, fminf(110, d->battery_level)) * 2;
 			// ind = 55
 		}
 	}
@@ -3379,6 +3392,16 @@ static lbm_value ext_set_fw_version(lbm_value *args, lbm_uint argn) {
 	return VESC_IF->lbm_enc_sym_true;
 }
 
+// Called from Lisp periodically to pass in the battery level
+static lbm_value ext_set_batt_level(lbm_value *args, lbm_uint argn) {
+	data *d = (data*)ARG;
+	if (argn > 0) {
+		// store battery level as 0..100 8-bit integer
+		d->battery_level = VESC_IF->lbm_dec_as_float(args[0]) * 100;
+	}
+	return VESC_IF->lbm_enc_sym_true;
+}
+
 // These functions are used to send the config page to VESC Tool
 // and to make persistent read and write work
 static int get_cfg(uint8_t *buffer, bool is_default) {
@@ -3479,6 +3502,7 @@ INIT_FUN(lib_info *info) {
 	VESC_IF->set_app_data_handler(on_command_received);
 	VESC_IF->lbm_add_extension("ext-float-dbg", ext_bal_dbg);
 	VESC_IF->lbm_add_extension("ext-set-fw-version", ext_set_fw_version);
+	VESC_IF->lbm_add_extension("ext-set-batt-level", ext_set_batt_level);
 
 	return true;
 }
