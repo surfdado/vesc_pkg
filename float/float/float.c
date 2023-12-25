@@ -3211,8 +3211,8 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = 101;	// magic nr.
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
-			send_buffer[ind++] = 2;     // build number
-			send_buffer[ind++] = 1;
+			send_buffer[ind++] = 1;     // build number
+			send_buffer[ind++] = d->float_conf.has_floatwheel_lcm ? 2 : 0;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}

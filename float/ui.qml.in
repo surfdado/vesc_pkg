@@ -52,6 +52,7 @@ Item {
     property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
     property var quicksaveNames: []
+    property var has_floatwheel_lcm: 0
     property var handtest_toggle: 0
     property var lights_toggle: 0
     property var beep_reason: 0
@@ -167,6 +168,13 @@ Item {
 
             if (magicnr != 101) {
                 return;
+            }
+            if (msgtype == 0) {
+                ind += 2;
+                var lcm = dv.getUint8(ind);
+                if (lcm >= 2) {
+                    has_floatwheel_lcm = 1
+                }
             }
             if (msgtype == 1) {
                 var pid_value = dv.getFloat32(ind); ind += 4;
@@ -677,7 +685,7 @@ Item {
 					}
 					Text {
 						id: versionText
-						text: "{{VERSION}}"
+						text: "{{VERSION}}beta"
 						color: Utility.getAppHexColor("lightText")
 						font.pointSize: 10
 						font.weight: Font.Black
@@ -786,6 +794,7 @@ Item {
                 }
                 Button {
                         id: lightsButton
+			visible: has_floatwheel_lcm == 1
                         text: "TOGGLE HEADLIGHTS"
                         Layout.fillWidth: true
                         font.pointSize: 16
