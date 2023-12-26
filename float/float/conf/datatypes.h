@@ -82,6 +82,7 @@ typedef struct {
 	HAPTIC_BUZZ_TYPE haptic_buzz_lv;
 	HAPTIC_BUZZ_TYPE haptic_buzz_temp;
 	HAPTIC_BUZZ_TYPE haptic_buzz_current;
+	HAPTIC_BUZZ_TYPE haptic_buzz_bms;
 	uint16_t tiltback_constant_erpm;
 	float tiltback_variable;
 	float tiltback_variable_max;
