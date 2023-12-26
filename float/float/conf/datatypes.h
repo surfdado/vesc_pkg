@@ -130,6 +130,9 @@ typedef struct {
 	float atr_filter;
 	float atr_amps_accel_ratio;
 	float atr_amps_decel_ratio;
+	int   atr_test1;
+	float atr_test2;
+	float atr_test3;
 	float braketilt_strength;
 	float braketilt_lingering;
 	float turntilt_strength;

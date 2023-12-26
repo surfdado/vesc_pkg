@@ -108,6 +108,9 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_float16(buffer, conf->atr_filter, 100, &ind);
 	buffer_append_float16(buffer, conf->atr_amps_accel_ratio, 100, &ind);
 	buffer_append_float16(buffer, conf->atr_amps_decel_ratio, 100, &ind);
+	buffer[ind++] = (uint8_t)conf->atr_test1;
+	buffer_append_float16(buffer, conf->atr_test2, 100, &ind);
+	buffer_append_float16(buffer, conf->atr_test3, 100, &ind);
 	buffer_append_float16(buffer, conf->braketilt_strength, 100, &ind);
 	buffer_append_float16(buffer, conf->braketilt_lingering, 1000, &ind);
 	buffer[ind++] = conf->led_type;
@@ -236,6 +239,9 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->atr_filter = buffer_get_float16(buffer, 100, &ind);
 	conf->atr_amps_accel_ratio = buffer_get_float16(buffer, 100, &ind);
 	conf->atr_amps_decel_ratio = buffer_get_float16(buffer, 100, &ind);
+	conf->atr_test1 = buffer[ind++];
+	conf->atr_test2 = buffer_get_float16(buffer, 100, &ind);
+	conf->atr_test3 = buffer_get_float16(buffer, 100, &ind);
 	conf->braketilt_strength = buffer_get_float16(buffer, 100, &ind);
 	conf->braketilt_lingering = buffer_get_float16(buffer, 1000, &ind);
 	conf->led_type = buffer[ind++];
@@ -357,6 +363,9 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->atr_filter = APPCONF_FLOAT_ATR_FILTER;
 	conf->atr_amps_accel_ratio = APPCONF_FLOAT_ATR_AMPS_ACCEL_RATIO;
 	conf->atr_amps_decel_ratio = APPCONF_FLOAT_ATR_AMPS_DECEL_RATIO;
+	conf->atr_test1 = APPCONF_FLOAT_ATR_TEST1;
+	conf->atr_test2 = APPCONF_FLOAT_ATR_TEST2;
+	conf->atr_test3 = APPCONF_FLOAT_ATR_TEST3;
 	conf->braketilt_strength = APPCONF_FLOAT_BRAKETILT_STRENGTH;
 	conf->braketilt_lingering = APPCONF_FLOAT_BRAKETILT_LINGERING;
 	conf->led_type = APPCONF_FLOAT_LED_TYPE;
