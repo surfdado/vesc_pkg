@@ -160,6 +160,7 @@ typedef struct {
 
 	// Feature: ATR (Adaptive Torque Response)
 	float atr_on_step_size, atr_off_step_size;
+	float atr_speed_boost_multiplier;
 	float acceleration, last_erpm;
 	float accel_gap;
 	float accelhist[ACCEL_ARRAY_SIZE];
@@ -462,6 +463,12 @@ static void configure(data *d) {
 
 	// Feature: ATR:
 	d->float_acc_diff = 0;
+	d->atr_speed_boost_multiplier = 1 / 3000;  // used to be hard coded to 3000, still is for speed_boost <= 40%
+	if (fabsf(d->float_conf.atr_speed_boost) > 0.4) {
+		// above 0.4 we add 500erpm for each extra 10% of speed boost, so at most +6000 for 100% speed boost
+		// we're producing a multiplier here to avoid unnecessary floating point division in the main loop
+		d->atr_speed_boost_multiplier = 1 / ((fabsf(d->float_conf.atr_speed_boost) - 0.4) * 5000 + 3000);
+	}
 
 	/* INSERT OG TT LOGIC? */
 
@@ -1282,8 +1289,8 @@ static void apply_torquetilt(data *d) {
 	// Take abs motor current, subtract start offset, and take the max of that with 0 to get the current above our start threshold (absolute).
 	// Then multiply it by "power" to get our desired angle, and min with the limit to respect boundaries.
 	// Finally multiply it by sign motor current to get directionality back
-	d->torquetilt_target = fminf(fmaxf((fabsf(d->atr_filtered_current) - d->float_conf.torquetilt_start_current), 0) *
-			tt_strength, d->float_conf.torquetilt_angle_limit) * SIGN(d->atr_filtered_current);
+	float abs_net_torque = fmaxf(0, (fabsf(d->atr_filtered_current) - d->float_conf.torquetilt_start_current));
+	d->torquetilt_target = fminf(abs_net_torque * tt_strength, d->float_conf.torquetilt_angle_limit) * SIGN(d->atr_filtered_current);
 
 	if ((d->torquetilt_interpolated - d->torquetilt_target > 0 && d->torquetilt_target > 0) ||
 			(d->torquetilt_interpolated - d->torquetilt_target < 0 && d->torquetilt_target < 0)) {
@@ -1342,9 +1349,12 @@ static void apply_torquetilt(data *d) {
 	//     !forward | down | up
 	float atr_strength = forward == (d->accel_gap > 0) ? d->float_conf.atr_strength_up : d->float_conf.atr_strength_down;
 
-	// from 3000 to 6000 erpm gradually crank up the torque response
+	// from 3000 to 6000..9000 erpm gradually crank up the torque response
 	if ((d->abs_erpm > 3000) && (!d->braking)) {
-		float speedboost = (d->abs_erpm - 3000) / 3000;
+		float speedboost = (d->abs_erpm - 3000) * d->atr_speed_boost_multiplier;
+		// configured speedboost can now also be negative (-1...1)!
+		// -1 brings it to 0 (if erpm exceeds 9000)
+		// +1 doubles it     (if erpm exceeds 9000)
 		speedboost = fminf(1, speedboost) * d->float_conf.atr_speed_boost;
 		atr_strength += atr_strength * speedboost;
 	}
