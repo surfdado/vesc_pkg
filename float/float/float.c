@@ -3072,16 +3072,24 @@ static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
 	if (len < 4)
 		return;
 
-	d->lcm_set = 1;
-	d->lcm_headlight_brightness = cfg[0];
-	d->lcm_lightbar_brightness = cfg[1];
-	d->lcm_lightbar_mode = cfg[2];
-	if (len < 5) {
-		d->lcm_board_off = cfg[3];
-		return;
+	if (d->float_conf.has_floatwheel_lcm) {
+		d->lcm_set = 1;
+		d->lcm_headlight_brightness = cfg[0];
+		d->lcm_lightbar_brightness = cfg[1];
+		d->lcm_lightbar_mode = cfg[2];
+		if (len < 5) {
+			d->lcm_board_off = cfg[3];
+			return;
+		}
+		d->lcm_duty_beep = cfg[3];
+		d->lcm_board_off = cfg[4];
 	}
-	d->lcm_duty_beep = cfg[3];
-	d->lcm_board_off = cfg[4];
+	if (d->float_conf.led_type > 0) {
+		d->float_conf.led_brightness = cfg[0] * 100 / 255;
+		d->float_conf.led_status_brightness = cfg[1] * 100 / 255;
+		d->float_conf.led_status_mode = cfg[2];
+		d->float_conf.led_mode = cfg[3];
+	}
 }
 
 static void cmd_flywheel_toggle(data *d, unsigned char *cfg, int len)
@@ -3232,11 +3240,14 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		case FLOAT_COMMAND_GET_INFO: {
 			int32_t ind = 0;
 			uint8_t send_buffer[10];
+			uint8_t capabilities = 0;
+			capabilities += d->float_conf.has_floatwheel_lcm ? 2 : 0;
+			capabilities += d->float_conf.led_type > 0 ? 4 : 0;
 			send_buffer[ind++] = 101;	// magic nr.
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
 			send_buffer[ind++] = 1;     // build number
-			send_buffer[ind++] = d->float_conf.has_floatwheel_lcm ? 2 : 0;
+			send_buffer[ind++] = capabilities;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}
