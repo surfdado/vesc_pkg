@@ -279,7 +279,7 @@ void led_display_battery(LEDData* led_data, int brightness, int strip_offset, in
     }
 }
 
-void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state) {
+void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state, int float_state) {
     if (led_data->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
         return;
     } else {
@@ -325,7 +325,8 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     }
 
     int brightness = float_conf->led_brightness;
-    if (switch_state == 0) {
+    if (float_state > 5) {
+        // board is disengaged
         brightness = (int)(brightness * 0.05);
     }
     if (brightness > led_data->led_previous_brightness) {
@@ -439,7 +440,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
     }
 
-    if (batteryMeter && switch_state == 0) {
+    if (batteryMeter && float_state > 5) {
         // Idle voltage display
         led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, fade);
         led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, fade);

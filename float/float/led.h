@@ -20,7 +20,7 @@ typedef struct {
 } LEDData;
 
 void led_init(LEDData* led_data, float_config* float_conf);
-void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state);
+void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state, int float_state);
 void led_stop(LEDData* led_data);
 
 #endif /* FLOATLED_H_ */
