@@ -52,7 +52,9 @@ Item {
     property ConfigParams mAppConf: VescIf.appConfig()
     property ConfigParams mCustomConf: VescIf.customConfig(0)
     property var quicksaveNames: []
+    property var info_received : 0
     property var has_floatwheel_lcm: 0
+    property var has_lights_support: 0
     property var handtest_toggle: 0
     property var lights_toggle: 0
     property var beep_reason: 0
@@ -74,7 +76,12 @@ Item {
             var dv = new DataView(buffer)
             var ind = 0
             dv.setUint8(ind, 101); ind += 1
-            dv.setUint8(ind, 0x1); ind += 1
+	    if(info_received == 0){
+	        dv.setUint8(ind, 0x0); ind += 1		// FLOAT_COMMAND_INFO
+	    }
+	    else {
+	        dv.setUint8(ind, 0x1); ind += 1         // FLOAT_COMMAND_GET_RTDATA
+            }
             mCommands.sendCustomAppData(buffer)
             mCommands.getValues()
             
@@ -173,8 +180,12 @@ Item {
                 ind += 2;
                 var lcm = dv.getUint8(ind);
                 if (lcm >= 2) {
-                    has_floatwheel_lcm = 1
+                    has_lights_support = 1
+		    if((lcm & 2) > 0) {
+		        has_floatwheel_lcm = 1
+		    }
                 }
+		info_received = 1
             }
             if (msgtype == 1) {
                 var pid_value = dv.getFloat32(ind); ind += 4;
@@ -794,7 +805,7 @@ Item {
                 }
                 Button {
                         id: lightsButton
-			visible: has_floatwheel_lcm == 1
+			visible: has_lights_support == 1
                         text: "TOGGLE HEADLIGHTS"
                         Layout.fillWidth: true
                         font.pointSize: 16
