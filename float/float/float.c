@@ -385,7 +385,8 @@ static void configure(data *d) {
 	d->debug_render_2 = 4;
 
 	// This timer is used to determine how long the board has been disengaged / idle
-	d->disengage_timer = d->current_time;
+	// subtract 1 second to prevent the haptic buzz disengage click on "write config"
+	d->disengage_timer = d->current_time - 1;
 
 	// Set calculated values from config
 	d->loop_time_seconds = 1.0 / d->float_conf.hertz;
@@ -2154,6 +2155,9 @@ static void float_thd(void *arg) {
 					set_current(d, d->pid_value + d->float_conf.startup_click_current);
 			}
 			else {
+				// modulate haptic buzz onto pid_value unconditionally to allow
+				// checking for haptic conditions, and to finish minimum duration haptic effect
+				// even after short pulses of hitting the condition(s)
 				d->pid_value += haptic_buzz(d, 0.3, false);
 				set_current(d, d->pid_value);
 			}
