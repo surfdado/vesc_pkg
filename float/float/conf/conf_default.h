@@ -548,9 +548,19 @@
 #define APPCONF_FLOAT_LED_BRIGHTNESS 50
 #endif
 
+// Forward/Rear LED Brightness when Idle
+#ifndef APPCONF_FLOAT_LED_BRIGHTNESS_IDLE
+#define APPCONF_FLOAT_LED_BRIGHTNESS_IDLE 10
+#endif
+
 // Forward/Rear LED Mode
 #ifndef APPCONF_FLOAT_LED_MODE
 #define APPCONF_FLOAT_LED_MODE 1
+#endif
+
+// Forward/Rear LED Mode when Idle
+#ifndef APPCONF_FLOAT_LED_MODE_IDLE
+#define APPCONF_FLOAT_LED_MODE_IDLE 1
 #endif
 
 // Status LED Brightness

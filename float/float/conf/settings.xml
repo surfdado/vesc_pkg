@@ -2424,6 +2424,26 @@ p, li { white-space: pre-wrap; }
             <suffix>%</suffix>
             <vTx>1</vTx>
         </led_brightness>
+        <led_brightness_idle>
+            <longName>Forward/Rear LED Brightness when Idle</longName>
+            <type>2</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Brightness for the forward and rear LED strips when the board is disengaged.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_LED_BRIGHTNESS_IDLE</cDefine>
+            <editorScale>1</editorScale>
+            <editAsPercentage>0</editAsPercentage>
+            <maxInt>100</maxInt>
+            <minInt>0</minInt>
+            <showDisplay>0</showDisplay>
+            <stepInt>5</stepInt>
+            <valInt>10</valInt>
+            <suffix>%</suffix>
+            <vTx>1</vTx>
+        </led_brightness_idle>
         <led_mode>
             <longName>Forward/Rear LED Mode</longName>
             <type>4</type>
@@ -2432,7 +2452,7 @@ p, li { white-space: pre-wrap; }
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Color modes for forward &amp;amp; rear LED strips.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Color modes for forward &amp;amp; rear LED strips while the board is in motion.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_LED_MODE</cDefine>
             <valInt>1</valInt>
             <enumNames>White/Red</enumNames>
@@ -2445,6 +2465,27 @@ p, li { white-space: pre-wrap; }
             <enumNames>Rave</enumNames>
             <enumNames>Mullet</enumNames>
         </led_mode>
+        <led_mode_idle>
+            <longName>Forward/Rear LED Mode when Idle</longName>
+            <type>4</type>
+            <transmittable>1</transmittable>
+            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Color modes for forward &amp;amp; rear LED strips while the board is disengaged.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>APPCONF_FLOAT_LED_MODE_IDLE</cDefine>
+            <valInt>1</valInt>
+            <enumNames>White/Red</enumNames>
+            <enumNames>White/Red with Idle Battery Meter</enumNames>
+            <enumNames>Cyan/Magenta</enumNames>
+            <enumNames>Blue/Green</enumNames>
+            <enumNames>Yellow/Green</enumNames>
+            <enumNames>RGB Fade</enumNames>
+            <enumNames>Strobe</enumNames>
+            <enumNames>Rave</enumNames>
+            <enumNames>Mullet</enumNames>
+        </led_mode_idle>
         <led_status_brightness>
             <longName>Status LED Brightness</longName>
             <type>2</type>
@@ -2736,7 +2777,9 @@ p, li { white-space: pre-wrap; }
         <ser>led_forward_count</ser>
         <ser>led_rear_count</ser>
         <ser>led_brightness</ser>
+        <ser>led_brightness_idle</ser>
         <ser>led_mode</ser>
+        <ser>led_mode_idle</ser>
         <ser>led_status_brightness</ser>
         <ser>led_status_mode</ser>
         <ser>limit_current_accel</ser>
@@ -2917,7 +2960,9 @@ p, li { white-space: pre-wrap; }
                 <subgroupParams>
                     <param>::sep::Forward &amp; Rear</param>
                     <param>led_brightness</param>
+                    <param>led_brightness_idle</param>
                     <param>led_mode</param>
+                    <param>led_mode_idle</param>
                     <param>::sep::Status</param>
                     <param>led_status_brightness</param>
                     <param>led_status_mode</param>

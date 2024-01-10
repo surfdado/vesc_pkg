@@ -157,7 +157,9 @@ typedef struct {
 	uint8_t led_forward_count;
 	uint8_t led_rear_count;
 	uint8_t led_brightness;
+	uint8_t led_brightness_idle;
 	uint8_t led_mode;
+	uint8_t led_mode_idle;
 	uint8_t led_status_brightness;
 	uint8_t led_status_mode;
 	int limit_current_accel;

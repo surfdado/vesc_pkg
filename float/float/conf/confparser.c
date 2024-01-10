@@ -119,7 +119,9 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer[ind++] = (uint8_t)conf->led_forward_count;
 	buffer[ind++] = (uint8_t)conf->led_rear_count;
 	buffer[ind++] = (uint8_t)conf->led_brightness;
+	buffer[ind++] = (uint8_t)conf->led_brightness_idle;
 	buffer[ind++] = conf->led_mode;
+	buffer[ind++] = conf->led_mode_idle;
 	buffer[ind++] = (uint8_t)conf->led_status_brightness;
 	buffer[ind++] = conf->led_status_mode;
 	buffer_append_int16(buffer, conf->limit_current_accel, &ind);
@@ -251,7 +253,9 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->led_forward_count = buffer[ind++];
 	conf->led_rear_count = buffer[ind++];
 	conf->led_brightness = buffer[ind++];
+	conf->led_brightness_idle = buffer[ind++];
 	conf->led_mode = buffer[ind++];
+	conf->led_mode_idle = buffer[ind++];
 	conf->led_status_brightness = buffer[ind++];
 	conf->led_status_mode = buffer[ind++];
 	conf->limit_current_accel = buffer_get_int16(buffer, &ind);
@@ -376,7 +380,9 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->led_forward_count = APPCONF_FLOAT_LED_FORWARD_COUNT;
 	conf->led_rear_count = APPCONF_FLOAT_LED_REAR_COUNT;
 	conf->led_brightness = APPCONF_FLOAT_LED_BRIGHTNESS;
+	conf->led_brightness_idle = APPCONF_FLOAT_LED_BRIGHTNESS_IDLE;
 	conf->led_mode = APPCONF_FLOAT_LED_MODE;
+	conf->led_mode_idle = APPCONF_FLOAT_LED_MODE_IDLE;
 	conf->led_status_brightness = APPCONF_FLOAT_LED_STATUS_BRIGHTNESS;
 	conf->led_status_mode = APPCONF_FLOAT_LED_STATUS_MODE;
 	conf->limit_current_accel = LIMIT_CURRENT_ACCEL;
