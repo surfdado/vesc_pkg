@@ -279,6 +279,23 @@ void led_display_battery(LEDData* led_data, int brightness, int strip_offset, in
     }
 }
 
+void led_float_disabled(LEDData* led_data, int brightness, int first, int count) {
+    // show red LEDs in the center of the light bar
+    int start = count / 4;
+    int end = count * 3 / 4;
+    if (end < 3) { // 3 or fewer LEDs in total? Show red lights across the entire light bar
+        end = count;
+    }
+    for (int i = first; i < first + count; i++) {
+        int bright = brightness;
+        if ((end > 4) && ((i == first+start) || (i == first+end-1))) // first and last red led at half brightness
+            bright /= 2;
+        if ((i < first+start) || (i > first+end)) // outer LEDs are off
+            bright = 0;
+        led_set_color(led_data, i, 0x00FF0000, bright, false);
+    }
+}
+
 void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state, int float_state) {
     if (led_data->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
         return;
@@ -287,7 +304,10 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     }
     if (led_data->led_status_count > 0) {
         int statusBrightness = (int)(float_conf->led_status_brightness * 2.55);
-        if (erpm < float_conf->fault_adc_half_erpm) {
+        if (float_state == 15) {
+            led_float_disabled(led_data, statusBrightness, 0, led_data->led_status_count);
+        }
+        else if (erpm < float_conf->fault_adc_half_erpm) {
             // Display status LEDs
             if (switch_state == 0) {
                 led_display_battery(led_data, statusBrightness, 0, led_data->led_status_count, false);
@@ -327,7 +347,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     int brightness = float_conf->led_brightness;
     if (float_state > 5) {
         // board is disengaged
-        brightness = (int)(brightness * 0.05);
+        brightness = float_conf->led_brightness_idle;
     }
     if (brightness > led_data->led_previous_brightness) {
         led_data->led_previous_brightness += 5;
@@ -440,7 +460,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
     }
 
-    if (batteryMeter && float_state > 5) {
+    if (batteryMeter && float_state > 5 && float_state < 15) {
         // Idle voltage display
         led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, fade);
         led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, fade);
@@ -448,12 +468,20 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         // Normal color/pattern display
         if (led_data->led_forward_count > 0) {
             int offset = led_data->led_status_count;
-            for (int i = offset; i < led_data->led_forward_count + offset; i++) {
-                led_set_color(led_data, i, forwardColor, brightness, fade);
+            if (float_state == 15) { // disabled board? front lights show red in center
+                led_float_disabled(led_data, brightness, offset, led_data->led_forward_count);
+            }
+            else {
+                for (int i = offset; i < led_data->led_forward_count + offset; i++) {
+                    led_set_color(led_data, i, forwardColor, brightness, fade);
+                }
             }
         }
         if (led_data->led_rear_count > 0) {
             int offset = led_data->led_status_count + led_data->led_forward_count;
+            if (float_state == 15) { // disabled board? rear lights off
+                brightness = 0;
+            }
             for (int i = offset; i < led_data->led_rear_count + offset; i++) {
                 led_set_color(led_data, i, rearColor, brightness, fade);
             }
