@@ -3096,6 +3096,10 @@ static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
 		d->float_conf.led_status_brightness = cfg[1] * 100 / 255;
 		d->float_conf.led_status_mode = cfg[2];
 		d->float_conf.led_mode = cfg[3];
+		if (len > 5) {
+			d->float_conf.led_mode_idle = cfg[4];
+			d->float_conf.led_brightness_idle = cfg[5];
+		}
 	}
 }
 
@@ -3382,7 +3386,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_LCM_CTRL: {
-			if (len >= 3) {
+			if (len >= 6) {
 				cmd_lcm_ctrl(d, &buffer[2], len-2);
 			}
 			else {
