@@ -531,8 +531,6 @@ static void configure(data *d) {
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
 	konami_init(&d->battery_konami, battery_konami_sequence, sizeof(battery_konami_sequence));
 
-	led_init(&d->led_data, &d->float_conf);
-
 	// Floatwheel LCM Support:
 	d->lcm_headlight_brightness = 0;
 	d->lcm_lightbar_brightness = 10;
