@@ -1,3 +1,4 @@
+*.d
 conf_default.h
 confparser.c
 confparser.h
