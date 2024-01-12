@@ -1645,8 +1645,8 @@ static float haptic_buzz(data *d, float note_period, bool brake) {
 
 		if (brake) {
 			// This is to emulate the equivalent of "stop click"
-			buzz_current = fmaxf(5, d->float_conf.startup_click_current);
-			buzz_current = fminf(15, buzz_current);
+			buzz_current = fmaxf(3, d->float_conf.startup_click_current * 0.8);
+			buzz_current = fminf(10, buzz_current);
 			buzz_period = 0;
 		}
 		else if ((d->abs_erpm < 10000) && (buzz_current > 5)) {
@@ -2262,10 +2262,10 @@ static void float_thd(void *arg) {
 				}
 			}
 
-			if ((d->current_time - d->disengage_timer) < 0.012) {
+			if ((d->current_time - d->disengage_timer) < 0.008) {
 				// 20ms brake buzz, single tone
 				if (d->float_conf.startup_click_current > 0) {
-					set_current(d, haptic_buzz(d, 0.012, true));
+					set_current(d, haptic_buzz(d, 0.008, true));
 				}
 			}
 			else {
