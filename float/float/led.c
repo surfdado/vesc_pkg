@@ -368,23 +368,24 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     bool fade = true;
     bool directional = true;
     bool batteryMeter = false;
-    if (float_conf->led_mode == 0) { // Red/White
+    int led_mode = float_state < 5 ? float_conf->led_mode : float_conf->led_mode_idle;
+    if (led_mode == 0) { // Red/White
         forwardColor = 0xFFFFFFFF;
         rearColor = 0x00FF0000;
-    } else if (float_conf->led_mode == 1) { // Red/White with Battery Meter
+    } else if (led_mode == 1) { // Red/White with Battery Meter
         batteryMeter = true;
         forwardColor = 0xFFFFFFFF;
         rearColor = 0x00FF0000;
-    } else if (float_conf->led_mode == 2) { // Cyan/Magenta
+    } else if (led_mode == 2) { // Cyan/Magenta
         forwardColor = 0x0000FFFF;
         rearColor = 0x00FF00FF;
-    } else if (float_conf->led_mode == 3) { // Blue/Green
+    } else if (led_mode == 3) { // Blue/Green
         forwardColor = 0x000000FF;
         rearColor = 0x0000FF00;
-    } else if (float_conf->led_mode == 4) { // Yellow/Green
+    } else if (led_mode == 4) { // Yellow/Green
         forwardColor = 0x00FFFF00;
         rearColor = 0x0000FF00;
-    } else if (float_conf->led_mode == 5) { // RGB Fade
+    } else if (led_mode == 5) { // RGB Fade
         if ((int)(current_time * 1000) % 3000 < 1000) {
             forwardColor = 0x00FF0000;
             rearColor = 0x00FF0000;
@@ -395,7 +396,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             forwardColor = 0x000000FF;
             rearColor = 0x000000FF;
         }
-    } else if (float_conf->led_mode == 6) { // Strobe
+    } else if (led_mode == 6) { // Strobe
         fade = false;
         if (led_data->led_previous_forward > 0) {
             forwardColor = 0x00000000;
@@ -405,7 +406,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             rearColor = 0xFFFFFFFF;
         }
         led_data->led_previous_forward = forwardColor;
-    } else if (float_conf->led_mode == 7) { // Rave
+    } else if (led_mode == 7) { // Rave
         fade = false;
         if (led_data->led_previous_forward == 0x00FF0000) {
             forwardColor = 0x00FFFF00;
@@ -427,7 +428,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             rearColor = 0x00FF0000;
         }
         led_data->led_previous_forward = forwardColor;
-    } else if (float_conf->led_mode == 8) { // Mullet
+    } else if (led_mode == 8) { // Mullet
         fade = false;
         forwardColor = 0xFFFFFFFF;
         if (led_data->led_previous_rear == 0x00FF0000) {
