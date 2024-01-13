@@ -8,7 +8,7 @@ refloat.vescpkg: refloat refloat.lisp README-pkg.md ui.qml
 refloat:
 	$(MAKE) -C $@
 
-VERSION=`grep APPCONF_FLOAT_VERSION refloat/conf/settings.xml -A10 | grep valDouble | tr -dc '[.[:digit:]]'`
+VERSION=`grep CFG_DFLT_VERSION refloat/conf/settings.xml -A10 | grep valDouble | tr -dc '[.[:digit:]]'`
 
 README-pkg.md: README.md
 	cp README.md README-pkg.md
