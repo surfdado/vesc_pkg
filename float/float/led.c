@@ -307,7 +307,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         if (float_state == 15) {
             led_float_disabled(led_data, statusBrightness, 0, led_data->led_status_count);
         }
-        else if (erpm < float_conf->fault_adc_half_erpm) {
+        else if (fabsf(erpm) < float_conf->fault_adc_half_erpm) {
             // Display status LEDs
             if (switch_state == 0) {
                 led_display_battery(led_data, statusBrightness, 0, led_data->led_status_count, false);
@@ -449,6 +449,9 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
 
     // Set directonality
     if (directional) {
+        if (float_state == 4)  // RUNNING_UPSIDEDOWN aka drark ride => flip erpm sign
+            erpm = -erpm;
+
         if (erpm > 100) {
             led_data->led_latching_direction = true;
         } else if (erpm < -100) {
