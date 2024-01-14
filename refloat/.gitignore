@@ -2,6 +2,7 @@
 conf_default.h
 confparser.c
 confparser.h
+refloat/conf/conf_general.h
 refloat/refloat.lisp
 README-pkg.md
 ui.qml
