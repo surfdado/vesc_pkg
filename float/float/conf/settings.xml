@@ -227,7 +227,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>-180</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
-            <valDouble>90</valDouble>
+            <valDouble>60</valDouble>
             <vTxDoubleScale>10</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>7</vTx>
@@ -249,7 +249,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>-180</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
-            <valDouble>90</valDouble>
+            <valDouble>60</valDouble>
             <vTxDoubleScale>10</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>7</vTx>
@@ -273,7 +273,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>1</showDisplay>
             <stepDouble>0.1</stepDouble>
-            <valDouble>3</valDouble>
+            <valDouble>2</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> V</suffix>
             <vTx>7</vTx>
@@ -297,7 +297,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>1</showDisplay>
             <stepDouble>0.1</stepDouble>
-            <valDouble>3</valDouble>
+            <valDouble>2</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> V</suffix>
             <vTx>7</vTx>
@@ -330,7 +330,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>50</stepInt>
-            <valInt>1000</valInt>
+            <valInt>250</valInt>
             <suffix> ms</suffix>
             <vTx>3</vTx>
         </fault_delay_pitch>
@@ -350,7 +350,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>50</stepInt>
-            <valInt>1000</valInt>
+            <valInt>250</valInt>
             <suffix> ms</suffix>
             <vTx>3</vTx>
         </fault_delay_roll>
@@ -370,7 +370,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>50</stepInt>
-            <valInt>250</valInt>
+            <valInt>100</valInt>
             <suffix> ms</suffix>
             <vTx>3</vTx>
         </fault_delay_switch_half>
@@ -412,7 +412,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>50</stepInt>
-            <valInt>300</valInt>
+            <valInt>200</valInt>
             <suffix> ERPM</suffix>
             <vTx>3</vTx>
         </fault_adc_half_erpm>
@@ -786,11 +786,11 @@ p, li { white-space: pre-wrap; }
             <editorDecimalsDouble>1</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
-            <maxDouble>100</maxDouble>
+            <maxDouble>10</maxDouble>
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>5</valDouble>
+            <valDouble>1</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
             <suffix> °/s</suffix>
             <vTx>7</vTx>
@@ -1288,7 +1288,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>5</valDouble>
+            <valDouble>3</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>7</vTx>
@@ -1332,7 +1332,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>5</stepDouble>
-            <valDouble>60</valDouble>
+            <valDouble>30</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
             <suffix> °/s</suffix>
             <vTx>7</vTx>
@@ -1717,7 +1717,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.05</stepDouble>
-            <valDouble>0</valDouble>
+            <valDouble>0.1</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix> °/A</suffix>
             <vTx>7</vTx>
@@ -1796,7 +1796,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>0.5</valDouble>
+            <valDouble>1.5</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>7</vTx>
@@ -1822,7 +1822,7 @@ p, li { white-space: pre-wrap; }
             <minDouble>0</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.5</stepDouble>
-            <valDouble>0.5</valDouble>
+            <valDouble>1.5</valDouble>
             <vTxDoubleScale>100</vTxDoubleScale>
             <suffix> °</suffix>
             <vTx>7</vTx>
@@ -2454,7 +2454,7 @@ p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Color modes for forward &amp;amp; rear LED strips while the board is in motion.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_LED_MODE</cDefine>
-            <valInt>1</valInt>
+            <valInt>0</valInt>
             <enumNames>White/Red</enumNames>
             <enumNames>White/Red with Idle Battery Meter</enumNames>
             <enumNames>Cyan/Magenta</enumNames>

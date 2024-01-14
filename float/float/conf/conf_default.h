@@ -40,22 +40,22 @@
 
 // Pitch Axis Fault Cutoff
 #ifndef APPCONF_FLOAT_FAULT_PITCH
-#define APPCONF_FLOAT_FAULT_PITCH 90
+#define APPCONF_FLOAT_FAULT_PITCH 60
 #endif
 
 // Roll Axis Fault Cutoff
 #ifndef APPCONF_FLOAT_FAULT_ROLL
-#define APPCONF_FLOAT_FAULT_ROLL 90
+#define APPCONF_FLOAT_FAULT_ROLL 60
 #endif
 
 // ADC1 Switch Voltage
 #ifndef APPCONF_FLOAT_FAULT_ADC1
-#define APPCONF_FLOAT_FAULT_ADC1 3
+#define APPCONF_FLOAT_FAULT_ADC1 2
 #endif
 
 // ADC2 Switch Voltage
 #ifndef APPCONF_FLOAT_FAULT_ADC2
-#define APPCONF_FLOAT_FAULT_ADC2 3
+#define APPCONF_FLOAT_FAULT_ADC2 2
 #endif
 
 // Beep on Sensor Fault
@@ -65,17 +65,17 @@
 
 // Pitch Fault Delay
 #ifndef APPCONF_FLOAT_FAULT_DELAY_PITCH
-#define APPCONF_FLOAT_FAULT_DELAY_PITCH 1000
+#define APPCONF_FLOAT_FAULT_DELAY_PITCH 250
 #endif
 
 // Roll Fault Delay
 #ifndef APPCONF_FLOAT_FAULT_DELAY_ROLL
-#define APPCONF_FLOAT_FAULT_DELAY_ROLL 1000
+#define APPCONF_FLOAT_FAULT_DELAY_ROLL 250
 #endif
 
 // Half Switch Fault Delay
 #ifndef APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF
-#define APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF 250
+#define APPCONF_FLOAT_FAULT_DELAY_SWITCH_HALF 100
 #endif
 
 // Full Switch Fault Delay
@@ -85,7 +85,7 @@
 
 // ADC Half State Fault ERPM
 #ifndef APPCONF_FLOAT_FAULT_ADC_HALF_ERPM
-#define APPCONF_FLOAT_FAULT_ADC_HALF_ERPM 300
+#define APPCONF_FLOAT_FAULT_ADC_HALF_ERPM 200
 #endif
 
 // Treat Both Sensors as One (Posi)
@@ -175,7 +175,7 @@
 
 // Return To Level Speed
 #ifndef APPCONF_FLOAT_TILTBACK_RETURN_SPEED
-#define APPCONF_FLOAT_TILTBACK_RETURN_SPEED 5
+#define APPCONF_FLOAT_TILTBACK_RETURN_SPEED 1
 #endif
 
 // Constant Tiltback
@@ -290,7 +290,7 @@
 
 // Startup Pitch Axis Angle Tolerance
 #ifndef APPCONF_FLOAT_STARTUP_PITCH_TOLERANCE
-#define APPCONF_FLOAT_STARTUP_PITCH_TOLERANCE 5
+#define APPCONF_FLOAT_STARTUP_PITCH_TOLERANCE 3
 #endif
 
 // Startup Roll Axis Angle Tolerance
@@ -300,7 +300,7 @@
 
 // Startup Centering Speed
 #ifndef APPCONF_FLOAT_STARTUP_SPEED
-#define APPCONF_FLOAT_STARTUP_SPEED 60
+#define APPCONF_FLOAT_STARTUP_SPEED 30
 #endif
 
 // Startup Click Current
@@ -390,7 +390,7 @@
 
 // Strength (Regen)
 #ifndef APPCONF_FLOAT_TORQUETILT_STRENGTH_REGEN
-#define APPCONF_FLOAT_TORQUETILT_STRENGTH_REGEN 0
+#define APPCONF_FLOAT_TORQUETILT_STRENGTH_REGEN 0.1
 #endif
 
 // Strength
@@ -445,12 +445,12 @@
 
 // Threshold Angle Up
 #ifndef APPCONF_FLOAT_ATR_THRESHOLD_UP
-#define APPCONF_FLOAT_ATR_THRESHOLD_UP 0.5
+#define APPCONF_FLOAT_ATR_THRESHOLD_UP 1.5
 #endif
 
 // Threshold Angle Down
 #ifndef APPCONF_FLOAT_ATR_THRESHOLD_DOWN
-#define APPCONF_FLOAT_ATR_THRESHOLD_DOWN 0.5
+#define APPCONF_FLOAT_ATR_THRESHOLD_DOWN 1.5
 #endif
 
 // Speed Boost
@@ -555,7 +555,7 @@
 
 // Forward/Rear LED Mode
 #ifndef APPCONF_FLOAT_LED_MODE
-#define APPCONF_FLOAT_LED_MODE 1
+#define APPCONF_FLOAT_LED_MODE 0
 #endif
 
 // Forward/Rear LED Mode when Idle
