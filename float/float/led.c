@@ -303,7 +303,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         led_data->led_last_updated = current_time;
     }
     if (led_data->led_status_count > 0) {
-        int statusBrightness = (int)(float_conf->led_status_brightness * 2.55);
+        int statusBrightness = (int)(float_conf->led_status_brightness);
         if (float_state == 15) {
             led_float_disabled(led_data, statusBrightness, 0, led_data->led_status_count);
         }
@@ -316,7 +316,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
                     if (i < led_data->led_status_count / 2) {
                         led_set_color(led_data, i, 0x000000FF, statusBrightness, false);
                     } else {
-                        led_set_color(led_data, i, 0x00000000, 0xFF, false);
+                        led_set_color(led_data, i, 0x00000000, 0, false);
                     }
                 }
             } else {
@@ -338,7 +338,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
                 if (i < dutyLeds) {
                     led_set_color(led_data, i, dutyColor, statusBrightness, false);
                 } else {
-                    led_set_color(led_data, i, 0x00000000, 0xFF, false);
+                    led_set_color(led_data, i, 0x00000000, 0, false);
                 }
             }
         }

@@ -3042,8 +3042,11 @@ static void cmd_lcm_poll(data *d)
 	if (d->lcm_set != 0) {
 		// LCM control info
 		send_buffer[ind++] = d->lcm_set;
-		send_buffer[ind++] = d->lcm_headlight_brightness;
-		send_buffer[ind++] = d->lcm_lightbar_brightness;
+		// LCM expects brightness values between 0..255
+		unsigned int headlts = d->lcm_headlight_brightness * 255 / 100;
+		unsigned int lightbar = d->lcm_lightbar_brightness * 255 / 100;
+		send_buffer[ind++] = headlts;
+		send_buffer[ind++] = lightbar;
 		send_buffer[ind++] = d->lcm_lightbar_mode;
 		send_buffer[ind++] = d->lcm_duty_beep;
 		send_buffer[ind++] = d->lcm_board_off;
@@ -3090,8 +3093,8 @@ static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
 		d->lcm_board_off = cfg[4];
 	}
 	if (d->float_conf.led_type > 0) {
-		d->float_conf.led_brightness = cfg[0] * 100 / 255;
-		d->float_conf.led_status_brightness = cfg[1] * 100 / 255;
+		d->float_conf.led_brightness = cfg[0];
+		d->float_conf.led_status_brightness = cfg[1];
 		d->float_conf.led_status_mode = cfg[2];
 		d->float_conf.led_mode = cfg[3];
 		if (len > 5) {
