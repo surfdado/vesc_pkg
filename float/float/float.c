@@ -101,8 +101,22 @@ typedef enum {
 	BQ_HIGHPASS
 } BiquadType;
 
+typedef enum {
+	NO_LIGHTS = 0,
+	INTERNAL = 1,
+	EXTERNAL_MODULE = 2
+} LightingType;
+
 static const FootpadSensorState flywheel_konami_sequence[] = { FS_LEFT, FS_NONE, FS_RIGHT, FS_NONE, FS_LEFT, FS_NONE, FS_RIGHT };
 static const FootpadSensorState battery_konami_sequence[] = { FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT };
+
+#define MAXLCMNAMELENGTH 20
+#define MAXLCMPAYLOADLENGTH 64
+
+typedef struct {
+    uint8_t data[MAXLCMPAYLOADLENGTH];
+    uint8_t size;
+} lcmPayload;
 
 // This is all persistent state of the application, which will be allocated in init. It
 // is put here because variables can only be read-only when this program is loaded
@@ -126,12 +140,13 @@ typedef struct {
 	bool beeper_enabled;
 
 	// LEDs
+	LightingType light_implementation; 	// Runtime determined lighting mode (internal/external) LEDS 
 	LEDData led_data;
 
 	// External Lights (LCM)
-	uint8_t lcm_lightbar_mode;
-	uint8_t lcm_board_off;
-	uint8_t lcm_set;
+	char lcm_name[MAXLCMNAMELENGTH];
+	lcmPayload lcm_payload;
+	bool lcm_set; // Flag to indicate that config should be passed to the external module
 
 	// Config values
 	float loop_time_seconds;
@@ -527,10 +542,13 @@ static void configure(data *d) {
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
 	konami_init(&d->battery_konami, battery_konami_sequence, sizeof(battery_konami_sequence));
 
-	// External LCM support (Floatwheel)
-	d->lcm_lightbar_mode = 0;
-	d->lcm_board_off = 0;
-	d->lcm_set = 0;
+	// Run as no lights if using external module until it has polled us
+	d->light_implementation = (d->float_conf.led_type != LED_Type_None && d->float_conf.led_type != LED_Type_External_Module) ? INTERNAL : NO_LIGHTS;
+
+	// External light module support
+	d->lcm_name[0] = '\0';
+	d->lcm_payload.size = 0;
+	d->lcm_set = false;
 }
 
 static void reset_vars(data *d) {
@@ -2405,9 +2423,10 @@ enum {
 	FLOAT_COMMAND_TUNE_TILT = 14,
 	FLOAT_COMMAND_FLYWHEEL = 22,
 	FLOAT_COMMAND_HAPTIC = 23,
-	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by LCM
-	FLOAT_COMMAND_LIGHT_INFO = 25,   // to be called by apps to check if a lighting solution is present / get info
-	FLOAT_COMMAND_LIGHT_CTRL = 26    // to be called by apps to change light settings
+	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by external light modules
+	FLOAT_COMMAND_LIGHT_INFO = 25, // to be called by apps to check if a lighting module is present / get info
+	FLOAT_COMMAND_LIGHT_CTRL = 26, // to be called by apps to change light settings
+	FLOAT_COMMAND_LCM_INFO = 27,   // to be called by apps to check lighting controller firmware
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -3000,16 +3019,29 @@ static void cmd_haptic_config(data *d, unsigned char *cfg, int len)
 /**
  * Command for the LCM to poll data from the float package
  */
-static void cmd_lcm_poll(data *d)
+static void cmd_lcm_poll(data *d, unsigned char *cfg, int len)
 {
-	#define POLLBUFSIZE 20
+	if (len > 0) {
+ 		// Read name from LCM
+		for (int i = 0; i < MAXLCMNAMELENGTH; i++) {
+			if (i > len || i > MAXLCMNAMELENGTH - 1 || cfg[i] == '\0') {
+				d->lcm_name[i] = '\0';
+				break;
+			}
+			d->lcm_name[i] = (char)cfg[i];
+    	}
+	}
+
+	#define POLLBUFSIZE 20 + MAXLCMPAYLOADLENGTH
 	uint8_t send_buffer[POLLBUFSIZE];
 	int32_t ind = 0;
 	mc_fault_code fault = VESC_IF->mc_get_fault();
 
-	if (d->float_conf.led_type == LED_Type_Floatwheel_LCM) {
-		// Why do we still need this??
-		d->lcm_set = 1;
+	d->light_implementation = EXTERNAL_MODULE;
+
+	if (d->float_conf.led_type == LED_Type_External_Module) {
+		// Start sending light info immediately
+		d->lcm_set = true;
 	}
 	
 	// 11 bytes for base info
@@ -3036,13 +3068,15 @@ static void cmd_lcm_poll(data *d)
 
 	if (d->lcm_set != 0) {
 		// LCM control info
-		send_buffer[ind++] = d->lcm_set;
 		send_buffer[ind++] = d->float_conf.led_brightness;
 		send_buffer[ind++] = d->float_conf.led_brightness_idle;
 		send_buffer[ind++] = d->float_conf.led_status_brightness;
-		send_buffer[ind++] = d->lcm_lightbar_mode;
-		send_buffer[ind++] = d->float_conf.is_dutybeep_enabled && d->float_conf.tiltback_duty > 0 ? d->float_conf.tiltback_duty * 100 : 100;
-		send_buffer[ind++] = d->lcm_board_off;
+
+		// Relay any generic byte pairs set by cmd_light_ctrl
+		for (int i = 0; i < d->lcm_payload.size; i++) {
+			send_buffer[ind++] = d->lcm_payload.data[i];
+		}
+		d->lcm_payload.size = 0; // Message has been processed, clear it
 	}
 
 	if (ind > POLLBUFSIZE) {
@@ -3060,10 +3094,30 @@ static void cmd_light_info(data *d)
 	int32_t ind = 0;
 	send_buffer[ind++] = 101;//Magic Number
 	send_buffer[ind++] = FLOAT_COMMAND_LIGHT_INFO;
-	send_buffer[ind++] = d->float_conf.led_type;
+	send_buffer[ind++] = d->light_implementation;
 	send_buffer[ind++] = d->float_conf.led_brightness;
 	send_buffer[ind++] = d->float_conf.led_brightness_idle;
 	send_buffer[ind++] = d->float_conf.led_status_brightness;
+
+	VESC_IF->send_app_data(send_buffer, ind);
+}
+
+/**
+ * Command for apps to call to LCM hardware info (if any)
+ */
+static void cmd_lcm_info(data *d)
+{
+	uint8_t send_buffer[18];
+	int32_t ind = 0;
+	send_buffer[ind++] = 101;//Magic Number
+	send_buffer[ind++] = FLOAT_COMMAND_LCM_INFO;
+	// Write light module firmware name into buffer
+	for (int i = 0; i < MAXLCMNAMELENGTH; i++) {
+		send_buffer[ind++] = d->lcm_name[i];
+		if (d->lcm_name[i] == '\0') {
+			break;
+		}
+	}
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }
@@ -3073,19 +3127,22 @@ static void cmd_light_info(data *d)
  */
 static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 {
-	if (len < 3 || d->float_conf.led_type == LED_Type_None)
+	if (len < 3 || d->light_implementation == NO_LIGHTS)
 		return;
 
 	d->float_conf.led_brightness = cfg[0];
 	d->float_conf.led_brightness_idle = cfg[1];
 	d->float_conf.led_status_brightness = cfg[2];
 
-	if (len > 4) {
-		if (d->float_conf.led_type == LED_Type_Floatwheel_LCM) {
-			d->lcm_set = 1;
-			d->lcm_lightbar_mode = cfg[3];
-			d->lcm_board_off = cfg[4];
-		} else {
+	if (len > 3) {
+		if (d->light_implementation == EXTERNAL_MODULE) {
+			d->lcm_set = true;
+			// Copy rest of payload into data for LCM to pull
+			d->lcm_payload.size = len - 3;
+			for (int i = 0; i < d->lcm_payload.size; i++) {
+				d->lcm_payload.data[i] = cfg[i + 3];
+			}
+		} else if (d->light_implementation == INTERNAL) {
 			d->float_conf.led_mode = cfg[3];
 			d->float_conf.led_mode_idle = cfg[4];
 			d->float_conf.led_status_mode = cfg[5];
@@ -3245,7 +3302,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
 			send_buffer[ind++] = 1;     // build number
-			send_buffer[ind++] = d->float_conf.led_type;
+			send_buffer[ind++] = d->light_implementation;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}
@@ -3365,7 +3422,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_LCM_POLL: {
-			cmd_lcm_poll(d);
+			cmd_lcm_poll(d, &buffer[2], len-2);
 			return;
 		}
 		case FLOAT_COMMAND_LIGHT_INFO: {
@@ -3374,6 +3431,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_LIGHT_CTRL: {
 			cmd_light_ctrl(d, &buffer[2], len-2);
+			return;
+		}
+		case FLOAT_COMMAND_LCM_INFO: {
+			cmd_lcm_info(d);
 			return;
 		}
 		default: {

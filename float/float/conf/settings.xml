@@ -2337,16 +2337,14 @@ p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;LED Strip Type&lt;br /&gt;&lt;br /&gt;None: disable led output&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;RGB: for ws2811 &amp;amp; ws2812b and anything else that shares that 3 channel protocol&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;RGBW: for sk2812 &amp;amp; ws2815 and anything else that shares that 4 channel protocol&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;RGBW: for sk2812 &amp;amp; ws2815 and anything else that shares that 4 channel protocol&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;External Module: for external lighting solutions such as the Floatwheel LCM&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_LED_TYPE</cDefine>
             <valInt>0</valInt>
             <enumNames>None</enumNames>
-            <enumNames>Internal_RGB</enumNames>
-            <enumNames>Internal_RGBW</enumNames>
-            <enumNames>BalanceBuddy</enumNames>
-            <enumNames>rESCue</enumNames>
-            <enumNames>Floatwheel_LCM</enumNames>
-            <enumNames>Other</enumNames>
+            <enumNames>RGB</enumNames>
+            <enumNames>RGBW</enumNames>
+            <enumNames>External Module</enumNames>
         </led_type>
         <led_status_count>
             <longName>Status LED Strip Length</longName>
