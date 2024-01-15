@@ -2360,7 +2360,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>1</stepInt>
-            <valInt>8</valInt>
+            <valInt>10</valInt>
             <suffix></suffix>
             <vTx>1</vTx>
         </led_status_count>
@@ -2380,7 +2380,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>1</stepInt>
-            <valInt>13</valInt>
+            <valInt>20</valInt>
             <suffix></suffix>
             <vTx>1</vTx>
         </led_forward_count>
@@ -2400,7 +2400,7 @@ p, li { white-space: pre-wrap; }
             <minInt>0</minInt>
             <showDisplay>0</showDisplay>
             <stepInt>1</stepInt>
-            <valInt>13</valInt>
+            <valInt>20</valInt>
             <suffix></suffix>
             <vTx>1</vTx>
         </led_rear_count>
