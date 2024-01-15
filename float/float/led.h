@@ -7,10 +7,7 @@ typedef enum {
 	LED_Type_None,
 	LED_Type_RGB,
 	LED_Type_RGBW,
-	LED_Type_BalanceBuddy,
-	LED_Type_rESCue,
-	LED_Type_Floatwheel_LCM,
-	LED_Type_Other
+	LED_Type_External_Module,
 } LEDType;
 
 typedef struct {

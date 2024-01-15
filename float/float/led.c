@@ -184,8 +184,7 @@ void led_init(LEDData* led_data, float_config* float_conf) {
         bits = 24;
     } else if (led_data->led_type == LED_Type_RGBW) {
         bits = 32;
-    }
-    else {
+    } else {
         return;
     }
 
@@ -234,7 +233,7 @@ void led_init(LEDData* led_data, float_config* float_conf) {
 }
 
 void led_set_color(LEDData* led_data, int led, uint32_t color, uint32_t brightness, bool fade) {
-    if ((led_data->led_type == LED_Type_None) || (led_data->led_type > LED_Type_RGBW)) {
+    if ((led_data->led_type == LED_Type_None) || (led_data->led_type == LED_Type_External_Module)) {
         return;
     }
     if (led >= 0 && led < led_data->ledbuf_len) {
@@ -310,7 +309,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     ///////////////////////
     // Status LED Logic //
     /////////////////////
-    if ((led_data->led_type == LED_Type_None) || (led_data->led_type > LED_Type_RGBW)) {
+    if ((led_data->led_type == LED_Type_None) || (led_data->led_type == LED_Type_External_Module)) {
         return;
     }
     if (current_time - led_data->led_last_updated < 0.05) {
