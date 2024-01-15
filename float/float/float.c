@@ -1891,7 +1891,11 @@ static void float_thd(void *arg) {
 
 		footpad_sensor_update(&d->footpad_sensor, &d->float_conf);
 
-		if (d->footpad_sensor.state == FS_NONE && d->state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_beep_erpm) {
+		int float_state = (d->is_flywheel_mode && (d->state <= RUNNING_TILTBACK)) ? RUNNING_FLYWHEEL : d->state;
+		int switch_state = footpad_sensor_state_to_switch_compat(d->footpad_sensor.state);
+		led_update(&d->led_data, &d->float_conf, d->current_time, d->erpm, d->abs_duty_cycle, switch_state, float_state);
+
+		if (d->footpad_sensor.state == FS_NONE && float_state <= RUNNING_TILTBACK && d->abs_erpm > d->switch_warn_beep_erpm) {
 			// If we're at riding speed and the switch is off => ALERT the user
 			// set force=true since this could indicate an imminent shutdown/nosedive
 			beep_on(d, true);
@@ -1900,10 +1904,6 @@ static void float_thd(void *arg) {
 			// if the switch comes back on we stop beeping
 			beep_off(d, false);
 		}
-
-		int float_state = (d->is_flywheel_mode && (d->state <= RUNNING_TILTBACK)) ? RUNNING_FLYWHEEL : d->state;
-		int switch_state = footpad_sensor_state_to_switch_compat(d->footpad_sensor.state);
-		led_update(&d->led_data, &d->float_conf, d->current_time, d->erpm, d->abs_duty_cycle, switch_state, float_state);
 
 		// Log Values
 		d->float_setpoint = d->setpoint;
