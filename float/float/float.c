@@ -101,6 +101,12 @@ typedef enum {
 	BQ_HIGHPASS
 } BiquadType;
 
+typedef enum {
+	NO_LIGHTS = 0,
+	INTERNAL = 1,
+	EXTERNAL_MODULE = 2
+} LightingType;
+
 static const FootpadSensorState flywheel_konami_sequence[] = { FS_LEFT, FS_NONE, FS_RIGHT, FS_NONE, FS_LEFT, FS_NONE, FS_RIGHT };
 static const FootpadSensorState battery_konami_sequence[] = { FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT };
 
@@ -126,7 +132,13 @@ typedef struct {
 	bool beeper_enabled;
 
 	// LEDs
+	LightingType light_implementation;
 	LEDData led_data;
+
+	// External Lights (LCM)
+	uint8_t lcm_lightbar_mode;
+	uint8_t lcm_board_off;
+	uint8_t lcm_set;
 
 	// Config values
 	float loop_time_seconds;
@@ -246,15 +258,6 @@ typedef struct {
 	int rc_counter;
 	float rc_current_target;
 	float rc_current;
-
-	// LCM:
-	uint8_t lcm_headlight_brightness;
-	uint8_t lcm_lightbar_brightness;
-	uint8_t lcm_lightbar_mode;
-	uint8_t lcm_board_off;
-	uint8_t lcm_duty_beep;
-	uint8_t lcm_set;
-	uint8_t lcm_active;
 
 	// Log values
 	float float_setpoint, float_atr, float_braketilt, float_torquetilt, float_turntilt, float_inputtilt;
@@ -531,14 +534,12 @@ static void configure(data *d) {
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
 	konami_init(&d->battery_konami, battery_konami_sequence, sizeof(battery_konami_sequence));
 
-	// Floatwheel LCM Support:
-	d->lcm_headlight_brightness = 0;
-	d->lcm_lightbar_brightness = 10;
+	d->light_implementation = (d->float_conf.led_type  > 0) ? INTERNAL : NO_LIGHTS;
+
+	// External LCM support (Floatwheel)
 	d->lcm_lightbar_mode = 0;
 	d->lcm_board_off = 0;
-	d->lcm_duty_beep = 90;
 	d->lcm_set = 0;
-	d->lcm_active = 0;
 }
 
 static void reset_vars(data *d) {
@@ -2414,8 +2415,8 @@ enum {
 	FLOAT_COMMAND_FLYWHEEL = 22,
 	FLOAT_COMMAND_HAPTIC = 23,
 	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by LCM
-	FLOAT_COMMAND_LCM_INFO = 25,   // to be called by apps to check if an LCM is present / get info
-	FLOAT_COMMAND_LCM_CTRL = 26    // to be called by apps to change LCM settings
+	FLOAT_COMMAND_LIGHT_INFO = 25,   // to be called by apps to check if a lighting is present / get info
+	FLOAT_COMMAND_LIGHT_CTRL = 26    // to be called by apps to change light settings
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -3015,8 +3016,12 @@ static void cmd_lcm_poll(data *d)
 	int32_t ind = 0;
 	mc_fault_code fault = VESC_IF->mc_get_fault();
 
-	d->lcm_active = 1;
+	d->light_implementation = EXTERNAL_MODULE;
 
+	if (d->float_conf.has_lcm) {
+		d->lcm_set = 1;
+	}
+	
 	// 11 bytes for base info
 	send_buffer[ind++] = 101;//Magic Number
 	send_buffer[ind++] = FLOAT_COMMAND_LCM_POLL;
@@ -3042,13 +3047,11 @@ static void cmd_lcm_poll(data *d)
 	if (d->lcm_set != 0) {
 		// LCM control info
 		send_buffer[ind++] = d->lcm_set;
-		// LCM expects brightness values between 0..255
-		unsigned int headlts = d->lcm_headlight_brightness * 255 / 100;
-		unsigned int lightbar = d->lcm_lightbar_brightness * 255 / 100;
-		send_buffer[ind++] = headlts;
-		send_buffer[ind++] = lightbar;
+		send_buffer[ind++] = d->float_conf.led_brightness;
+		send_buffer[ind++] = d->float_conf.led_brightness_idle;
+		send_buffer[ind++] = d->float_conf.led_status_brightness;
 		send_buffer[ind++] = d->lcm_lightbar_mode;
-		send_buffer[ind++] = d->lcm_duty_beep;
+		send_buffer[ind++] = d->float_conf.is_dutybeep_enabled && d->float_conf.tiltback_duty > 0 ? d->float_conf.tiltback_duty * 100 : 100;
 		send_buffer[ind++] = d->lcm_board_off;
 	}
 
@@ -3059,47 +3062,46 @@ static void cmd_lcm_poll(data *d)
 }
 
 /**
- * Command for apps to call to get info about LCM
+ * Command for apps to call to get info about lighting
  */
-static void cmd_lcm_info(data *d)
+static void cmd_light_info(data *d)
 {
-	// For now the only info is whether the LCM is present/active (and has new firmware)
-	uint8_t send_buffer[3];
+	uint8_t send_buffer[7];
 	int32_t ind = 0;
 	send_buffer[ind++] = 101;//Magic Number
-	send_buffer[ind++] = FLOAT_COMMAND_LCM_INFO;
-	send_buffer[ind++] = d->lcm_active;
+	send_buffer[ind++] = FLOAT_COMMAND_LIGHT_INFO;
+	send_buffer[ind++] = d->light_implementation;
+	send_buffer[ind++] = d->float_conf.led_brightness;
+	send_buffer[ind++] = d->float_conf.led_brightness_idle;
+	send_buffer[ind++] = d->float_conf.led_status_brightness;
+	send_buffer[ind++] = d->light_implementation == EXTERNAL_MODULE ? d->lcm_lightbar_mode : d->float_conf.led_status_mode;
+
 	VESC_IF->send_app_data(send_buffer, ind);
 }
 
 /**
  * Command for apps to call to control LCM details (lights, behavior, etc)
  */
-static void cmd_lcm_ctrl(data *d, unsigned char *cfg, int len)
+static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 {
-	if (len < 4)
+	if (len < 4 || d->light_implementation == NO_LIGHTS)
 		return;
 
-	if (d->float_conf.has_floatwheel_lcm) {
+	d->float_conf.led_brightness = cfg[0];
+	d->float_conf.led_brightness_idle = cfg[1];
+	d->float_conf.led_status_brightness = cfg[2];
+
+	if (d->light_implementation == EXTERNAL_MODULE) {
 		d->lcm_set = 1;
-		d->lcm_headlight_brightness = cfg[0];
-		d->lcm_lightbar_brightness = cfg[1];
-		d->lcm_lightbar_mode = cfg[2];
-		if (len < 5) {
-			d->lcm_board_off = cfg[3];
-			return;
+		d->lcm_lightbar_mode = cfg[3];
+		if (len > 4) {
+			d->lcm_board_off = cfg[4];
 		}
-		d->lcm_duty_beep = cfg[3];
-		d->lcm_board_off = cfg[4];
-	}
-	if (d->float_conf.led_type > 0) {
-		d->float_conf.led_brightness = cfg[0];
-		d->float_conf.led_status_brightness = cfg[1];
-		d->float_conf.led_status_mode = cfg[2];
-		d->float_conf.led_mode = cfg[3];
+	} else if (d->light_implementation == INTERNAL) {
+		d->float_conf.led_status_mode = cfg[3];
+		d->float_conf.led_mode = cfg[4];
 		if (len > 5) {
-			d->float_conf.led_mode_idle = cfg[4];
-			d->float_conf.led_brightness_idle = cfg[5];
+			d->float_conf.led_mode_idle = cfg[5];
 		}
 	}
 }
@@ -3252,14 +3254,11 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		case FLOAT_COMMAND_GET_INFO: {
 			int32_t ind = 0;
 			uint8_t send_buffer[10];
-			uint8_t capabilities = 0;
-			capabilities += d->float_conf.has_floatwheel_lcm ? 2 : 0;
-			capabilities += d->float_conf.led_type > 0 ? 4 : 0;
 			send_buffer[ind++] = 101;	// magic nr.
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
 			send_buffer[ind++] = 1;     // build number
-			send_buffer[ind++] = capabilities;
+			send_buffer[ind++] = d->light_implementation;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}
@@ -3382,13 +3381,13 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			cmd_lcm_poll(d);
 			return;
 		}
-		case FLOAT_COMMAND_LCM_INFO: {
-			cmd_lcm_info(d);
+		case FLOAT_COMMAND_LIGHT_INFO: {
+			cmd_light_info(d);
 			return;
 		}
-		case FLOAT_COMMAND_LCM_CTRL: {
+		case FLOAT_COMMAND_LIGHT_CTRL: {
 			if (len >= 6) {
-				cmd_lcm_ctrl(d, &buffer[2], len-2);
+				cmd_light_ctrl(d, &buffer[2], len-2);
 			}
 			else {
 				if (!VESC_IF->app_is_output_disabled()) {

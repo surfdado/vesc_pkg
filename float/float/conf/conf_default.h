@@ -598,9 +598,9 @@
 #define APPCONF_FLOAT_IS_BEEPER_ENABLED 0
 #endif
 
-// Enable Floatwheel LCM Control
-#ifndef HAS_FLOATWHEEL_LCM
-#define HAS_FLOATWHEEL_LCM 0
+// Enable LCM Control
+#ifndef HAS_LCM
+#define HAS_LCM 0
 #endif
 
 // Disable Float Package

@@ -2619,18 +2619,18 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_IS_BEEPER_ENABLED</cDefine>
             <valInt>0</valInt>
         </is_beeper_enabled>
-        <has_floatwheel_lcm>
-            <longName>Enable Floatwheel LCM Control</longName>
+        <has_lcm>
+            <longName>Enable LCM Control</longName>
             <type>5</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Allow controlling of Floatwheel LCM via AppUI and external Apps&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
-            <cDefine>HAS_FLOATWHEEL_LCM</cDefine>
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Allow controlling external light control modules (Floatwheel) via AppUI and external Apps&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
+            <cDefine>HAS_LCM</cDefine>
             <valInt>0</valInt>
-        </has_floatwheel_lcm>
+        </has_lcm>
         <float_disable>
             <longName>Disable Float Package</longName>
             <type>5</type>
@@ -2787,7 +2787,7 @@ p, li { white-space: pre-wrap; }
         <ser>limit_current_cont</ser>
         <ser>dark_pitch_offset</ser>
         <ser>is_beeper_enabled</ser>
-        <ser>has_floatwheel_lcm</ser>
+        <ser>has_lcm</ser>
         <ser>float_disable</ser>
         <ser>float_version</ser>
     </SerOrder>
@@ -2991,7 +2991,7 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Miscellaneous</param>
                     <param>dark_pitch_offset</param>
                     <param>is_beeper_enabled</param>
-                    <param>has_floatwheel_lcm</param>
+                    <param>has_lcm</param>
                     <param>::sep::Current Limiting</param>
                     <param>limit_current_accel</param>
                     <param>limit_current_brake</param>
