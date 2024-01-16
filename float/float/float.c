@@ -3093,15 +3093,19 @@ static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 
 	if (d->light_implementation == EXTERNAL_MODULE) {
 		d->lcm_set = 1;
-		d->lcm_lightbar_mode = cfg[3];
-		if (len > 4) {
-			d->lcm_board_off = cfg[4];
+		if (len > 3) {
+			d->lcm_lightbar_mode = cfg[3];
+			if (len > 4) {
+				d->lcm_board_off = cfg[4];
+			}
 		}
 	} else if (d->light_implementation == INTERNAL) {
-		d->float_conf.led_status_mode = cfg[3];
-		d->float_conf.led_mode = cfg[4];
-		if (len > 5) {
-			d->float_conf.led_mode_idle = cfg[5];
+		if (len > 3) {
+			d->float_conf.led_status_mode = cfg[3];
+			d->float_conf.led_mode = cfg[4];
+			if (len > 5) {
+				d->float_conf.led_mode_idle = cfg[5];
+			}
 		}
 	}
 }
