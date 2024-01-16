@@ -2415,7 +2415,7 @@ enum {
 	FLOAT_COMMAND_FLYWHEEL = 22,
 	FLOAT_COMMAND_HAPTIC = 23,
 	FLOAT_COMMAND_LCM_POLL = 24,   // this should only be called by LCM
-	FLOAT_COMMAND_LIGHT_INFO = 25,   // to be called by apps to check if a lighting is present / get info
+	FLOAT_COMMAND_LIGHT_INFO = 25,   // to be called by apps to check if a lighting solution is present / get info
 	FLOAT_COMMAND_LIGHT_CTRL = 26    // to be called by apps to change light settings
 } float_commands;
 
@@ -3084,7 +3084,7 @@ static void cmd_light_info(data *d)
  */
 static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 {
-	if (len < 4 || d->light_implementation == NO_LIGHTS)
+	if (len < 3 || d->light_implementation == NO_LIGHTS)
 		return;
 
 	d->float_conf.led_brightness = cfg[0];
@@ -3390,7 +3390,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_LIGHT_CTRL: {
-			if (len >= 6) {
+			if (len >= 5) {
 				cmd_light_ctrl(d, &buffer[2], len-2);
 			}
 			else {
