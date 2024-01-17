@@ -3086,9 +3086,9 @@ static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 			d->lcm_lightbar_mode = cfg[3];
 			d->lcm_board_off = cfg[4];
 		} else {
-			d->float_conf.led_status_mode = cfg[3];
-			d->float_conf.led_mode = cfg[4];
-			d->float_conf.led_mode_idle = cfg[5];
+			d->float_conf.led_mode = cfg[3];
+			d->float_conf.led_mode_idle = cfg[4];
+			d->float_conf.led_status_mode = cfg[5];
 		}
 	}
 }
