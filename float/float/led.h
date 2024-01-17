@@ -3,6 +3,16 @@
 
 #include "conf/datatypes.h"
 
+typedef enum {
+	LED_Type_None,
+	LED_Type_RGB,
+	LED_Type_RGBW,
+	LED_Type_BalanceBuddy,
+	LED_Type_rESCue,
+	LED_Type_Floatwheel_LCM,
+	LED_Type_Other
+} LEDType;
+
 typedef struct {
     float led_last_updated;
     uint8_t led_previous_brightness;

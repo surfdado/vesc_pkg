@@ -145,7 +145,6 @@ typedef struct {
 	uint16_t turntilt_erpm_boost_end;
 	int turntilt_yaw_aggregate;
 	float dark_pitch_offset;
-	bool has_lcm;
 	bool is_beeper_enabled;
 	bool is_dutybeep_enabled;
 	bool is_footbeep_enabled;

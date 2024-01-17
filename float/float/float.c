@@ -101,12 +101,6 @@ typedef enum {
 	BQ_HIGHPASS
 } BiquadType;
 
-typedef enum {
-	NO_LIGHTS = 0,
-	INTERNAL = 1,
-	EXTERNAL_MODULE = 2
-} LightingType;
-
 static const FootpadSensorState flywheel_konami_sequence[] = { FS_LEFT, FS_NONE, FS_RIGHT, FS_NONE, FS_LEFT, FS_NONE, FS_RIGHT };
 static const FootpadSensorState battery_konami_sequence[] = { FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT, FS_NONE, FS_LEFT };
 
@@ -132,7 +126,6 @@ typedef struct {
 	bool beeper_enabled;
 
 	// LEDs
-	LightingType light_implementation;
 	LEDData led_data;
 
 	// External Lights (LCM)
@@ -533,8 +526,6 @@ static void configure(data *d) {
 
 	konami_init(&d->flywheel_konami, flywheel_konami_sequence, sizeof(flywheel_konami_sequence));
 	konami_init(&d->battery_konami, battery_konami_sequence, sizeof(battery_konami_sequence));
-
-	d->light_implementation = (d->float_conf.led_type  > 0) ? INTERNAL : NO_LIGHTS;
 
 	// External LCM support (Floatwheel)
 	d->lcm_lightbar_mode = 0;
@@ -3016,9 +3007,8 @@ static void cmd_lcm_poll(data *d)
 	int32_t ind = 0;
 	mc_fault_code fault = VESC_IF->mc_get_fault();
 
-	d->light_implementation = EXTERNAL_MODULE;
-
-	if (d->float_conf.has_lcm) {
+	if (d->float_conf.led_type == LED_Type_Floatwheel_LCM) {
+		// Why do we still need this??
 		d->lcm_set = 1;
 	}
 	
@@ -3070,11 +3060,10 @@ static void cmd_light_info(data *d)
 	int32_t ind = 0;
 	send_buffer[ind++] = 101;//Magic Number
 	send_buffer[ind++] = FLOAT_COMMAND_LIGHT_INFO;
-	send_buffer[ind++] = d->light_implementation;
+	send_buffer[ind++] = d->float_conf.led_type;
 	send_buffer[ind++] = d->float_conf.led_brightness;
 	send_buffer[ind++] = d->float_conf.led_brightness_idle;
 	send_buffer[ind++] = d->float_conf.led_status_brightness;
-	send_buffer[ind++] = d->light_implementation == EXTERNAL_MODULE ? d->lcm_lightbar_mode : d->float_conf.led_status_mode;
 
 	VESC_IF->send_app_data(send_buffer, ind);
 }
@@ -3084,28 +3073,22 @@ static void cmd_light_info(data *d)
  */
 static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
 {
-	if (len < 3 || d->light_implementation == NO_LIGHTS)
+	if (len < 3 || d->float_conf.led_type == LED_Type_None)
 		return;
 
 	d->float_conf.led_brightness = cfg[0];
 	d->float_conf.led_brightness_idle = cfg[1];
 	d->float_conf.led_status_brightness = cfg[2];
 
-	if (d->light_implementation == EXTERNAL_MODULE) {
-		d->lcm_set = 1;
-		if (len > 3) {
+	if (len > 4) {
+		if (d->float_conf.led_type == LED_Type_Floatwheel_LCM) {
+			d->lcm_set = 1;
 			d->lcm_lightbar_mode = cfg[3];
-			if (len > 4) {
-				d->lcm_board_off = cfg[4];
-			}
-		}
-	} else if (d->light_implementation == INTERNAL) {
-		if (len > 3) {
+			d->lcm_board_off = cfg[4];
+		} else {
 			d->float_conf.led_status_mode = cfg[3];
 			d->float_conf.led_mode = cfg[4];
-			if (len > 5) {
-				d->float_conf.led_mode_idle = cfg[5];
-			}
+			d->float_conf.led_mode_idle = cfg[5];
 		}
 	}
 }
@@ -3262,7 +3245,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			send_buffer[ind++] = 0x0;	// command ID
 			send_buffer[ind++] = (uint8_t) (10 * APPCONF_FLOAT_VERSION);
 			send_buffer[ind++] = 1;     // build number
-			send_buffer[ind++] = d->light_implementation;
+			send_buffer[ind++] = d->float_conf.led_type;
 			VESC_IF->send_app_data(send_buffer, ind);
 			return;
 		}
@@ -3390,14 +3373,7 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 			return;
 		}
 		case FLOAT_COMMAND_LIGHT_CTRL: {
-			if (len >= 5) {
-				cmd_light_ctrl(d, &buffer[2], len-2);
-			}
-			else {
-				if (!VESC_IF->app_is_output_disabled()) {
-					VESC_IF->printf("Float App: Command length incorrect (%d)\n", len);
-				}
-			}
+			cmd_light_ctrl(d, &buffer[2], len-2);
 			return;
 		}
 		default: {

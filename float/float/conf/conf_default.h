@@ -543,17 +543,17 @@
 #define APPCONF_FLOAT_LED_REAR_COUNT 20
 #endif
 
-// Forward/Rear LED Brightness
+// Headlight Brightness
 #ifndef APPCONF_FLOAT_LED_BRIGHTNESS
 #define APPCONF_FLOAT_LED_BRIGHTNESS 50
 #endif
 
-// Forward/Rear LED Brightness when Idle
+// Headlight Brightness when Idle
 #ifndef APPCONF_FLOAT_LED_BRIGHTNESS_IDLE
 #define APPCONF_FLOAT_LED_BRIGHTNESS_IDLE 10
 #endif
 
-// Forward/Rear LED Mode
+// Headlights LED Mode
 #ifndef APPCONF_FLOAT_LED_MODE
 #define APPCONF_FLOAT_LED_MODE 0
 #endif
@@ -596,11 +596,6 @@
 // Enable Beeper on Servo/PPM
 #ifndef APPCONF_FLOAT_IS_BEEPER_ENABLED
 #define APPCONF_FLOAT_IS_BEEPER_ENABLED 0
-#endif
-
-// Enable LCM Control
-#ifndef HAS_LCM
-#define HAS_LCM 0
 #endif
 
 // Disable Float Package

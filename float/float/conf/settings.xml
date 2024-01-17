@@ -2341,8 +2341,12 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_LED_TYPE</cDefine>
             <valInt>0</valInt>
             <enumNames>None</enumNames>
-            <enumNames>RGB</enumNames>
-            <enumNames>RGBW</enumNames>
+            <enumNames>Internal_RGB</enumNames>
+            <enumNames>Internal_RGBW</enumNames>
+            <enumNames>BalanceBuddy</enumNames>
+            <enumNames>rESCue</enumNames>
+            <enumNames>Floatwheel_LCM</enumNames>
+            <enumNames>Other</enumNames>
         </led_type>
         <led_status_count>
             <longName>Status LED Strip Length</longName>
@@ -2405,7 +2409,7 @@ p, li { white-space: pre-wrap; }
             <vTx>1</vTx>
         </led_rear_count>
         <led_brightness>
-            <longName>Forward/Rear LED Brightness</longName>
+            <longName>Headlight Brightness</longName>
             <type>2</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -2425,7 +2429,7 @@ p, li { white-space: pre-wrap; }
             <vTx>1</vTx>
         </led_brightness>
         <led_brightness_idle>
-            <longName>Forward/Rear LED Brightness when Idle</longName>
+            <longName>Headlight Brightness when Idle</longName>
             <type>2</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -2445,7 +2449,7 @@ p, li { white-space: pre-wrap; }
             <vTx>1</vTx>
         </led_brightness_idle>
         <led_mode>
-            <longName>Forward/Rear LED Mode</longName>
+            <longName>Headlights LED Mode</longName>
             <type>4</type>
             <transmittable>1</transmittable>
             <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
@@ -2623,18 +2627,6 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_IS_BEEPER_ENABLED</cDefine>
             <valInt>0</valInt>
         </is_beeper_enabled>
-        <has_lcm>
-            <longName>Enable LCM Control</longName>
-            <type>5</type>
-            <transmittable>1</transmittable>
-            <description>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Roboto'; ; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Allow controlling external light control modules (Floatwheel) via AppUI and external Apps&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
-            <cDefine>HAS_LCM</cDefine>
-            <valInt>0</valInt>
-        </has_lcm>
         <float_disable>
             <longName>Disable Float Package</longName>
             <type>5</type>
@@ -2661,11 +2653,11 @@ p, li { white-space: pre-wrap; }
             <editorDecimalsDouble>2</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
-            <maxDouble>2.0</maxDouble>
-            <minDouble>2.0</minDouble>
+            <maxDouble>2</maxDouble>
+            <minDouble>2</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>1</stepDouble>
-            <valDouble>2.0</valDouble>
+            <valDouble>2</valDouble>
             <vTxDoubleScale>1000</vTxDoubleScale>
             <suffix></suffix>
             <vTx>7</vTx>
@@ -2791,7 +2783,6 @@ p, li { white-space: pre-wrap; }
         <ser>limit_current_cont</ser>
         <ser>dark_pitch_offset</ser>
         <ser>is_beeper_enabled</ser>
-        <ser>has_lcm</ser>
         <ser>float_disable</ser>
         <ser>float_version</ser>
     </SerOrder>
@@ -2962,7 +2953,7 @@ p, li { white-space: pre-wrap; }
             <subgroup>
                 <subgroupName>LEDs</subgroupName>
                 <subgroupParams>
-                    <param>::sep::Forward &amp; Rear</param>
+                    <param>::sep::Headlights</param>
                     <param>led_brightness</param>
                     <param>led_brightness_idle</param>
                     <param>led_mode</param>
@@ -2995,7 +2986,6 @@ p, li { white-space: pre-wrap; }
                     <param>::sep::Miscellaneous</param>
                     <param>dark_pitch_offset</param>
                     <param>is_beeper_enabled</param>
-                    <param>has_lcm</param>
                     <param>::sep::Current Limiting</param>
                     <param>limit_current_accel</param>
                     <param>limit_current_brake</param>

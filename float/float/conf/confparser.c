@@ -129,7 +129,6 @@ int32_t confparser_serialize_float_config(uint8_t *buffer, const float_config *c
 	buffer_append_int16(buffer, conf->limit_current_cont, &ind);
 	buffer_append_float16(buffer, conf->dark_pitch_offset, 10, &ind);
 	buffer[ind++] = conf->is_beeper_enabled;
-	buffer[ind++] = conf->has_lcm;
 	buffer[ind++] = conf->float_disable;
 	buffer_append_float16(buffer, conf->float_version, 1000, &ind);
 
@@ -263,7 +262,6 @@ bool confparser_deserialize_float_config(const uint8_t *buffer, float_config *co
 	conf->limit_current_cont = buffer_get_int16(buffer, &ind);
 	conf->dark_pitch_offset = buffer_get_float16(buffer, 10, &ind);
 	conf->is_beeper_enabled = buffer[ind++];
-	conf->has_lcm = buffer[ind++];
 	conf->float_disable = buffer[ind++];
 	conf->float_version = buffer_get_float16(buffer, 1000, &ind);
 
@@ -390,7 +388,6 @@ void confparser_set_defaults_float_config(float_config *conf) {
 	conf->limit_current_cont = LIMIT_CURRENT_CONT;
 	conf->dark_pitch_offset = APPCONF_FLOAT_DARK_PITCH_OFFSET;
 	conf->is_beeper_enabled = APPCONF_FLOAT_IS_BEEPER_ENABLED;
-	conf->has_lcm = HAS_LCM;
 	conf->float_disable = APPCONF_FLOAT_DISABLE;
 	conf->float_version = APPCONF_FLOAT_VERSION;
 }

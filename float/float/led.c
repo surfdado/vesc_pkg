@@ -180,12 +180,13 @@ void led_init(LEDData* led_data, float_config* float_conf) {
 
     // Init
     int bits = 0;
-    if (led_data->led_type == 0) {
-        return;
-    } else if (led_data->led_type == 1) {
+    if (led_data->led_type == LED_Type_RGB) {
         bits = 24;
-    } else {
+    } else if (led_data->led_type == LED_Type_RGBW) {
         bits = 32;
+    }
+    else {
+        return;
     }
 
     led_data->ledbuf_len = led_data->led_status_count + led_data->led_forward_count + led_data->led_rear_count + 1;
@@ -233,7 +234,7 @@ void led_init(LEDData* led_data, float_config* float_conf) {
 }
 
 void led_set_color(LEDData* led_data, int led, uint32_t color, uint32_t brightness, bool fade) {
-    if (led_data->led_type == 0) {
+    if ((led_data->led_type == LED_Type_None) || (led_data->led_type > LED_Type_RGBW)) {
         return;
     }
     if (led >= 0 && led < led_data->ledbuf_len) {
@@ -309,11 +310,14 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     ///////////////////////
     // Status LED Logic //
     /////////////////////
-    if (led_data->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
+    if ((led_data->led_type == LED_Type_None) || (led_data->led_type > LED_Type_RGBW)) {
         return;
-    } else {
-        led_data->led_last_updated = current_time;
     }
+    if (current_time - led_data->led_last_updated < 0.05) {
+        return;
+    }
+    led_data->led_last_updated = current_time;
+
     if (led_data->led_status_count > 0) {
         int statusBrightness = (int)(float_conf->led_status_brightness);
         if (float_state == 15) {
