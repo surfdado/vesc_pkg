@@ -2456,7 +2456,7 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_LED_MODE</cDefine>
             <valInt>0</valInt>
             <enumNames>White/Red</enumNames>
-            <enumNames>White/Red with Idle Battery Meter</enumNames>
+            <enumNames>Battery Meter</enumNames>
             <enumNames>Cyan/Magenta</enumNames>
             <enumNames>Blue/Green</enumNames>
             <enumNames>Yellow/Green</enumNames>
@@ -2464,6 +2464,8 @@ p, li { white-space: pre-wrap; }
             <enumNames>Strobe</enumNames>
             <enumNames>Rave</enumNames>
             <enumNames>Mullet</enumNames>
+            <enumNames>Knight Rider</enumNames>
+            <enumNames>Felony</enumNames>
         </led_mode>
         <led_mode_idle>
             <longName>Forward/Rear LED Mode when Idle</longName>
@@ -2477,7 +2479,7 @@ p, li { white-space: pre-wrap; }
             <cDefine>APPCONF_FLOAT_LED_MODE_IDLE</cDefine>
             <valInt>1</valInt>
             <enumNames>White/Red</enumNames>
-            <enumNames>White/Red with Idle Battery Meter</enumNames>
+            <enumNames>Battery Meter</enumNames>
             <enumNames>Cyan/Magenta</enumNames>
             <enumNames>Blue/Green</enumNames>
             <enumNames>Yellow/Green</enumNames>
@@ -2485,6 +2487,8 @@ p, li { white-space: pre-wrap; }
             <enumNames>Strobe</enumNames>
             <enumNames>Rave</enumNames>
             <enumNames>Mullet</enumNames>
+            <enumNames>Knight Rider</enumNames>
+            <enumNames>Felony</enumNames>
         </led_mode_idle>
         <led_status_brightness>
             <longName>Status LED Brightness</longName>

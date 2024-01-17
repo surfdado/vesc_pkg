@@ -5,6 +5,11 @@
 #include "conf/datatypes.h"
 
 #include <math.h>
+#include <stdlib.h>
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
 
 #define WS2812_CLK_HZ		800000
 #define TIM_PERIOD			(((168000000 / 2 / WS2812_CLK_HZ) - 1))
@@ -197,8 +202,6 @@ void led_init(LEDData* led_data, float_config* float_conf) {
     }
 
     led_data->led_last_updated = 0;
-    led_data->led_previous_forward = 0;
-    led_data->led_previous_rear = 0;
     led_data->led_previous_brightness = 0;
     led_data->led_latching_direction = true;
 
@@ -260,6 +263,12 @@ void led_set_color(LEDData* led_data, int led, uint32_t color, uint32_t brightne
     }
 }
 
+void led_strip_set_color(LEDData* led_data, int offset, int length, uint32_t color, uint32_t brightness, bool fade) {
+    for(int led= offset; led < offset+length; led++){
+        led_set_color(led_data, led, color, brightness, fade);
+    }
+}
+
 void led_display_battery(LEDData* led_data, int brightness, int strip_offset, int strip_length, bool fade) {
     float batteryLevel = VESC_IF->mc_get_battery_level(NULL);
     int batteryLeds = (int)(batteryLevel * strip_length);
@@ -297,6 +306,9 @@ void led_float_disabled(LEDData* led_data, int brightness, int first, int count)
 }
 
 void led_update(LEDData* led_data, float_config* float_conf, float current_time, float erpm, float abs_duty_cycle, int switch_state, int float_state) {
+    ///////////////////////
+    // Status LED Logic //
+    /////////////////////
     if (led_data->led_type == 0 || current_time - led_data->led_last_updated < 0.05) {
         return;
     } else {
@@ -362,134 +374,158 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     }
     brightness = led_data->led_previous_brightness;
 
+    /////////////////////////
+    // Patten strip logic //
+    ///////////////////////
+
+    // calculate directonality
+    int forwardOffsetDirectional = led_data->led_status_count;
+    int forwardlengthDirectional = led_data->led_forward_count;
+    int rearOffsetDirectional = led_data->led_status_count + led_data->led_forward_count;
+    int rearlengthDirectional = led_data->led_rear_count;
+    if (float_state == 4) { // RUNNING_UPSIDEDOWN aka drark ride => flip erpm sign
+        erpm = -erpm;
+    }
+
+    if (erpm > 100) {
+        led_data->led_latching_direction = true;
+    } else if (erpm < -100) {
+        led_data->led_latching_direction = false;
+    }
+    if (led_data->led_latching_direction == false) {
+        forwardOffsetDirectional = led_data->led_status_count + led_data->led_forward_count;
+        forwardlengthDirectional = led_data->led_rear_count;
+        rearOffsetDirectional = led_data->led_status_count;
+        rearlengthDirectional = led_data->led_forward_count;
+    }
+
     // Find color
-    int forwardColor = 0;
-    int rearColor = 0;
-    bool fade = true;
-    bool directional = true;
-    bool batteryMeter = false;
     int led_mode = float_state < 5 ? float_conf->led_mode : float_conf->led_mode_idle;
-    if (led_mode == 0) { // Red/White
-        forwardColor = 0xFFFFFFFF;
-        rearColor = 0x00FF0000;
-    } else if (led_mode == 1) { // Red/White with Battery Meter
-        batteryMeter = true;
-        forwardColor = 0xFFFFFFFF;
-        rearColor = 0x00FF0000;
+    if (float_state == 15) { // disabled board? front leds show red in center, rear leds off
+        led_float_disabled(led_data, brightness, led_data->led_status_count, led_data->led_forward_count);
+        led_strip_set_color(led_data, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, 0, 0, true);
+        return;
+    }else if (led_mode == 0) { // Red/White
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0xFFFFFFFF, brightness, true);
+        led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, true);
+        return;
+    } else if (led_mode == 1) { //Battery Meter
+        led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, true);
+        led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, true);
+        return;
     } else if (led_mode == 2) { // Cyan/Magenta
-        forwardColor = 0x0000FFFF;
-        rearColor = 0x00FF00FF;
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FFFF, brightness, true);
+        led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF00FF, brightness, true);
+        return;
     } else if (led_mode == 3) { // Blue/Green
-        forwardColor = 0x000000FF;
-        rearColor = 0x0000FF00;
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x000000FF, brightness, true);
+        led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, true);
+        return;
     } else if (led_mode == 4) { // Yellow/Green
-        forwardColor = 0x00FFFF00;
-        rearColor = 0x0000FF00;
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FFFF00, brightness, true);
+        led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, true);
+        return;
     } else if (led_mode == 5) { // RGB Fade
         if ((int)(current_time * 1000) % 3000 < 1000) {
-            forwardColor = 0x00FF0000;
-            rearColor = 0x00FF0000;
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FF0000, brightness, true);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, true);
         } else if ((int)(current_time * 1000) % 3000 < 2000) {
-            forwardColor = 0x0000FF00;
-            rearColor = 0x0000FF00;
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FF00, brightness, true);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, true);
         } else {
-            forwardColor = 0x000000FF;
-            rearColor = 0x000000FF;
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x000000FF, brightness, true);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, true);
         }
+        return;
     } else if (led_mode == 6) { // Strobe
-        fade = false;
-        if (led_data->led_previous_forward > 0) {
-            forwardColor = 0x00000000;
-            rearColor = 0x00000000;
+        if (led_data->RGBdata[forwardOffsetDirectional] > 0) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00000000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00000000, brightness, false);
         } else {
-            forwardColor = 0xFFFFFFFF;
-            rearColor = 0xFFFFFFFF;
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0xFFFFFFFF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0xFFFFFFFF, brightness, false);
         }
-        led_data->led_previous_forward = forwardColor;
+        return;
     } else if (led_mode == 7) { // Rave
-        fade = false;
-        if (led_data->led_previous_forward == 0x00FF0000) {
-            forwardColor = 0x00FFFF00;
-            rearColor = 0x00FFFF00;
-        } else if (led_data->led_previous_forward == 0x00FFFF00) {
-            forwardColor = 0x0000FF00;
-            rearColor = 0x0000FF00;
-        } else if (led_data->led_previous_forward == 0x0000FF00) {
-            forwardColor = 0x0000FFFF;
-            rearColor = 0x0000FFFF;
-        } else if (led_data->led_previous_forward == 0x0000FFFF) {
-            forwardColor = 0x000000FF;
-            rearColor = 0x000000FF;
-        } else if (led_data->led_previous_forward == 0x000000FF) {
-            forwardColor = 0x00FF00FF;
-            rearColor = 0x00FF00FF;
+        if (led_data->RGBdata[forwardOffsetDirectional] == 0x00FF0000) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FFFF00, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
+        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x00FFFF00) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FF00, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, false);
+        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x0000FF00) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FFFF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FFFF, brightness, false);
+        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x0000FFFF) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x000000FF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, false);
+        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x000000FF) {
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FF00FF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF00FF, brightness, false);
         } else {
-            forwardColor = 0x00FF0000;
-            rearColor = 0x00FF0000;
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FF0000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, false);
         }
-        led_data->led_previous_forward = forwardColor;
+        return;
     } else if (led_mode == 8) { // Mullet
-        fade = false;
-        forwardColor = 0xFFFFFFFF;
-        if (led_data->led_previous_rear == 0x00FF0000) {
-            rearColor = 0x00FFFF00;
-        } else if (led_data->led_previous_rear == 0x00FFFF00) {
-            rearColor = 0x0000FF00;
-        } else if (led_data->led_previous_rear == 0x0000FF00) {
-            rearColor = 0x0000FFFF;
-        } else if (led_data->led_previous_rear == 0x0000FFFF) {
-            rearColor = 0x000000FF;
-        } else if (led_data->led_previous_rear == 0x000000FF) {
-            rearColor = 0x00FF00FF;
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0xFFFFFFFF, brightness, true);
+        if (led_data->RGBdata[rearOffsetDirectional] == 0x00FF0000) {
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
+        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x00FFFF00) {
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, false);
+        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x0000FF00) {
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FFFF, brightness, false);
+        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x0000FFFF) {
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, false);
+        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x000000FF) {
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF00FF, brightness, false);
         } else {
-            rearColor = 0x00FF0000;
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, false);
         }
-        led_data->led_previous_rear = rearColor;
-    }
-
-    // Set directonality
-    if (directional) {
-        if (float_state == 4)  // RUNNING_UPSIDEDOWN aka drark ride => flip erpm sign
-            erpm = -erpm;
-
-        if (erpm > 100) {
-            led_data->led_latching_direction = true;
-        } else if (erpm < -100) {
-            led_data->led_latching_direction = false;
+        return;
+    } else if (led_mode == 9){ // Knight Rider
+        int centerPosition = (fmod(current_time, 1) * forwardlengthDirectional) + forwardOffsetDirectional;
+        if(fmod(current_time, 2) > 1){
+            centerPosition = forwardOffsetDirectional + forwardlengthDirectional - centerPosition + forwardOffsetDirectional;
         }
-        if (led_data->led_latching_direction == false) {
-            int temp = forwardColor;
-            forwardColor = rearColor;
-            rearColor = temp;
+        for(int i = forwardOffsetDirectional; i < forwardOffsetDirectional + forwardlengthDirectional; i++){
+            int intensity = (((forwardlengthDirectional/2)-min(abs(i-centerPosition), forwardlengthDirectional/2))
+            /(forwardlengthDirectional/2.0)) * 255;
+            led_set_color(led_data, i, intensity << 16, brightness, false);
         }
-    }
-
-    if (batteryMeter && float_state > 5 && float_state < 15) {
-        // Idle voltage display
-        led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, fade);
-        led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, fade);
-    } else {
-        // Normal color/pattern display
-        if (led_data->led_forward_count > 0) {
-            int offset = led_data->led_status_count;
-            if (float_state == 15) { // disabled board? front lights show red in center
-                led_float_disabled(led_data, brightness, offset, led_data->led_forward_count);
-            }
-            else {
-                for (int i = offset; i < led_data->led_forward_count + offset; i++) {
-                    led_set_color(led_data, i, forwardColor, brightness, fade);
-                }
-            }
+        centerPosition = (fmod(current_time, 1) * rearlengthDirectional) + rearOffsetDirectional;
+        if(fmod(current_time, 2) > 1){
+            centerPosition = rearOffsetDirectional + rearlengthDirectional - centerPosition + rearOffsetDirectional;
         }
-        if (led_data->led_rear_count > 0) {
-            int offset = led_data->led_status_count + led_data->led_forward_count;
-            if (float_state == 15) { // disabled board? rear lights off
-                brightness = 0;
-            }
-            for (int i = offset; i < led_data->led_rear_count + offset; i++) {
-                led_set_color(led_data, i, rearColor, brightness, fade);
-            }
+        for(int i = rearOffsetDirectional; i < rearOffsetDirectional + rearlengthDirectional; i++){
+            int intensity = (((rearlengthDirectional/2)-min(abs(i-centerPosition), rearlengthDirectional/2))/(rearlengthDirectional/2.0)) * 255;
+            led_set_color(led_data, i, intensity << 16, brightness, false);
         }
+        return;
+    } else if (led_mode == 10){ // Felony
+        int state = 0;
+        if(led_data->RGBdata[forwardOffsetDirectional] == 0x00000000){
+            state = 1;
+        }else if(led_data->RGBdata[forwardOffsetDirectional] == 0x00FF0000){
+            state = 2;
+        }
+        if(state == 0){
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional / 2, 0x00000000, brightness, false);
+            led_strip_set_color(led_data, forwardOffsetDirectional + forwardlengthDirectional / 2, forwardlengthDirectional, 0x00FF0000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional / 2, 0x00000000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional + rearlengthDirectional / 2, rearlengthDirectional, 0x00FF0000, brightness, false);
+        } else if (state == 1){
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional / 2, 0x00FF0000, brightness, false);
+            led_strip_set_color(led_data, forwardOffsetDirectional + forwardlengthDirectional / 2, forwardlengthDirectional, 0x000000FF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional / 2, 0x00FF0000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional + rearlengthDirectional / 2, rearlengthDirectional, 0x000000FF, brightness, false);
+        }else{
+            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional / 2, 0x000000FF, brightness, false);
+            led_strip_set_color(led_data, forwardOffsetDirectional + forwardlengthDirectional / 2, forwardlengthDirectional, 0x00000000, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional / 2, 0x000000FF, brightness, false);
+            led_strip_set_color(led_data, rearOffsetDirectional + rearlengthDirectional / 2, rearlengthDirectional, 0x00000000, brightness, false);
+        }
+        return;
     }
 }
 
