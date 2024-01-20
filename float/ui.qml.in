@@ -246,6 +246,8 @@ Item {
                     stateString = "STOP_REVERSE"
                 }else if(state == 13){
                     stateString = "STOP_QUICKSTOP"
+                }else if(state == 14){
+                    stateString = "CHARGING"
                 }else{
                     stateString = "UNKNOWN"
                 }
@@ -316,10 +318,18 @@ Item {
 		    beep_reason = new_beep_reason;
 		}
                 if(state == 15){
-                    stateString = "DISABLED"
-                    switchString = "Enable in Float Cfg: Specs"
                     rt_state.text = "Float Package is Disabled\n\n" +
                                     "You can re-enable it in\nFloat Cfg: Specs\n\n"
+                    rt_data.text = "-- n/a --"
+                    setpoints.text = "-- n/a --"
+                    debug.text = "-- n/a --"
+                }
+		else if(state == 14){
+                    rt_state.text =
+                        "State               : " + stateString + "\n\n" +
+                        "Charge Current      : " + applied_booster_current.toFixed(2) + "A\n" +
+                        "Charge Voltage      : " + motor_current.toFixed(2) + "V\n\n"
+			
                     rt_data.text = "-- n/a --"
                     setpoints.text = "-- n/a --"
                     debug.text = "-- n/a --"

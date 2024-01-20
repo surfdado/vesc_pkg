@@ -64,6 +64,7 @@ typedef enum {
 	FAULT_STARTUP = 11,
 	FAULT_REVERSE = 12,
 	FAULT_QUICKSTOP = 13,
+	CHARGING = 14,
 	DISABLED = 15
 } FloatState;
 
@@ -146,6 +147,9 @@ typedef struct {
 	char lcm_name[MAXLCMNAMELENGTH];
 	lcmPayload lcm_payload;
 
+	float charge_voltage, charge_current;
+	float charge_timer;
+	
 	// Config values
 	float loop_time_seconds;
 	unsigned int start_counter_clicks, start_counter_clicks_max;
@@ -2277,6 +2281,17 @@ static void float_thd(void *arg) {
 				do_rc_move(d);
 			}
 			break;
+		case (CHARGING):
+			if ((d->current_time - d->charge_timer) > 10) {
+				// 10 seconds of no chargestate calls? Revert back to normal
+				if (d->float_conf.float_disable) {
+					d->state = DISABLED;
+				}
+				else {
+					d->state = STARTUP;
+				}
+			}
+			break;
 		case (DISABLED):;
 			// no set_current, no brake_current
 		default:;
@@ -2421,6 +2436,7 @@ enum {
 	FLOAT_COMMAND_LIGHT_INFO = 25, // to be called by apps to check if a lighting module is present / get info
 	FLOAT_COMMAND_LIGHT_CTRL = 26, // to be called by apps to change light settings
 	FLOAT_COMMAND_LCM_INFO = 27,   // to be called by apps to check lighting controller firmware
+	FLOAT_COMMAND_CHARGESTATE = 28,// to be called by ADV LCM when charging starts/stops
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -2460,8 +2476,14 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
-	buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
-	buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
+	if (state == CHARGING) {
+		buffer_append_float32_auto(send_buffer, d->charge_current, &ind);
+		buffer_append_float32_auto(send_buffer, d->charge_voltage, &ind);
+	}
+	else {
+		buffer_append_float32_auto(send_buffer, d->applied_booster_current, &ind);
+		buffer_append_float32_auto(send_buffer, d->motor_current, &ind);
+	}
 	buffer_append_float32_auto(send_buffer, d->throttle_val, &ind);
 
 	if (ind > BUFSIZE) {
@@ -2550,6 +2572,12 @@ static void cmd_send_all_data(data *d, unsigned char mode){
 			send_buffer[ind++] = fmaxf(0, fminf(110, d->battery_level)) * 2;
 			// ind = 55
 		}
+		if (mode >= 4) {
+			// make charge current and voltage available in mode 4
+			buffer_append_float16(send_buffer, d->charge_current, 10, &ind);
+			buffer_append_float16(send_buffer, d->charge_voltage, 10, &ind);
+			// ind = 59
+		}
 	}
 
 	if (ind > SNDBUFSIZE) {
@@ -2573,7 +2601,9 @@ static void cmd_lock(data *d, unsigned char *cfg)
 {
 	if (d->state >= FAULT_ANGLE_PITCH) {
 		d->float_conf.float_disable = cfg[0] ? true : false;
-		d->state = cfg[0] ? DISABLED : STARTUP;
+		if (d->state != CHARGING) {
+			d->state = cfg[0] ? DISABLED : STARTUP;
+		}
 		write_cfg_to_eeprom(d);
 	}
 }
@@ -3110,6 +3140,44 @@ static void cmd_lcm_info(data *d)
 }
 
 /**
+ * Command to be called by ADV/LCM to announce that the board is charging
+ */
+static void cmd_chargestate(data *d, unsigned char *cfg, int len)
+{
+	// ignore this while riding!
+	if ((d->state >= RUNNING) && (d->state <= RUNNING_FLYWHEEL))
+		return;
+
+	// Expecting 5 bytes:
+	// -charging: 1/0 aka true/false
+	// -voltage: 16bit float divided by 10
+	// -current: 16bit float divided by 10
+	if (len < 5)
+		return;
+
+	bool charging = (cfg[0] > 0);
+	d->charge_timer = d->current_time;
+
+	if (charging) {
+	        int32_t idx = 1;
+		d->charge_voltage = buffer_get_float16(cfg, 10, &idx);
+		d->charge_current = buffer_get_float16(cfg, 10, &idx);
+		d->state = CHARGING;
+	}
+	else {
+		// Once charging is done, go back to normal
+		if (d->float_conf.float_disable) {
+			d->state = DISABLED;
+		}
+		else {
+			d->state = STARTUP;
+		}
+		d->charge_voltage = 0;
+		d->charge_current = 0;
+	}
+}
+
+/**
  * Command for apps to call to control LCM details (lights, behavior, etc)
  */
 static void cmd_light_ctrl(data *d, unsigned char *cfg, int len)
@@ -3423,6 +3491,10 @@ static void on_command_received(unsigned char *buffer, unsigned int len) {
 		}
 		case FLOAT_COMMAND_LCM_INFO: {
 			cmd_lcm_info(d);
+			return;
+		}
+		case FLOAT_COMMAND_CHARGESTATE: {
+			cmd_chargestate(d, &buffer[2], len-2);
 			return;
 		}
 		default: {
