@@ -2436,7 +2436,7 @@ enum {
 	FLOAT_COMMAND_LIGHT_INFO = 25, // to be called by apps to check if a lighting module is present / get info
 	FLOAT_COMMAND_LIGHT_CTRL = 26, // to be called by apps to change light settings
 	FLOAT_COMMAND_LCM_INFO = 27,   // to be called by apps to check lighting controller firmware
-	FLOAT_COMMAND_CHARGESTATE = 28,// to be called by ADV LCM when charging starts/stops
+	FLOAT_COMMAND_CHARGESTATE = 28,// to be called by ADV LCM while charging
 } float_commands;
 
 static void send_realtime_data(data *d){
@@ -3148,18 +3148,23 @@ static void cmd_chargestate(data *d, unsigned char *cfg, int len)
 	if ((d->state >= RUNNING) && (d->state <= RUNNING_FLYWHEEL))
 		return;
 
-	// Expecting 5 bytes:
+	// Expecting 6 bytes:
+	// -magic nr: must be 151
 	// -charging: 1/0 aka true/false
 	// -voltage: 16bit float divided by 10
 	// -current: 16bit float divided by 10
-	if (len < 5)
+	if (len < 6)
 		return;
 
-	bool charging = (cfg[0] > 0);
+        uint8_t magicnr = cfg[0];
+	if (magicnr != 151)
+		return;
+
+	bool charging = (cfg[1] > 0);
 	d->charge_timer = d->current_time;
 
 	if (charging) {
-	        int32_t idx = 1;
+	        int32_t idx = 2;
 		d->charge_voltage = buffer_get_float16(cfg, 10, &idx);
 		d->charge_current = buffer_get_float16(cfg, 10, &idx);
 		d->state = CHARGING;
