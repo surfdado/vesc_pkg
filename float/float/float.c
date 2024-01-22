@@ -519,10 +519,18 @@ static void configure(data *d) {
 
 	// Variable nose angle adjustment / tiltback (setting is per 1000erpm, convert to per erpm)
 	d->tiltback_variable = d->float_conf.tiltback_variable / 1000;
-	if (d->tiltback_variable > 0) {
-		d->tiltback_variable_max_erpm = fabsf(d->float_conf.tiltback_variable_max / d->tiltback_variable);
-	} else {
+	if ((d->float_conf.tiltback_variable < 0) || (d->float_conf.tiltback_variable_max < 0)) {
+		// we now allow negative rate or negative max (or both), it all is treated as negative tilt
+		// runtime logic expects positive rate but negative max for negative tilt:
+		if (d->tiltback_variable < 0)
+			d->tiltback_variable *= -1;
+		if (d->float_conf.tiltback_variable_max > 0)
+			d->float_conf.tiltback_variable_max *= -1;
+	}
+	if (d->tiltback_variable == 0) {
 		d->tiltback_variable_max_erpm = 100000;
+	} else {
+		d->tiltback_variable_max_erpm = fabsf(d->float_conf.tiltback_variable_max / d->tiltback_variable);
 	}
 
 	// Reset loop time variables

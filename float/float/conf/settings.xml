@@ -124,7 +124,7 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-style:italic;&quot;&gt;&lt;br /&gt;&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-weight:600; font-style:italic;&quot;&gt;*Note: If your set Mahony KP in &amp;quot;App CFG -&amp;gt; IMU&amp;quot; does not match this value, this value will take priority and writing the Float Config will overwrite this value into your App CFG.&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</description>
             <cDefine>APPCONF_FLOAT_MAHONY_KP</cDefine>
-            <editorDecimalsDouble>1</editorDecimalsDouble>
+            <editorDecimalsDouble>2</editorDecimalsDouble>
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
             <maxDouble>3</maxDouble>
@@ -853,7 +853,7 @@ p, li { white-space: pre-wrap; }
             <editorScale>1</editorScale>
             <editAsPercentage>0</editAsPercentage>
             <maxDouble>5</maxDouble>
-            <minDouble>0</minDouble>
+            <minDouble>-5</minDouble>
             <showDisplay>0</showDisplay>
             <stepDouble>0.05</stepDouble>
             <valDouble>0.1</valDouble>
