@@ -2445,6 +2445,7 @@ enum {
 	FLOAT_COMMAND_LIGHT_CTRL = 26, // to be called by apps to change light settings
 	FLOAT_COMMAND_LCM_INFO = 27,   // to be called by apps to check lighting controller firmware
 	FLOAT_COMMAND_CHARGESTATE = 28,// to be called by ADV LCM while charging
+	FLOAT_COMMAND_LCM_DEBUG = 99,  // reserved for external debug purposes
 } float_commands;
 
 static void send_realtime_data(data *d){
