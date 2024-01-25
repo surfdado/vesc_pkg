@@ -2485,7 +2485,7 @@ static void send_realtime_data(data *d){
 	buffer_append_float32_auto(send_buffer, d->true_pitch_angle, &ind);
 	buffer_append_float32_auto(send_buffer, d->atr_filtered_current, &ind);
 	buffer_append_float32_auto(send_buffer, d->float_acc_diff, &ind);
-	if (state == CHARGING) {
+	if (d->state == CHARGING) {
 		buffer_append_float32_auto(send_buffer, d->charge_current, &ind);
 		buffer_append_float32_auto(send_buffer, d->charge_voltage, &ind);
 	}
