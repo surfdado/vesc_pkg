@@ -3178,7 +3178,7 @@ static void cmd_chargestate(data *d, unsigned char *cfg, int len)
 		d->charge_current = buffer_get_float16(cfg, 10, &idx);
 		d->state = CHARGING;
 	}
-	else {
+	else if (d->state == CHARGING) {
 		// Once charging is done, go back to normal
 		if (d->float_conf.float_disable) {
 			d->state = DISABLED;
