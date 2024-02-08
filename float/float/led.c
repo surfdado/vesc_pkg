@@ -36,10 +36,10 @@ uint32_t led_rgb_to_local(uint32_t color, uint8_t brightness, bool rgbw) {
 }
 
 uint32_t led_fade_color(uint32_t from, uint32_t to) {
-    uint8_t fw = (from >> 24) & 0xFF;
-    uint8_t fr = (from >> 16) & 0xFF;
-    uint8_t fg = (from >> 8) & 0xFF;
-    uint8_t fb = from & 0xFF;
+    uint32_t fw = (from >> 24) & 0xFF;
+    uint32_t fr = (from >> 16) & 0xFF;
+    uint32_t fg = (from >> 8) & 0xFF;
+    uint32_t fb = from & 0xFF;
 
     uint8_t tw = (to >> 24) & 0xFF;
     uint8_t tr = (to >> 16) & 0xFF;
@@ -492,7 +492,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             centerPosition = forwardOffsetDirectional + forwardlengthDirectional - centerPosition + forwardOffsetDirectional;
         }
         for(int i = forwardOffsetDirectional; i < forwardOffsetDirectional + forwardlengthDirectional; i++){
-            int intensity = (((forwardlengthDirectional/2)-min(abs(i-centerPosition), forwardlengthDirectional/2))
+            uint32_t intensity = (((forwardlengthDirectional/2)-min(abs(i-centerPosition), forwardlengthDirectional/2))
             /(forwardlengthDirectional/2.0)) * 255;
             led_set_color(led_data, i, intensity << 16, brightness, false);
         }
@@ -501,7 +501,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
             centerPosition = rearOffsetDirectional + rearlengthDirectional - centerPosition + rearOffsetDirectional;
         }
         for(int i = rearOffsetDirectional; i < rearOffsetDirectional + rearlengthDirectional; i++){
-            int intensity = (((rearlengthDirectional/2)-min(abs(i-centerPosition), rearlengthDirectional/2))/(rearlengthDirectional/2.0)) * 255;
+            uint32_t intensity = (((rearlengthDirectional/2)-min(abs(i-centerPosition), rearlengthDirectional/2))/(rearlengthDirectional/2.0)) * 255;
             led_set_color(led_data, i, intensity << 16, brightness, false);
         }
         return;
