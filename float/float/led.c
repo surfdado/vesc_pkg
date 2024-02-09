@@ -35,6 +35,23 @@ uint32_t led_rgb_to_local(uint32_t color, uint8_t brightness, bool rgbw) {
     }
 }
 
+int stepTowards(int from, int to, int step_size){
+    if (from < to) {
+        if (from + step_size > to) {
+            return to;
+        } else {
+            return from + step_size;
+        }
+    } else if (from > to) {
+        if (from - step_size < to) {
+            return to;
+        } else {
+            return from - step_size;
+        }
+    }
+    return to;
+}
+
 uint32_t led_fade_color(uint32_t from, uint32_t to) {
     uint32_t fw = (from >> 24) & 0xFF;
     uint32_t fr = (from >> 16) & 0xFF;
@@ -46,58 +63,11 @@ uint32_t led_fade_color(uint32_t from, uint32_t to) {
     uint8_t tg = (to >> 8) & 0xFF;
     uint8_t tb = to & 0xFF;
 
-    if (fw < tw) {
-        if (fw + 12 > tw) {
-            fw = tw;
-        } else {
-            fw += 12;
-        }
-    } else if (fw > tw) {
-        if (fw - 12 < tw) {
-            fw = tw;
-        } else {
-            fw -= 12;
-        }
-    }
-    if (fr < tr) {
-        if (fr + 12 > tr) {
-            fr = tr;
-        } else {
-            fr += 12;
-        }
-    } else if (fr > tr) {
-        if (fr - 12 < tr) {
-            fr = tr;
-        } else {
-            fr -= 12;
-        }
-    }
-    if (fg < tg) {
-        if (fg + 12 > tg) {
-            fg = tg;
-        } else {
-            fg += 12;
-        }
-    } else if (fg > tg) {
-        if (fg - 12 < tg) {
-            fg = tg;
-        } else {
-            fg -= 12;
-        }
-    }
-    if (fb < tb) {
-        if (fb + 12 > tb) {
-            fb = tb;
-        } else {
-            fb += 12;
-        }
-    } else if (fb > tb) {
-        if (fb - 12 < tb) {
-            fb = tb;
-        } else {
-            fb -= 12;
-        }
-    }
+    fw = stepTowards(fw, tw, 12);
+    fr = stepTowards(fr, tr, 12);
+    fg = stepTowards(fg, tg, 12);
+    fb = stepTowards(fb, tb, 12);
+    
     return (fw << 24) | (fr << 16) | (fg << 8) | fb;
 }
 
@@ -342,7 +312,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         } else {
             // Display duty cycle when riding
             int dutyLeds = (int)(fminf((abs_duty_cycle * 1.1112), 1) * led_data->led_status_count);
-            int dutyColor = 0x00FFFF00;
+            uint32_t dutyColor = 0x00FFFF00;
             if (abs_duty_cycle > 0.85) {
                 dutyColor = 0x00FF0000;
             } else if (abs_duty_cycle > 0.7) {
@@ -377,9 +347,9 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     }
     brightness = led_data->led_previous_brightness;
 
-    /////////////////////////
-    // Patten strip logic //
-    ///////////////////////
+    //////////////////////////
+    // Pattern strip logic //
+    ////////////////////////
 
     // calculate directonality
     int forwardOffsetDirectional = led_data->led_status_count;
@@ -441,7 +411,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
         return;
     } else if (led_mode == 6) { // Strobe
-        if (led_data->RGBdata[forwardOffsetDirectional] > 0) {
+        if ((int)(current_time * 1000) % 100 < 50) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00000000, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00000000, brightness, false);
         } else {
@@ -450,19 +420,20 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
         return;
     } else if (led_mode == 7) { // Rave
-        if (led_data->RGBdata[forwardOffsetDirectional] == 0x00FF0000) {
+        int time = (int)(current_time * 1000) % 300;
+        if (time < 50) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FFFF00, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
-        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x00FFFF00) {
+        } else if (time < 100) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FF00, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, false);
-        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x0000FF00) {
+        } else if (time < 150) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FFFF, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FFFF, brightness, false);
-        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x0000FFFF) {
+        } else if (time < 200) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x000000FF, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, false);
-        } else if (led_data->RGBdata[forwardOffsetDirectional] == 0x000000FF) {
+        } else if (time < 250) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FF00FF, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF00FF, brightness, false);
         } else {
@@ -472,15 +443,16 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         return;
     } else if (led_mode == 8) { // Mullet
         led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0xFFFFFFFF, brightness, true);
-        if (led_data->RGBdata[rearOffsetDirectional] == 0x00FF0000) {
+        int time = (int)(current_time * 1000) % 300;
+        if (time < 50) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
-        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x00FFFF00) {
+        } else if (time < 100) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, false);
-        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x0000FF00) {
+        } else if (time < 150) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FFFF, brightness, false);
-        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x0000FFFF) {
+        } else if (time < 200) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, false);
-        } else if (led_data->RGBdata[rearOffsetDirectional] == 0x000000FF) {
+        } else if (time < 250) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF00FF, brightness, false);
         } else {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, false);
@@ -507,9 +479,9 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         return;
     } else if (led_mode == 10){ // Felony
         int state = 0;
-        if(led_data->RGBdata[forwardOffsetDirectional] == 0x00000000){
+        if((int)(current_time * 1000) % 150 < 50){
             state = 1;
-        }else if(led_data->RGBdata[forwardOffsetDirectional] == 0x00FF0000){
+        }else if((int)(current_time * 1000) % 150 < 100){
             state = 2;
         }
         if(state == 0){
