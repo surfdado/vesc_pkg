@@ -399,19 +399,20 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, true);
         return;
     } else if (led_mode == 5) { // RGB Fade
-        if ((int)(current_time * 1000) % 3000 < 1000) {
-            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FF0000, brightness, true);
-            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FF0000, brightness, true);
-        } else if ((int)(current_time * 1000) % 3000 < 2000) {
-            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x0000FF00, brightness, true);
-            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x0000FF00, brightness, true);
+        uint16_t time = (unsigned long)(current_time * 1000) % 3000;
+        uint32_t color;
+        if (time <= 1000) {
+            color =  (uint32_t)(255 * (1 - (time / 1000.0))) << 16 | (uint8_t)(255 * (time / 1000.0));
+        } else if (time <= 2000) {
+            color = (uint16_t)(255 * ((time - 1000) / 1000.0)) << 8 | (uint8_t)(255 * (1 - ((time - 1000) / 1000.0)));
         } else {
-            led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x000000FF, brightness, true);
-            led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x000000FF, brightness, true);
+            color =  (uint32_t)(255 * ((time - 1000) / 1000.0)) << 16 | (uint16_t)(255 * (1 - ((time - 1000) / 1000.0))) << 8 ;
         }
+        led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, color, brightness, false);
+        led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, color, brightness, false);
         return;
     } else if (led_mode == 6) { // Strobe
-        if ((int)(current_time * 1000) % 100 < 50) {
+        if ((unsigned long)(current_time * 1000) % 100 < 50) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00000000, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00000000, brightness, false);
         } else {
@@ -420,7 +421,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
         return;
     } else if (led_mode == 7) { // Rave
-        int time = (int)(current_time * 1000) % 300;
+        uint16_t time = (unsigned long)(current_time * 1000) % 300;
         if (time < 50) {
             led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0x00FFFF00, brightness, false);
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
@@ -443,7 +444,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         return;
     } else if (led_mode == 8) { // Mullet
         led_strip_set_color(led_data, forwardOffsetDirectional, forwardlengthDirectional, 0xFFFFFFFF, brightness, true);
-        int time = (int)(current_time * 1000) % 300;
+        uint16_t time = (unsigned long)(current_time * 1000) % 300;
         if (time < 50) {
             led_strip_set_color(led_data, rearOffsetDirectional, rearlengthDirectional, 0x00FFFF00, brightness, false);
         } else if (time < 100) {
@@ -478,10 +479,10 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         }
         return;
     } else if (led_mode == 10){ // Felony
-        int state = 0;
-        if((int)(current_time * 1000) % 150 < 50){
+        uint8_t state = 0;
+        if((unsigned long)(current_time * 1000) % 150 < 50){
             state = 1;
-        }else if((int)(current_time * 1000) % 150 < 100){
+        }else if((unsigned long)(current_time * 1000) % 150 < 100){
             state = 2;
         }
         if(state == 0){
