@@ -139,6 +139,11 @@ void led_init_dma(LEDData* led_data) {
 }
 
 void led_init(LEDData* led_data, float_config* float_conf) {
+    if ((float_conf->led_type == LED_Type_None) || (float_conf->led_type == LED_Type_External_Module)) {
+        led_data->led_type = float_conf->led_type;
+        return;
+    }
+
     // De-init
     led_stop(led_data);
 
@@ -279,7 +284,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
     ///////////////////////
     // Status LED Logic //
     /////////////////////
-    if ((led_data->led_type == LED_Type_None) || (led_data->led_type == LED_Type_External_Module)) {
+    if ((float_conf->led_type == LED_Type_None) || (float_conf->led_type == LED_Type_External_Module)) {
         return;
     }
     if (current_time - led_data->led_last_updated < 0.05) {
@@ -506,6 +511,10 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
 }
 
 void led_stop(LEDData* led_data) {
+    if ((led_data->led_type == LED_Type_None) || (led_data->led_type == LED_Type_External_Module)) {
+        return;
+    }
+
     TIM_DeInit(TIM4);
     DMA_DeInit(DMA1_Stream3);
 
