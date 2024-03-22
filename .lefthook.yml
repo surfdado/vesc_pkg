@@ -12,7 +12,14 @@ pre-commit:
       run: clang-format -i {staged_files}
       skip: true
 
-clang-format:
+clang-format-check:
+  commands:
+    check:
+      glob: "*.{c,h}"
+      root: "refloat/"
+      run: clang-format -i --dry-run --Werror {all_files}
+
+clang-format-fix:
   commands:
     fix:
       glob: "*.{c,h}"
