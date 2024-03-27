@@ -806,7 +806,11 @@ static void calculate_setpoint_target(data *d) {
         }
     }
 
-    if (d->state.mode != MODE_FLYWHEEL) {
+    if (d->state.mode == MODE_FLYWHEEL) {
+        // We don't care about / don't want to report wheelslip in flywheel mode
+        d->state.wheelslip = false;
+    }
+    else {
         if (d->state.sat == SAT_PB_DUTY) {
             if (d->float_conf.is_dutybeep_enabled || (d->float_conf.tiltback_duty_angle == 0)) {
                 beep_on(d, true);
