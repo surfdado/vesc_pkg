@@ -260,9 +260,13 @@ void led_set_color(LEDData* led_data, int led, uint32_t color, uint32_t brightne
     }
 }
 
-void led_display_battery(LEDData* led_data, int brightness, int strip_offset, int strip_length, bool fade) {
+void led_display_battery(LEDData* led_data, int brightness, int strip_offset, int strip_length, float current_time, bool fade) {
     float batteryLevel = VESC_IF->mc_get_battery_level(NULL);
-    int batteryLeds = (int)(batteryLevel * strip_length);
+    int batteryLeds = ceilf((batteryLevel * strip_length));
+    if(batteryLevel <=0 && strip_length > 0){
+        batteryLeds = 1;
+        brightness = brightness * (1 - (current_time - (int)current_time));
+    }
     int batteryColor = 0x0000FF00;
     if (batteryLevel < .4) {
         batteryColor = 0x00FFFF00;
@@ -290,7 +294,7 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
         if (erpm < float_conf->fault_adc_half_erpm) {
             // Display status LEDs
             if (switch_state == 0) {
-                led_display_battery(led_data, statusBrightness, 0, led_data->led_status_count, false);
+                led_display_battery(led_data, statusBrightness, 0, led_data->led_status_count, current_time, false);
             } else if (switch_state == 1) {
                 for (int i = 0; i < led_data->led_status_count; i++) {
                     if (i < led_data->led_status_count / 2) {
@@ -441,8 +445,8 @@ void led_update(LEDData* led_data, float_config* float_conf, float current_time,
 
     if (batteryMeter && switch_state == 0) {
         // Idle voltage display
-        led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, fade);
-        led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, fade);
+        led_display_battery(led_data, brightness, led_data->led_status_count, led_data->led_forward_count, current_time, fade);
+        led_display_battery(led_data, brightness, led_data->led_status_count + led_data->led_forward_count, led_data->led_rear_count, current_time, fade);
     } else {
         // Normal color/pattern display
         if (led_data->led_forward_count > 0) {
