@@ -2623,6 +2623,8 @@ static void cmd_print_info(data *d)
 static void cmd_lock(data *d, unsigned char *cfg)
 {
 	if (d->state >= FAULT_ANGLE_PITCH) {
+		// restore config before locking to avoid accidentally writing temporary changes
+		read_cfg_from_eeprom(d);
 		d->float_conf.float_disable = cfg[0] ? true : false;
 		if (d->state != CHARGING) {
 			d->state = cfg[0] ? DISABLED : STARTUP;
