@@ -395,7 +395,7 @@ Item {
                     }
 
                     GroupBox {
-                        title: "LED Control"
+                        title: "Lights Control"
                         Layout.fillWidth: true
                         visible: ledEnabled.checked
 
@@ -405,7 +405,7 @@ Item {
 
                             CheckBox {
                                 id: ledOn
-                                text: "LED On"
+                                text: "Headlights On"
                                 checked: true
                                 onCheckedChanged: {
                                     handleDebouncedChange()
@@ -443,7 +443,7 @@ Item {
 
                                 CheckBox {
                                     id: ledHighbeamOn
-                                    text: "LED Highbeam On"
+                                    text: "Highbeams On"
                                     checked: true
                                     onCheckedChanged: {
                                         handleDebouncedChange()
@@ -458,7 +458,7 @@ Item {
 
                                 Text {
                                     color: Utility.getAppHexColor("lightText")
-                                    text: "Brightness"
+                                    text: "Headlights Brightness"
                                 }
 
                                 Slider {
@@ -473,7 +473,7 @@ Item {
 
                                 Text {
                                     color: Utility.getAppHexColor("lightText")
-                                    text: "Idle Brightness"
+                                    text: "Headlights Idle Brightness"
                                 }
 
                                 Slider {
