@@ -485,8 +485,9 @@ Item {
                                         handleDebouncedChange()
                                     }
                                 }
+                            }
 
-                                ColumnLayout {
+                            ColumnLayout {
                                     id: ledStatusBrightnessLayout
                                     visible: ledStatusStripType.currentValue > 0 || ledMallGrabEnabled.checked
                                     spacing: 10
@@ -505,7 +506,6 @@ Item {
                                             handleDebouncedChange()
                                         }
                                     }
-                                }
                             }
 
                             ColumnLayout {
